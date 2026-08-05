@@ -1,0 +1,18 @@
+<svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#F6F4EE"/>
+  <rect x="70" y="70" width="260" height="260" rx="10" fill="#FFFFFF" stroke="#16181D" stroke-width="10"/>
+  <g stroke="#16181D" stroke-width="6">
+    <line x1="156" y1="70" x2="156" y2="330"/>
+    <line x1="243" y1="70" x2="243" y2="330"/>
+    <line x1="70" y1="156" x2="330" y2="156"/>
+    <line x1="70" y1="243" x2="330" y2="243"/>
+  </g>
+  <rect x="70" y="156" width="86" height="87" fill="#13B886"/>
+  <g fill="#16181D" font-family="sans-serif" font-weight="700" font-size="58" text-anchor="middle">
+    <text x="113" y="135">5</text>
+    <text x="286" y="135">3</text>
+    <text x="200" y="222">7</text>
+    <text x="113" y="309">1</text>
+    <text x="286" y="309">9</text>
+  </g>
+</svg>
