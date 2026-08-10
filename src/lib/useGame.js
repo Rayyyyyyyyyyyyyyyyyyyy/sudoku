@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { clearGameSession, loadGameSession, persistGameSession } from './gameSession';
 import { generate, peersOf } from './sudoku';
 import { recordSolve } from './stats';
 
@@ -23,6 +24,21 @@ function reducer(state, action) {
       return INITIAL;
 
     case 'board':
+      if (action.saved) {
+        const values = action.saved.values.map((value, i) => action.board.puzzle[i] || value);
+        const notes = action.saved.notes.map((cell, i) =>
+          action.board.puzzle[i] || values[i] ? [] : Array.from(new Set(cell))
+        );
+        return {
+          ...INITIAL,
+          board: action.board,
+          values,
+          notes,
+          sel: action.saved.sel,
+          pencil: action.saved.pencil,
+          solved: values.every((value, i) => value === action.board.solution[i])
+        };
+      }
       return {
         ...INITIAL,
         board: action.board,
@@ -115,21 +131,52 @@ export function useGame({ level, seed, isDaily, settings }) {
     const id = setTimeout(() => {
       const board = generate(level, seed);
       if (cancelled) return;
-      startedAt.current = Date.now();
-      dispatch({ type: 'board', board });
+      const saved = loadGameSession({ level, seed, isDaily });
+      startedAt.current = saved ? saved.startedAt : Date.now();
+      setElapsed(Math.max(0, Date.now() - startedAt.current));
+      dispatch({ type: 'board', board, saved });
     }, 16);
 
     return () => {
       cancelled = true;
       clearTimeout(id);
     };
-  }, [level, seed]);
+  }, [level, seed, isDaily]);
 
   useEffect(() => {
     if (!state.board || state.solved) return undefined;
     const id = setInterval(() => setElapsed(Date.now() - startedAt.current), 500);
     return () => clearInterval(id);
   }, [state.board, state.solved]);
+
+  // 每次操作後同步保存；seed 可重建盤面，所以只需保存玩家輸入與開始時間。
+  useEffect(() => {
+    if (!state.board) return;
+    if (state.solved) {
+      clearGameSession();
+      return;
+    }
+    persistGameSession({
+      level,
+      seed,
+      isDaily,
+      values: state.values,
+      notes: state.notes,
+      sel: state.sel,
+      pencil: state.pencil,
+      startedAt: startedAt.current
+    });
+  }, [
+    state.board,
+    state.values,
+    state.notes,
+    state.sel,
+    state.pencil,
+    state.solved,
+    level,
+    seed,
+    isDaily
+  ]);
 
   // 記錄成績是副作用,所以留在 reducer 外面;recorded 擋掉 StrictMode 的重跑。
   useEffect(() => {

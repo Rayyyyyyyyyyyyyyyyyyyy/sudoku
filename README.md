@@ -17,11 +17,11 @@ npm run preview  # 預覽 production build
 | 路徑 | 說明 |
 | --- | --- |
 | `/` | 首頁:每日一題、五種難度、個人紀錄、玩法設定 |
-| `/play/:level` | 指定難度開新局(`level` 為 0–4,對應入門～專家) |
-| `/daily` | 每日一題(中等難度,seed 取當天日期,同一天永遠同一題) |
+| `/#/play/:level?seed=…` | 指定難度的題目(`level` 為 0–4,seed 決定盤面) |
+| `/#/daily` | 每日一題(中等難度,seed 取當天日期,同一天永遠同一題) |
 
-不認得的路徑會導回 `/`。因為用的是 History API,部署到靜態主機時要把所有路徑 rewrite 到
-`index.html`(Netlify `/* /index.html 200`、Vercel 預設即可、nginx 用 `try_files $uri /index.html`)。
+不認得的路徑會導回 `/`。路由放在 URL hash 中，部署到一般靜態主機不需要額外 rewrite；
+手機回收分頁後重新載入，也不會把遊戲路徑當成伺服器檔案而回傳 404。
 
 ## 結構
 
@@ -30,6 +30,7 @@ src/
   lib/sudoku.js     出題:mulberry32 亂數 + 回溯填盤,挖空時檢查唯一解
   lib/stats.js      localStorage 紀錄(key: sudoku-drill-v1),最佳時間 / 連續天數
   lib/settings.js   玩法設定(key: sudoku-drill-settings-v1)
+  lib/gameSession.js 未完成題目(key: sudoku-drill-active-game-v1)
   lib/useGame.js    一局遊戲的 reducer:填數、註記、清除、完成判定、計時、鍵盤
   pages/Home.jsx    首頁
   pages/Game.jsx    遊戲畫面
@@ -47,3 +48,4 @@ src/
 - 字體改用 Google Fonts 連結(原版把 woff2 全部 inline 成 base64,佔了那 6 MB 的大半)。
 
 `sudoku-drill-v1` 這個 localStorage key 沒有變,舊的紀錄會直接沿用。
+未完成題目的 seed、輸入、註記和計時起點也會保存，完整重載後可接著作答。

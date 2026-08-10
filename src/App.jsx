@@ -14,7 +14,7 @@ export default function App() {
         {/* key 讓換難度時整局重來,而不是沿用上一題的狀態 */}
         <Route
           path="/play/:level"
-          element={<Game key={location.pathname} settings={settings} />}
+          element={<Game key={`${location.pathname}${location.search}`} settings={settings} />}
         />
         <Route path="/daily" element={<Game key="daily" daily settings={settings} />} />
         <Route path="*" element={<Navigate to="/" replace />} />

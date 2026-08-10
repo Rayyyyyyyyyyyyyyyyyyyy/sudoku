@@ -1,5 +1,5 @@
-import { useCallback, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useCallback, useEffect, useState } from 'react';
+import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Board from '../components/Board';
 import NumberPad from '../components/NumberPad';
 import { DAILY_LEVEL, LEVELS, dailySeed, randomSeed } from '../lib/sudoku';
@@ -8,6 +8,7 @@ import { useGame } from '../lib/useGame';
 
 export default function Game({ daily = false, settings }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const { level: levelParam } = useParams();
 
   const parsed = Number(levelParam);
@@ -17,7 +18,21 @@ export default function Game({ daily = false, settings }) {
       ? parsed
       : 0;
 
-  const [seed, setSeed] = useState(() => (daily ? dailySeed(dayKey()) : randomSeed()));
+  const [seed] = useState(() => {
+    if (daily) return dailySeed(dayKey());
+    const raw = new URLSearchParams(location.search).get('seed');
+    const parsedSeed = Number(raw);
+    return raw !== null && Number.isInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffffffff
+      ? parsedSeed
+      : randomSeed();
+  });
+
+  // seed 放進網址，完整重載後才能生成同一題；replace 避免留下沒有 seed 的歷史紀錄。
+  useEffect(() => {
+    if (daily) return;
+    const raw = new URLSearchParams(location.search).get('seed');
+    if (raw !== String(seed)) navigate(`/play/${level}?seed=${seed}`, { replace: true });
+  }, [daily, level, location.search, navigate, seed]);
 
   const game = useGame({ level, seed, isDaily: daily, settings });
   const { board, values, notes, sel, select, pencil, togglePencil, solved, elapsed } = game;
@@ -25,8 +40,8 @@ export default function Game({ daily = false, settings }) {
   // 每日一題重玩時換成同難度的隨機題,和原本的行為一致。
   const again = useCallback(() => {
     if (daily) navigate(`/play/${DAILY_LEVEL}`);
-    else setSeed(randomSeed());
-  }, [daily, navigate]);
+    else navigate(`/play/${level}?seed=${randomSeed()}`, { replace: true });
+  }, [daily, level, navigate]);
 
   return (
     <div className="sd-game">
