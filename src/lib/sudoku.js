@@ -1,14 +1,17 @@
+import { PUZZLES } from '../data/puzzles.js';
+
 export const LEVELS = [
-  { name: '入門', holes: 36, desc: '36 個空格 · 一眼就能填' },
-  { name: '簡單', holes: 42, desc: '42 個空格 · 靠單一候選數推進' },
-  { name: '中等', holes: 47, desc: '47 個空格 · 需要一點註記' },
-  { name: '困難', holes: 52, desc: '52 個空格 · 全盤都得註記' },
-  { name: '專家', holes: 56, desc: '56 個空格 · 慢慢來' }
+  { name: '入門', rating: '1.5–2.0', desc: 'SE 1.5–2.0 · 已高於基礎掃描題' },
+  { name: '簡單', rating: '2.3–3.0', desc: 'SE 2.3–3.0 · 需要多步候選排除' },
+  { name: '中等', rating: '3.2–4.4', desc: 'SE 3.2–4.4 · 進階技巧開始出現' },
+  { name: '困難', rating: '4.5–6.6', desc: 'SE 4.5–6.6 · 複合邏輯推理' },
+  { name: '專家', rating: '6.7+', desc: 'SE 6.7+ · 高強度邏輯題' }
 ];
 
-export const DAILY_LEVEL = 2;
+// 每日題也由原本的中等提高為困難。
+export const DAILY_LEVEL = 3;
 
-/** mulberry32 — 同一個 seed 永遠得到同一題。 */
+/** mulberry32 — 同一個 seed 永遠選到同一題。 */
 function rng(seed) {
   let a = seed >>> 0;
   return function () {
@@ -19,7 +22,7 @@ function rng(seed) {
   };
 }
 
-/** v 能否合法填進格子 i(檢查同列、同行、同宮)。 */
+/** v 能否合法填進格子 i（檢查同列、同行、同宮）。 */
 export function ok(g, i, v) {
   const r = Math.floor(i / 9);
   const c = i % 9;
@@ -32,72 +35,76 @@ export function ok(g, i, v) {
   return true;
 }
 
-function fill(g, pos, rand) {
-  if (pos === 81) return true;
-  const cand = [1, 2, 3, 4, 5, 6, 7, 8, 9];
-  for (let i = 8; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    const t = cand[i];
-    cand[i] = cand[j];
-    cand[j] = t;
-  }
-  for (const v of cand) {
-    if (ok(g, pos, v)) {
-      g[pos] = v;
-      if (fill(g, pos + 1, rand)) return true;
-      g[pos] = 0;
+function candidates(g, i) {
+  const out = [];
+  for (let v = 1; v <= 9; v++) if (ok(g, i, v)) out.push(v);
+  return out;
+}
+
+/** 最少候選數優先，讓高難度題也能快速求出唯一解供完成判定。 */
+function solve(g) {
+  let idx = -1;
+  let choices = null;
+  for (let i = 0; i < 81; i++) {
+    if (g[i]) continue;
+    const next = candidates(g, i);
+    if (!next.length) return false;
+    if (!choices || next.length < choices.length) {
+      idx = i;
+      choices = next;
+      if (next.length === 1) break;
     }
   }
+  if (idx < 0) return true;
+  for (const v of choices) {
+    g[idx] = v;
+    if (solve(g)) return true;
+  }
+  g[idx] = 0;
   return false;
 }
 
-/** 數解的個數,最多數到 limit 就提前收手。 */
-function countSolutions(g, limit) {
+/** 數解的個數，最多數到 limit；公開供題庫完整性測試使用。 */
+export function countSolutions(g, limit = 2) {
   let idx = -1;
+  let choices = null;
   for (let i = 0; i < 81; i++) {
-    if (!g[i]) {
+    if (g[i]) continue;
+    const next = candidates(g, i);
+    if (!next.length) return 0;
+    if (!choices || next.length < choices.length) {
       idx = i;
-      break;
+      choices = next;
+      if (next.length === 1) break;
     }
   }
   if (idx < 0) return 1;
-  let n = 0;
-  for (let v = 1; v <= 9; v++) {
-    if (ok(g, idx, v)) {
-      g[idx] = v;
-      n += countSolutions(g, limit - n);
-      g[idx] = 0;
-      if (n >= limit) break;
-    }
+
+  let total = 0;
+  for (const v of choices) {
+    g[idx] = v;
+    total += countSolutions(g, limit - total);
+    g[idx] = 0;
+    if (total >= limit) break;
   }
-  return n;
+  return total;
 }
 
-/** 挖空後仍保證唯一解;回傳 { puzzle, solution }。 */
+/**
+ * 從預先評級的離線題庫取題。
+ * 題庫共 1,000 題，全部由 QQWing 保證唯一解、Sukaku Explainer 評級。
+ */
 export function generate(level, seed) {
-  const rand = rng(seed);
-  const solution = new Array(81).fill(0);
-  fill(solution, 0, rand);
+  const pool = PUZZLES[level];
+  if (!pool) throw new RangeError(`Unknown Sudoku level: ${level}`);
 
-  const puzzle = solution.slice();
-  const order = Array.from({ length: 81 }, (_, i) => i);
-  for (let i = 80; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    const t = order[i];
-    order[i] = order[j];
-    order[j] = t;
-  }
-
-  let holes = 0;
-  const target = LEVELS[level].holes;
-  for (const p of order) {
-    if (holes >= target) break;
-    const keep = puzzle[p];
-    puzzle[p] = 0;
-    if (countSolutions(puzzle.slice(), 2) === 1) holes++;
-    else puzzle[p] = keep;
-  }
-  return { puzzle, solution };
+  const mixedSeed = (seed ^ Math.imul(level + 1, 0x9e3779b9)) >>> 0;
+  const index = Math.floor(rng(mixedSeed)() * pool.length);
+  const [digits, rating] = pool[index];
+  const puzzle = Array.from(digits, Number);
+  const solution = puzzle.slice();
+  if (!solve(solution)) throw new Error(`Invalid puzzle at level ${level}, index ${index}`);
+  return { puzzle, solution, rating };
 }
 
 export function randomSeed() {

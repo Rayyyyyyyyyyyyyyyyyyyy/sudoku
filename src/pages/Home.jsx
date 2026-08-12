@@ -1,6 +1,6 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { LEVELS } from '../lib/sudoku';
+import { DAILY_LEVEL, LEVELS } from '../lib/sudoku';
 import { dayKey, emptyStats, fmt, loadStats, persistStats } from '../lib/stats';
 import { SETTING_LABELS } from '../lib/settings';
 
@@ -30,7 +30,7 @@ export default function Home({ settings, toggleSetting }) {
           <span className="sd-daily__date">{today.replace(/-/g, ' / ')}</span>
           <span className="sd-daily__name">每日一題</span>
           <span className="sd-daily__status">
-            {dailyMs ? '已完成 · ' + fmt(dailyMs) : '中等難度 · 每天換一題'}
+            {dailyMs ? '已完成 · ' + fmt(dailyMs) : `${LEVELS[DAILY_LEVEL].name}難度 · 每天換一題`}
           </span>
         </div>
         <button type="button" className="sd-btn sd-btn--primary" onClick={() => navigate('/daily')}>
@@ -104,7 +104,7 @@ export default function Home({ settings, toggleSetting }) {
       </div>
 
       <div className="sd-foot">
-        <span>題目即時生成 · 解唯一</span>
+        <span>1,000 題專業評級題庫 · 解唯一</span>
         <button type="button" className="sd-btn sd-foot__reset" onClick={resetStats}>
           清除紀錄
         </button>

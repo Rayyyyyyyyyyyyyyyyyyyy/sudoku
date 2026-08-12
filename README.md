@@ -18,7 +18,7 @@ npm run preview  # 預覽 production build
 | --- | --- |
 | `/` | 首頁:每日一題、五種難度、個人紀錄、玩法設定 |
 | `/#/play/:level?seed=…` | 指定難度的題目(`level` 為 0–4,seed 決定盤面) |
-| `/#/daily` | 每日一題(中等難度,seed 取當天日期,同一天永遠同一題) |
+| `/#/daily` | 每日一題(困難難度,seed 取當天日期,同一天永遠同一題) |
 
 不認得的路徑會導回 `/`。路由放在 URL hash 中，部署到一般靜態主機不需要額外 rewrite；
 手機回收分頁後重新載入，也不會把遊戲路徑當成伺服器檔案而回傳 404。
@@ -27,17 +27,22 @@ npm run preview  # 預覽 production build
 
 ```
 src/
-  lib/sudoku.js     出題:mulberry32 亂數 + 回溯填盤,挖空時檢查唯一解
+  data/puzzles.js   1,000 題離線題庫,保留 Sukaku Explainer 原始評分
+  lib/sudoku.js     依 seed 選題 + 最少候選數優先求解與唯一解驗證
   lib/stats.js      localStorage 紀錄(key: sudoku-drill-v1),最佳時間 / 連續天數
   lib/settings.js   玩法設定(key: sudoku-drill-settings-v1)
-  lib/gameSession.js 未完成題目(key: sudoku-drill-active-game-v1)
+  lib/gameSession.js 未完成題目(key: sudoku-drill-active-game-v2)
   lib/useGame.js    一局遊戲的 reducer:填數、註記、清除、完成判定、計時、鍵盤
   pages/Home.jsx    首頁
   pages/Game.jsx    遊戲畫面
   components/       Board(9×9 盤面)、NumberPad(數字鍵)
 ```
 
-出題是同步的回溯搜尋,專家難度會卡一下,所以延後一個 frame 才跑,先讓「產生題目中…」畫出來。
+題目來自 public-domain 的
+[Sudoku Exchange Puzzle Bank](https://github.com/grantm/sudoku-exchange-puzzle-bank)：
+由 QQWing 產生並確認唯一解，再由 Sukaku Explainer 依實際解題技巧評分。應用程式收錄
+五級各 200 題，且刻意略過最基礎的 SE 1.2 題目；授權與來源見
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)。
 
 ## 跟原版的差異
 

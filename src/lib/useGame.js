@@ -111,8 +111,8 @@ function reducer(state, action) {
 }
 
 /**
- * 一局遊戲。level/seed 一變就重新出題;出題是同步的回溯搜尋(專家難度會卡一下),
- * 所以丟到下一個 frame 跑,讓「產生題目中」先畫出來。
+ * 一局遊戲。level/seed 一變就從離線題庫選出固定題目；求解仍放到下一個
+ * frame，讓「產生題目中」先畫出來。
  */
 export function useGame({ level, seed, isDaily, settings }) {
   const [state, dispatch] = useReducer(reducer, INITIAL);

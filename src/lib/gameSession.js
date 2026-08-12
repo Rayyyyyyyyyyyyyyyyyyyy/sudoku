@@ -1,4 +1,5 @@
-const KEY = 'sudoku-drill-active-game-v1';
+// v2 使用評級題庫；避免把舊生成器的作答進度套到不同盤面。
+const KEY = 'sudoku-drill-active-game-v2';
 
 function defaultStorage() {
   return typeof localStorage === 'undefined' ? null : localStorage;

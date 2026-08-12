@@ -18,21 +18,18 @@ export default function Game({ daily = false, settings }) {
       ? parsed
       : 0;
 
-  const [seed] = useState(() => {
-    if (daily) return dailySeed(dayKey());
-    const raw = new URLSearchParams(location.search).get('seed');
-    const parsedSeed = Number(raw);
-    return raw !== null && Number.isInteger(parsedSeed) && parsedSeed >= 0 && parsedSeed <= 0xffffffff
-      ? parsedSeed
-      : randomSeed();
-  });
+  const [fallbackSeed] = useState(randomSeed);
+  const rawSeed = new URLSearchParams(location.search).get('seed');
+  const querySeed = Number(rawSeed);
+  const validQuerySeed =
+    rawSeed !== null && Number.isInteger(querySeed) && querySeed >= 0 && querySeed <= 0xffffffff;
+  const seed = daily ? dailySeed(dayKey()) : validQuerySeed ? querySeed : fallbackSeed;
 
   // seed 放進網址，完整重載後才能生成同一題；replace 避免留下沒有 seed 的歷史紀錄。
   useEffect(() => {
     if (daily) return;
-    const raw = new URLSearchParams(location.search).get('seed');
-    if (raw !== String(seed)) navigate(`/play/${level}?seed=${seed}`, { replace: true });
-  }, [daily, level, location.search, navigate, seed]);
+    if (!validQuerySeed) navigate(`/play/${level}?seed=${seed}`, { replace: true });
+  }, [daily, level, navigate, seed, validQuerySeed]);
 
   const game = useGame({ level, seed, isDaily: daily, settings });
   const { board, values, notes, sel, select, pencil, togglePencil, solved, elapsed } = game;
@@ -51,6 +48,7 @@ export default function Game({ daily = false, settings }) {
         </button>
         <div className="sd-game__title">
           {LEVELS[level].name}
+          {board ? ` · SE ${board.rating}` : ''}
           {daily ? ' · 每日一題' : ''} · {fmt(elapsed)}
         </div>
       </div>
