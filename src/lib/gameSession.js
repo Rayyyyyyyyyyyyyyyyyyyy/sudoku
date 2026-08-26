@@ -54,6 +54,18 @@ export function loadGameSession({ level, seed, isDaily }, storage = defaultStora
   }
 }
 
+export function loadAnyGameSession(storage = defaultStorage()) {
+  if (!storage) return null;
+  try {
+    const raw = storage.getItem(KEY);
+    if (!raw) return null;
+    const session = JSON.parse(raw);
+    return validSession(session) ? session : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export function persistGameSession(session, storage = defaultStorage()) {
   if (!storage || !validSession(session)) return;
   try {

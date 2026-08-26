@@ -24,6 +24,9 @@ export default function Home({ settings, toggleSetting }) {
         </div>
         <span className="sd-kicker">Sudoku Drill</span>
       </div>
+      <button type="button" className="sd-btn sd-back" onClick={() => navigate('/')}>
+        ← 遊戲櫃
+      </button>
 
       <div className="sd-daily">
         <div className="sd-daily__meta">

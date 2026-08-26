@@ -43,8 +43,8 @@ export default function Game({ daily = false, settings }) {
   return (
     <div className="sd-game">
       <div className="sd-game__bar sd-width">
-        <button type="button" className="sd-btn sd-back" onClick={() => navigate('/')}>
-          ← 返回
+        <button type="button" className="sd-btn sd-back" onClick={() => navigate('/sudoku')}>
+          ← 數獨首頁
         </button>
         <div className="sd-game__title">
           {LEVELS[level].name}
@@ -78,8 +78,8 @@ export default function Game({ daily = false, settings }) {
               <button type="button" className="sd-btn sd-btn--win" onClick={again}>
                 再來一題
               </button>
-              <button type="button" className="sd-btn sd-btn--ghost" onClick={() => navigate('/')}>
-                回首頁
+              <button type="button" className="sd-btn sd-btn--ghost" onClick={() => navigate('/sudoku')}>
+                回數獨首頁
               </button>
             </div>
           </div>
