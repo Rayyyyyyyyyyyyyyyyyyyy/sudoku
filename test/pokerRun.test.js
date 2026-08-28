@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { PACKS } from '../src/data/poker/compatibility.js';
 import { openPack, rerollCost, settleRound } from '../src/lib/poker/economy.js';
-import { actionAvailability, createNewRun, currentRound, pokerRunReducer } from '../src/lib/poker/run.js';
+import { actionAvailability, addTestModifier, createNewRun, currentRound, pokerRunReducer, roundSettlementPreview } from '../src/lib/poker/run.js';
 import { seedRandom } from '../src/lib/poker/random.js';
 
 function begin(state, now = 2) {
@@ -147,4 +147,71 @@ test('settlement, rerolls, offers, packs, purchases, reordering and selling are 
   const sold = state;
   state = pokerRunReducer(state, { type: 'SELL_MODIFIER', instanceId: second, transactionId: 'sell-1', now: 25 });
   assert.equal(state, sold);
+});
+
+test('committed play and discard metadata records ordered actual card replacements without changing randomness', () => {
+  let discard = begin(createNewRun({ seed: 300, now: 1 }));
+  const onlyReplacement = discard.zones.drawPile.at(-1);
+  discard = {
+    ...discard,
+    zones: {
+      ...discard.zones,
+      drawPile: [onlyReplacement],
+      discarded: [...discard.zones.discarded, ...discard.zones.drawPile.slice(0, -1)]
+    }
+  };
+  const discardedIds = discard.zones.hand.slice(0, 3).map((card) => card.instanceId);
+  discardedIds.forEach((cardId, index) => { discard = pokerRunReducer(discard, { type: 'TOGGLE_CARD', cardId, now: 3 + index }); });
+  const discardRandomState = discard.randomState;
+  discard = pokerRunReducer(discard, { type: 'DISCARD', now: 7 });
+  assert.deepEqual(discard.trace[0].cardIds, discardedIds);
+  assert.deepEqual(discard.trace[0].drawnCardIds, [onlyReplacement.instanceId]);
+  assert.deepEqual(discard.randomState, discardRandomState);
+
+  let play = begin(createNewRun({ seed: 301, now: 1 }));
+  const selectedIds = play.zones.hand.slice(0, 2).map((card) => card.instanceId);
+  selectedIds.forEach((cardId, index) => { play = pokerRunReducer(play, { type: 'TOGGLE_CARD', cardId, now: 3 + index }); });
+  const playedInHandOrder = play.zones.hand.filter((card) => selectedIds.includes(card.instanceId)).map((card) => card.instanceId);
+  const oldHandIds = new Set(play.zones.hand.map((card) => card.instanceId));
+  const playRandomState = play.randomState;
+  play = pokerRunReducer(play, { type: 'PLAY', now: 6 });
+  assert.deepEqual(play.pendingResolution.playedCardIds, playedInHandOrder);
+  assert.deepEqual(play.pendingResolution.drawnCardIds, play.zones.hand.filter((card) => !oldHandIds.has(card.instanceId)).map((card) => card.instanceId));
+  assert.deepEqual(play.randomState, playRandomState);
+});
+
+test('duplicate and copied modifier operations retain exact owned instance provenance', () => {
+  let state = createNewRun({ seed: 302, now: 1 });
+  state = addTestModifier(state, 'copy-right-effect');
+  state = addTestModifier(state, 'flat-mult');
+  const [copy, source] = state.modifiers;
+  state = begin(state);
+  state = toggleFirst(state);
+  state = pokerRunReducer(state, { type: 'PLAY', now: 4 });
+  const modifierEvents = state.trace.filter((event) => event.source === 'flat-mult');
+  assert.ok(modifierEvents.some((event) => event.sourceInstanceId === source.instanceId && event.copySourceInstanceId === copy.instanceId));
+  assert.ok(modifierEvents.some((event) => event.sourceInstanceId === source.instanceId && !event.copySourceInstanceId));
+});
+
+test('round settlement preview is pure and matches the committed nonfinal and final settlement', () => {
+  let nonfinal = createNewRun({ seed: 303, now: 1 });
+  nonfinal = { ...nonfinal, phase: 'round-won', coins: 25, actions: { ...nonfinal.actions, hands: 2 } };
+  const before = structuredClone(nonfinal);
+  const preview = roundSettlementPreview(nonfinal);
+  assert.deepEqual(nonfinal, before);
+  assert.deepEqual({ base: preview.base, remainingHands: preview.remainingHands, interest: preview.interest, total: preview.total, current: preview.currentBalance, result: preview.resultingBalance, next: preview.nextPhase }, { base: currentRound(nonfinal).reward, remainingHands: 2, interest: 5, total: currentRound(nonfinal).reward + 7, current: 25, result: 25 + currentRound(nonfinal).reward + 7, next: 'shop' });
+  const settled = pokerRunReducer(nonfinal, { type: 'SETTLE_ROUND', now: 2 });
+  assert.deepEqual(settled.settlement, {
+    base: preview.base,
+    remainingHands: preview.remainingHands,
+    interest: preview.interest,
+    total: preview.total,
+    coinsAfter: preview.coinsAfter
+  });
+
+  const final = { ...nonfinal, stageIndex: 2, roundIndex: 2 };
+  const finalPreview = roundSettlementPreview(final);
+  assert.equal(finalPreview.isFinal, true);
+  assert.equal(finalPreview.nextPhase, 'run-won');
+  assert.equal(final.coins, 25);
 });

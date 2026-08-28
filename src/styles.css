@@ -926,6 +926,8 @@ a:hover {
 .pkr-mod summary { min-height: 46px; display: flex; align-items: center; gap: 7px; cursor: pointer; list-style: none; font-size: 12px; }
 .pkr-mod summary span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #1d8668; color: white; font: 700 10px 'JetBrains Mono', monospace; flex: 0 0 auto; }
 .pkr-mod p { font-size: 12px; line-height: 1.55; color: #69665f; }
+.pkr-mod summary em { margin-left: auto; color: #137f60; font-size: 10px; font-style: normal; }
+.pkr-mod.is-triggered { border-color: #168866; outline: 3px solid rgba(22, 136, 102, 0.2); background: #f0fbf6; }
 .pkr-inline-actions { display: flex; flex-wrap: wrap; gap: 5px; padding-bottom: 9px; }
 .pkr-inline-actions button { min-height: 44px; flex: 1; padding: 5px; font-size: 11px; }
 
@@ -961,12 +963,74 @@ a:hover {
 .pkr-card--red { color: #bd4949; }
 .pkr-card.is-selected { border-color: #137f60; transform: translateY(-7px); box-shadow: 0 7px 0 rgba(19, 127, 96, 0.17); }
 .pkr-card.is-contributing::after { content: '計'; position: absolute; top: 5px; right: 5px; width: 18px; height: 18px; border-radius: 50%; background: #17201d; color: white; display: grid; place-items: center; font-size: 9px; }
+.pkr-card.is-fresh { animation: pkr-fresh-card 0.34s ease both; animation-delay: calc(var(--pkr-card-index) * 55ms); border-color: #168866; }
+.pkr-card.is-fresh::before { content: '新'; position: absolute; left: 5px; bottom: 5px; min-width: 20px; height: 20px; border-radius: 999px; background: #168866; color: white; display: grid; place-items: center; font-size: 10px; font-weight: 700; }
+.pkr-card--display { list-style: none; cursor: default; user-select: none; }
 .pkr-card__rank { align-self: flex-start; font: 700 20px 'Space Grotesk', sans-serif; }
 .pkr-card__suit { font-size: 30px; }
 .pkr-card__state { min-height: 15px; color: #147b5d; font-size: 10px; font-weight: 700; }
 
 .pkr-controls > * { flex: 1; }
 .pkr-feedback { min-height: 22px; margin: 11px 0 0; color: #777268; text-align: center; font-size: 12px; }
+
+.pkr-live-status { position: fixed; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.pkr-metrics span { position: relative; }
+.pkr-metrics span small { position: absolute; right: 4px; bottom: 3px; color: #168866; font-size: 9px; font-weight: 700; }
+.pkr-metrics span.is-drawing { animation: pkr-deck-pulse 0.7s ease; }
+
+.pkr-discard-slot { min-height: 78px; display: grid; align-items: center; }
+.pkr-discard-cue { min-width: 0; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 10px; border: 1px solid #d6d0c2; border-radius: 12px; background: rgba(255, 254, 250, 0.9); padding: 7px 10px; animation: pkr-discard-cue 0.24s ease both; }
+.pkr-discard-cue > span { color: #8a5749; font-size: 11px; font-weight: 700; }
+.pkr-discard-cue > strong { color: #168866; font-size: 12px; white-space: nowrap; }
+.pkr-card-rail { min-width: 0; margin: 0; padding: 0; display: flex; gap: 6px; overflow-x: auto; scrollbar-width: thin; list-style: none; }
+.pkr-card-rail .pkr-card { flex: 0 0 68px; min-height: 88px; }
+.pkr-card-rail--discard .pkr-card { flex-basis: 42px; min-height: 58px; padding: 5px 3px; opacity: 0.78; }
+.pkr-card-rail--discard .pkr-card__rank { font-size: 14px; }
+.pkr-card-rail--discard .pkr-card__suit { font-size: 19px; }
+.pkr-card-rail--discard .pkr-card__state { display: none; }
+
+.pkr-score-stage { min-width: 0; padding: 4px 0 8px; }
+.pkr-score-stage > header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.pkr-score-stage > header span { color: #168866; font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 0.1em; }
+.pkr-score-stage > header h2 { margin: 0; font: 700 clamp(26px, 5vw, 42px) 'Space Grotesk', sans-serif; }
+.pkr-card-rail--scoring { margin: 14px 0; padding-bottom: 4px; }
+.pkr-card-rail--scoring .pkr-card { animation: pkr-score-card 0.3s ease both; animation-delay: calc(var(--pkr-card-index) * 55ms); }
+.pkr-score-beats { min-height: 118px; margin: 12px 0; padding: 12px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; border-radius: 12px; background: rgba(255, 255, 255, 0.48); list-style: none; }
+.pkr-score-beats li { min-width: 0; border-left: 3px solid #cdc7b9; padding: 6px 7px; display: flex; flex-direction: column; gap: 3px; opacity: 0.16; transform: translateY(6px); transition: opacity 0.16s ease, transform 0.16s ease, border-color 0.16s ease; }
+.pkr-score-beats li.is-revealed { opacity: 0.7; transform: translateY(0); }
+.pkr-score-beats li.is-active { opacity: 1; border-color: #168866; background: #f6fff9; }
+.pkr-score-beats span { font-size: 12px; font-weight: 700; }
+.pkr-score-beats small { color: #777269; font-size: 10px; line-height: 1.35; }
+.pkr-score-beats em { color: #168866; font-size: 9px; font-style: normal; }
+.pkr-equation { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 10px; border-block: 1px solid #d4cec0; padding: 13px 0; }
+.pkr-equation span { color: #777269; font-size: 11px; }
+.pkr-equation strong { text-align: center; font: 700 clamp(16px, 3vw, 24px) 'Space Grotesk', sans-serif; }
+.pkr-equation b { color: #168866; font: 700 clamp(22px, 5vw, 38px) 'Space Grotesk', sans-serif; white-space: nowrap; }
+.pkr-target-progress { margin-top: 13px; }
+.pkr-target-progress__copy { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; font-size: 11px; }
+.pkr-target-progress__copy span { color: #777269; }
+.pkr-target-progress__track { height: 11px; margin-top: 6px; overflow: hidden; border-radius: 999px; background: #d8d3c7; }
+.pkr-target-progress__track i { display: block; height: 100%; border-radius: inherit; background: #168866; transition: width 0.42s ease; }
+.pkr-target-progress.is-crossed .pkr-target-progress__track i { background: linear-gradient(90deg, #168866 0 88%, #d78445 88%); }
+.pkr-target-progress > b { display: block; margin-top: 6px; color: #a14f39; font-size: 11px; }
+.pkr-skip { width: 100%; min-height: 44px; margin-top: 14px; }
+
+.pkr-reward-stage { padding: clamp(20px, 5vw, 46px) 0 12px; text-align: center; }
+.pkr-reward-stage > span { color: #168866; font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 0.1em; }
+.pkr-reward-stage h2 { margin: 5px 0; font: 700 clamp(38px, 8vw, 66px) 'Space Grotesk', sans-serif; }
+.pkr-reward-stage > p { color: #716d64; }
+.pkr-reward-equation { max-width: 620px; margin: 18px auto; display: grid; grid-template-columns: 1fr auto 1fr auto 1fr auto 1.2fr; align-items: center; gap: 8px; }
+.pkr-reward-equation span { min-width: 0; border: 1px solid #d8d2c5; border-radius: 10px; background: #fffefa; padding: 9px 5px; display: flex; flex-direction: column; }
+.pkr-reward-equation small { color: #777269; font-size: 10px; }
+.pkr-reward-equation b { font: 700 20px 'Space Grotesk', sans-serif; }
+.pkr-reward-equation i { color: #777269; font-style: normal; }
+.pkr-balance strong { color: #168866; }
+.pkr-settle-cta { min-height: 50px; }
+
+@keyframes pkr-deck-pulse { 50% { transform: scale(1.04); background: #e7f7ef; } }
+@keyframes pkr-discard-cue { from { opacity: 0; transform: translateY(-6px); } }
+@keyframes pkr-fresh-card { from { opacity: 0; transform: translateY(9px); } }
+@keyframes pkr-score-card { from { opacity: 0; transform: translateY(8px) scale(0.98); } }
 
 .pkr-intro { padding: clamp(35px, 7vw, 70px) 15px; text-align: center; }
 .pkr-intro > span { color: #168866; font: 700 11px 'JetBrains Mono', monospace; letter-spacing: 0.1em; }
@@ -1033,6 +1097,16 @@ a:hover {
   .pkr-inline-actions button:last-child:nth-child(odd) { grid-column: 1 / -1; }
   .pkr-hand { grid-template-columns: repeat(4, minmax(0, 1fr)); row-gap: 14px; }
   .pkr-card { min-height: 100px; }
+  .pkr-discard-cue { grid-template-columns: auto minmax(0, 1fr); gap: 6px; }
+  .pkr-discard-cue > strong { grid-column: 1 / -1; text-align: right; }
+  .pkr-card-rail--discard .pkr-card { flex-basis: 35px; min-height: 52px; }
+  .pkr-score-beats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pkr-equation { grid-template-columns: 1fr auto; }
+  .pkr-equation span { grid-column: 1 / -1; }
+  .pkr-equation strong { text-align: left; }
+  .pkr-reward-equation { grid-template-columns: 1fr auto 1fr; }
+  .pkr-reward-equation span:last-child { grid-column: 1 / -1; }
+  .pkr-reward-equation i:nth-of-type(3) { display: none; }
   .pkr-controls, .pkr-landing__actions { flex-direction: column; }
   .pkr-offers { grid-template-columns: 1fr; }
   .pkr-offer { min-height: 190px; }
@@ -1050,4 +1124,10 @@ a:hover {
     transition-duration: 0.001ms !important;
   }
   .pkr-card.is-selected { transform: none; outline: 3px solid #137f60; outline-offset: 1px; }
+  .pkr-card.is-fresh,
+  .pkr-card-rail--scoring .pkr-card,
+  .pkr-discard-cue,
+  .pkr-metrics span.is-drawing { animation: none; }
+  .pkr-score-beats li { opacity: 1; transform: none; }
+  .pkr-target-progress__track i { transition: none; }
 }

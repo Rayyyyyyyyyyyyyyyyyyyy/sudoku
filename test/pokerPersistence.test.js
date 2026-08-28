@@ -114,3 +114,19 @@ test('poker records count starts and terminal completions idempotently', () => {
   assert.deepEqual({ runsWon: records.runsWon, highest: records.highestCompletedScore, streak: records.winStreak }, { runsWon: 1, highest: 999, streak: 1 });
   assert.notDeepEqual(records, emptyPokerRecords());
 });
+
+test('enriched resolving snapshots restore played and drawn identities under schema version one', () => {
+  const storage = memoryStorage();
+  let state = createNewRun({ seed: 88, now: 1 });
+  state = pokerRunReducer(state, { type: 'BEGIN_ROUND', now: 2 });
+  const playedCardIds = state.zones.hand.slice(0, 2).map((card) => card.instanceId);
+  playedCardIds.forEach((cardId, index) => { state = pokerRunReducer(state, { type: 'TOGGLE_CARD', cardId, now: 3 + index }); });
+  state = pokerRunReducer(state, { type: 'PLAY', now: 6 });
+  assert.equal(state.schemaVersion, 1);
+  assert.deepEqual(state.pendingResolution.playedCardIds, playedCardIds);
+  assert.equal(state.pendingResolution.drawnCardIds.length, 2);
+  savePokerSnapshot(state, storage);
+  const restored = loadPokerSnapshot(storage);
+  assert.deepEqual(restored, { status: 'ok', state });
+  assert.deepEqual(restored.state.pendingResolution, state.pendingResolution);
+});

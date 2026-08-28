@@ -58,3 +58,36 @@ test('hub and poker views distinguish active, terminal, and contextual empty sta
   assert.match(game, /尚無效果牌，可從上方商品取得/);
   assert.match(game, /rarityLabel\(item\.rarity\)/);
 });
+
+test('turn choreography source keeps score and settlement in-table with accessible bounded controls', async () => {
+  const [card, game, controller, css] = await Promise.all([
+    readFile(new URL('../src/components/PokerCard.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/pages/PokerGame.jsx', import.meta.url), 'utf8'),
+    readFile(new URL('../src/lib/poker/usePokerPresentation.js', import.meta.url), 'utf8'),
+    readFile(new URL('../src/styles.css', import.meta.url), 'utf8')
+  ]);
+  assert.match(game, /pkr-score-stage/);
+  assert.match(game, /pkr-card-rail--scoring/);
+  assert.match(game, /pkr-live-status[^]*aria-live="polite"/);
+  assert.match(game, /略過動畫/);
+  assert.match(game, /帶著.*幣前往補給站/);
+  assert.match(game, /收下.*幣，完成本局/);
+  assert.doesNotMatch(game, /完成計分|領取獎勵/);
+  assert.match(game, /focus\(\{ preventScroll: true \}\)/);
+  assert.doesNotMatch(game, /scrollIntoView/);
+  assert.match(card, /if \(!interactive\) return <li/);
+  assert.doesNotMatch(card, /disabled=\{disabled\}/);
+  assert.match(card, /新牌/);
+  assert.match(controller, /clearTimers/);
+  assert.match(controller, /return clearTimers/);
+  assert.match(controller, /REDUCED_MOTION_CONTINUATION_MS|scoreSequenceDuration/);
+  assert.match(css, /\.pkr-skip[^}]*min-height:\s*44px/);
+  assert.match(css, /\.pkr-settle-cta[^}]*min-height:\s*50px/);
+  assert.match(css, /\.pkr-card-rail[^}]*overflow-x:\s*auto/);
+  assert.match(css, /\.pkr-discard-slot[^}]*min-height/);
+  assert.match(css, /\.pkr-score-beats/);
+  assert.match(css, /\.pkr-target-progress/);
+  assert.match(css, /\.pkr-reward-stage/);
+  assert.match(css, /\.pkr-mod\.is-triggered/);
+  assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*pkr-card\.is-fresh/);
+});

@@ -134,6 +134,15 @@ function refill(zones, handSize) {
   return drawToHand(zones, Math.max(0, handSize - zones.hand.length), handSize);
 }
 
+function refillWithDrawnCardIds(zones, handSize) {
+  const existingIds = new Set(zones.hand.map((card) => card.instanceId));
+  const refilled = refill(zones, handSize);
+  return {
+    zones: refilled,
+    drawnCardIds: refilled.hand.filter((card) => !existingIds.has(card.instanceId)).map((card) => card.instanceId)
+  };
+}
+
 function cloneWithCommit(state, changes, action, now) {
   const committedAt = Number.isFinite(now) ? now : state.timers.lastCommittedAt;
   return {
@@ -152,6 +161,21 @@ function nextCursor(state) {
   if (state.roundIndex < currentStage(state).rounds.length - 1) return { stageIndex: state.stageIndex, roundIndex: state.roundIndex + 1, stageAdvanced: false };
   if (state.stageIndex < currentOpponent(state).stages.length - 1) return { stageIndex: state.stageIndex + 1, roundIndex: 0, stageAdvanced: true };
   return null;
+}
+
+export function roundSettlementPreview(state) {
+  const round = currentRound(state);
+  if (!round) return null;
+  const reward = settleRound({ coins: state.coins, baseReward: round.reward, handsRemaining: state.actions.hands });
+  const cursor = nextCursor(state);
+  return {
+    ...reward,
+    currentBalance: state.coins,
+    resultingBalance: reward.coinsAfter,
+    isFinal: cursor == null,
+    nextPhase: cursor ? 'shop' : 'run-won',
+    nextCursor: cursor
+  };
 }
 
 function modifierClassifierOptions(modifiers) {
@@ -189,7 +213,8 @@ export function pokerRunReducer(state, action) {
         stagePlayedCardIds: state.stagePlayedCardIds
       });
       let zones = moveSelected(state.zones, state.selection, 'played');
-      zones = refill(zones, state.actions.handSize);
+      const refilled = refillWithDrawnCardIds(zones, state.actions.handSize);
+      zones = refilled.zones;
       assertZoneInvariant(zones);
       const hands = state.actions.hands - 1;
       const roundScore = state.roundScore + scored.score;
@@ -210,7 +235,13 @@ export function pokerRunReducer(state, action) {
         stageHandCounts: stageCounts,
         stagePlayedCardIds: [...new Set([...state.stagePlayedCardIds, ...cards.map((card) => `${card.suit}-${card.rank}`)])],
         trace: scored.trace,
-        pendingResolution: { nextPhase, score: scored.score, handType: scored.evaluation.type }
+        pendingResolution: {
+          nextPhase,
+          score: scored.score,
+          handType: scored.evaluation.type,
+          playedCardIds: cards.map((card) => card.instanceId),
+          drawnCardIds: refilled.drawnCardIds
+        }
       }, action.type, now);
     }
     case 'FINISH_RESOLUTION':
@@ -220,7 +251,8 @@ export function pokerRunReducer(state, action) {
       if (!validSelection(state, 'DISCARD')) return state;
       const cards = state.zones.hand.filter((card) => state.selection.includes(card.instanceId));
       let zones = moveSelected(state.zones, state.selection, 'discarded');
-      zones = refill(zones, state.actions.handSize);
+      const refilled = refillWithDrawnCardIds(zones, state.actions.handSize);
+      zones = refilled.zones;
       const discards = state.actions.discards - 1;
       const phase = zones.hand.length === 0 && state.roundScore < currentRound(state).target ? 'run-lost' : 'selecting';
       return cloneWithCommit(state, {
@@ -229,15 +261,28 @@ export function pokerRunReducer(state, action) {
         selection: [],
         actions: { ...state.actions, discards },
         modifiers: updateModifiersAfterDiscard(state.modifiers, cards),
-        trace: [{ type: 'discard', cardIds: cards.map((card) => card.instanceId), discardsRemaining: discards }]
+        trace: [{
+          type: 'discard',
+          cardIds: cards.map((card) => card.instanceId),
+          drawnCardIds: refilled.drawnCardIds,
+          discardsRemaining: discards
+        }]
       }, action.type, now);
     }
     case 'SETTLE_ROUND': {
       if (state.phase !== 'round-won') return state;
       const round = currentRound(state);
       if (state.completion.settledRoundIds.includes(round.id)) return state;
-      const reward = settleRound({ coins: state.coins, baseReward: round.reward, handsRemaining: state.actions.hands });
-      const cursor = nextCursor(state);
+      const preview = roundSettlementPreview(state);
+      const {
+        nextCursor: cursor,
+        base,
+        remainingHands,
+        interest,
+        total,
+        coinsAfter
+      } = preview;
+      const reward = { base, remainingHands, interest, total, coinsAfter };
       const completion = { ...state.completion, settledRoundIds: [...state.completion.settledRoundIds, round.id] };
       if (!cursor) return cloneWithCommit(state, { phase: 'run-won', coins: reward.coinsAfter, settlement: reward, completion, trace: [...state.trace, { type: 'settlement', ...reward }] }, action.type, now);
       const generated = generateShopOffers(state.randomState, completion.settledRoundIds.length);

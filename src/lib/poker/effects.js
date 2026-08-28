@@ -84,9 +84,16 @@ function resolveOwnedOperations(modifiers, index, event, context, copied = false
     if (copied || index + 1 >= modifiers.length) return [];
     const target = modifierById(modifiers[index + 1].catalogId);
     if (!target || target.handlerId === 'copy-right') return [];
-    return resolveOwnedOperations(modifiers, index + 1, event, context, true).map((operation) => ({ ...operation, copiedBy: item.id }));
+    return resolveOwnedOperations(modifiers, index + 1, event, context, true).map((operation) => ({
+      ...operation,
+      copiedBy: item.id,
+      copySourceInstanceId: owned.instanceId
+    }));
   }
-  return modifierOperations(item, owned, event, context);
+  return modifierOperations(item, owned, event, context).map((operation) => ({
+    ...operation,
+    sourceInstanceId: owned.instanceId
+  }));
 }
 
 function appendOperations(running, operations) {
@@ -147,7 +154,13 @@ export function scoreHand({ cards, modifiers = [], randomState, discardsRemainin
       if (!nextRandomState) throw new Error('Random modifier requires serialized PRNG state');
       const rolled = randomInt(nextRandomState, item.params.max - item.params.min + 1);
       nextRandomState = rolled.state;
-      running = appendOperations(running, [{ type: 'add-mult', amount: item.params.min + rolled.value, source: item.id, provisional: item.params.distribution }]);
+      running = appendOperations(running, [{
+        type: 'add-mult',
+        amount: item.params.min + rolled.value,
+        source: item.id,
+        sourceInstanceId: owned.instanceId,
+        provisional: item.params.distribution
+      }]);
     } else running = appendOperations(running, resolveOwnedOperations(modifiers, index, 'score-independent', context));
   });
   const updatedModifiers = modifiers.map((owned) => {
