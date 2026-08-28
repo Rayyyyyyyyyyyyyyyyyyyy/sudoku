@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import PokerCard from '../components/PokerCard';
 import { POKER_RULES, modifierById, opponentById, packById, specialRuleById } from '../data/poker/compatibility';
+import { sortCardsForDisplay } from '../lib/poker/cards';
 import { rerollCost } from '../lib/poker/economy';
 import { handLabel } from '../lib/poker/evaluate';
 import { loadPokerSnapshot } from '../lib/poker/persistence';
@@ -141,6 +142,7 @@ function ActivePokerGame({ initialState, navigate }) {
   const presentation = usePokerPresentation(state, round, dispatch);
   const settlementPreview = state.phase === 'round-won' ? roundSettlementPreview(state) : null;
   const allCards = Object.values(state.zones).flat();
+  const sortedHand = useMemo(() => sortCardsForDisplay(state.zones.hand), [state.zones.hand]);
 
   useEffect(() => {
     const previous = previousPhaseRef.current;
@@ -190,7 +192,7 @@ function ActivePokerGame({ initialState, navigate }) {
       {state.phase === 'selecting' && <>
         <div className="pkr-discard-slot"><DiscardCue cue={presentation.discardCue} cards={allCards} /></div>
         <div className="pkr-preview" aria-live="polite"><span>{state.selection.length} 張已選</span><strong>{preview?.label || '選擇 1–5 張'}</strong></div>
-        <div className="pkr-hand" ref={handRootRef}>{state.zones.hand.map((card, index) => <PokerCard key={card.instanceId} card={card} selected={state.selection.includes(card.instanceId)} contributing={preview?.contributingIds.includes(card.instanceId)} fresh={presentation.freshCardIds.includes(card.instanceId)} presentationIndex={index} onToggle={(cardId) => dispatch({ type: 'TOGGLE_CARD', cardId, now: Date.now() })} />)}</div>
+        <div className="pkr-hand" ref={handRootRef}>{sortedHand.map((card, index) => <PokerCard key={card.instanceId} card={card} selected={state.selection.includes(card.instanceId)} contributing={preview?.contributingIds.includes(card.instanceId)} fresh={presentation.freshCardIds.includes(card.instanceId)} presentationIndex={index} onToggle={(cardId) => dispatch({ type: 'TOGGLE_CARD', cardId, now: Date.now() })} />)}</div>
         <div className="pkr-controls"><button className="pkr-btn pkr-btn--primary" type="button" disabled={!availability.canPlay} onClick={() => dispatch({ type: 'PLAY', now: Date.now() })}>出牌 · {state.actions.hands}</button><button className="pkr-btn pkr-btn--ghost" type="button" disabled={!availability.canDiscard} onClick={() => dispatch({ type: 'DISCARD', now: Date.now() })}>棄牌 · {state.actions.discards}</button></div>
         <p className="pkr-feedback">{!availability.canPlay && state.selection.length ? availability.playReason : '可點選牌面切換選取；參與目前牌型的牌會標記「計分」。'}</p>
       </>}

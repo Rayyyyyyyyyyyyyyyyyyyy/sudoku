@@ -4,8 +4,18 @@ export const SUITS = ['clubs', 'diamonds', 'hearts', 'spades'];
 export const RANKS = [2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14];
 export const ZONE_NAMES = ['drawPile', 'hand', 'played', 'discarded'];
 
+const SUIT_DISPLAY_PRIORITY = new Map([...SUITS].reverse().map((suit, index) => [suit, index]));
+
 export const rankLabel = (rank) => ({ 11: 'J', 12: 'Q', 13: 'K', 14: 'A' })[rank] || String(rank);
 export const suitSymbol = (suit) => ({ clubs: '♣', diamonds: '♦', hearts: '♥', spades: '♠' })[suit] || '?';
+
+export function sortCardsForDisplay(cards) {
+  return [...cards].sort((left, right) => (
+    right.rank - left.rank
+    || (SUIT_DISPLAY_PRIORITY.get(left.suit) ?? SUITS.length) - (SUIT_DISPLAY_PRIORITY.get(right.suit) ?? SUITS.length)
+    || left.instanceId.localeCompare(right.instanceId)
+  ));
+}
 
 export function createStandardDeck(prefix = 'standard') {
   return SUITS.flatMap((suit) => RANKS.map((rank) => ({

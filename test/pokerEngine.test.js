@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { COMPATIBILITY_FIXTURES, MODIFIERS, POKER_RULES, SPECIAL_RULES } from '../src/data/poker/compatibility.js';
-import { assertZoneInvariant, cardFromCode, createRoundZones, createStandardDeck, drawToHand, moveSelected, rankChips } from '../src/lib/poker/cards.js';
+import { assertZoneInvariant, cardFromCode, createRoundZones, createStandardDeck, drawToHand, moveSelected, rankChips, sortCardsForDisplay } from '../src/lib/poker/cards.js';
 import { interestFor } from '../src/lib/poker/economy.js';
 import { assertRegisteredHandlers, resolveScoreOperations, scoreHand, updateModifiersAfterDiscard } from '../src/lib/poker/effects.js';
 import { evaluateHand } from '../src/lib/poker/evaluate.js';
@@ -37,6 +37,19 @@ test('card transitions keep all 52 unique instances in exactly one explicit zone
   zones = drawToHand(zones, 2, 8);
   assertZoneInvariant(zones);
   assert.deepEqual(Object.keys(zones).sort(), ['discarded', 'drawPile', 'hand', 'played']);
+});
+
+test('display sorting orders cards by descending rank and fixed suit priority without mutating the hand', () => {
+  const hand = cards('2C', 'AH', 'AS', 'KD', 'JS');
+  const originalIds = hand.map((card) => card.instanceId);
+  assert.deepEqual(sortCardsForDisplay(hand).map((card) => card.instanceId), [
+    hand[2].instanceId,
+    hand[1].instanceId,
+    hand[3].instanceId,
+    hand[4].instanceId,
+    hand[0].instanceId
+  ]);
+  assert.deepEqual(hand.map((card) => card.instanceId), originalIds);
 });
 
 test('evaluator recognizes all nine classes, wheel, broadway, and ranking conflicts', () => {
