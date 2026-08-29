@@ -91,3 +91,10 @@ test('turn choreography source keeps score and settlement in-table with accessib
   assert.match(css, /\.pkr-mod\.is-triggered/);
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*pkr-card\.is-fresh/);
 });
+
+test('settlement click guard is scoped to the current round', async () => {
+  const game = await readFile(new URL('../src/pages/PokerGame.jsx', import.meta.url), 'utf8');
+  assert.match(game, /settlementCommittedRoundIdRef\.current === round\.id/);
+  assert.match(game, /settlementCommittedRoundIdRef\.current = round\.id/);
+  assert.doesNotMatch(game, /settlementCommittedRef\.current/);
+});

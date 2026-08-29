@@ -133,7 +133,7 @@ function ActivePokerGame({ initialState, navigate }) {
   const phaseHeadingRef = useRef(null);
   const handRootRef = useRef(null);
   const previousPhaseRef = useRef(null);
-  const settlementCommittedRef = useRef(false);
+  const settlementCommittedRoundIdRef = useRef(null);
   const round = currentRound(state);
   const opponent = opponentById(state.opponentId);
   const rule = specialRuleById(round.specialRuleId);
@@ -159,8 +159,8 @@ function ActivePokerGame({ initialState, navigate }) {
   }, [presentation, state.phase]);
 
   const settleOnce = () => {
-    if (settlementCommittedRef.current || state.phase !== 'round-won') return;
-    settlementCommittedRef.current = true;
+    if (settlementCommittedRoundIdRef.current === round.id || state.phase !== 'round-won') return;
+    settlementCommittedRoundIdRef.current = round.id;
     dispatch({ type: 'SETTLE_ROUND', now: Date.now() });
   };
   const phaseStatus = presentation.statusMessage
