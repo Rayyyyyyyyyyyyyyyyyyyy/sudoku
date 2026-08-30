@@ -13,6 +13,7 @@ test('versioned compatibility data validates and ships the primary 3-stage/9-rou
   assert.equal(primary.stages.length, 3);
   assert.equal(primary.stages.flatMap((stage) => stage.rounds).length, 9);
   assert.deepEqual(primary.stages.flatMap((stage) => stage.rounds.map((round) => round.type)), ['small', 'big', 'special', 'small', 'big', 'special', 'small', 'big', 'special']);
+  assert.equal(primary.stages[2].rounds[2].specialRuleId, null);
   assert.equal(OPPONENTS.filter((opponent) => !opponent.primary).every((opponent) => opponent.stages.length === 1), true);
 });
 
@@ -45,7 +46,7 @@ test('all 33 neutral modifiers carry stable typed metadata and use registered ha
 
 test('pack and special-rule catalogs remain separate and mark provisional distributions', () => {
   assert.equal(PACKS.length, 3);
-  assert.equal(SPECIAL_RULES.length, 8);
+  assert.equal(SPECIAL_RULES.length, 7);
   PACKS.forEach((pack) => {
     assert.ok(pack.choiceCount <= pack.revealCount);
     assert.equal(pack.distributionVerificationStatus, 'unknown');

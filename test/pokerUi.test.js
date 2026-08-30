@@ -92,9 +92,15 @@ test('turn choreography source keeps score and settlement in-table with accessib
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)[^]*pkr-card\.is-fresh/);
 });
 
-test('settlement click guard is scoped to the current round', async () => {
+test('settlement delegates idempotency to the run reducer without a sticky UI guard', async () => {
   const game = await readFile(new URL('../src/pages/PokerGame.jsx', import.meta.url), 'utf8');
-  assert.match(game, /settlementCommittedRoundIdRef\.current === round\.id/);
-  assert.match(game, /settlementCommittedRoundIdRef\.current = round\.id/);
+  assert.match(game, /const settleRound = \(\) => dispatch\(\{ type: 'SETTLE_ROUND'/);
   assert.doesNotMatch(game, /settlementCommittedRef\.current/);
+  assert.doesNotMatch(game, /settlementCommittedRoundIdRef/);
+});
+
+test('round intro only announces a special rule when one is configured', async () => {
+  const game = await readFile(new URL('../src/pages/PokerGame.jsx', import.meta.url), 'utf8');
+  assert.match(game, /\{rule \? '特殊規則已啟用' : '準備完成'\}/);
+  assert.doesNotMatch(game, /round\.type === 'special' \? '特殊規則已啟用'/);
 });

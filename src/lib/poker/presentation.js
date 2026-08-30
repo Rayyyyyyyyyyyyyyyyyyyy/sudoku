@@ -24,8 +24,7 @@ export const SPECIAL_RULE_DESCRIPTIONS = {
   'one-hand-only': '本回合只有 1 次出牌機會。',
   'hand-type-once': '每種牌型本回合最多打出 1 次；選到已使用的牌型時不能出牌。',
   'face-cards-debuffed': 'J、Q、K 仍可組成牌型，但不提供牌面籌碼；其他效果照常觸發。',
-  'single-hand-type': '第一次出牌會鎖定牌型，之後只能打出同一種牌型。',
-  'forced-selected-card': '每次出牌必須剛好選擇 1 張牌。'
+  'single-hand-type': '第一次出牌會鎖定牌型，之後只能打出同一種牌型。'
 };
 
 export function rarityLabel(rarity) {

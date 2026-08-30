@@ -35,6 +35,11 @@ export const POKER_RULES = {
     'unknown',
     provenance.provisional
   ),
+  shopPricing: value(
+    { initialMultiplier: 0.5, multiplierStep: 0.1, maximumMultiplier: 1.2, firstShopAffordableCost: 3 },
+    'unknown',
+    provenance.provisional
+  ),
   handValues: {
     'high-card': value({ chips: 5, mult: 1 }, 'inferred', provenance.openSpec),
     pair: value({ chips: 10, mult: 2 }, 'inferred', provenance.openSpec),
@@ -81,7 +86,7 @@ export const OPPONENTS = [
       stage('stage-3', [
         round('primary-3-small', 'small', 5000, 3),
         round('primary-3-big', 'big', 7500, 4),
-        round('primary-3-special', 'special', 10000, 5, 'forced-selected-card')
+        round('primary-3-special', 'special', 10000, 5)
       ])
     ]
   },
@@ -209,7 +214,7 @@ export const MODIFIERS = [
 
 export const SPECIAL_RULE_HANDLER_IDS = [
   'set-round-actions', 'debuff-by-stage-history', 'adjust-hand-size',
-  'reject-used-hand-type', 'debuff-by-rank-class', 'lock-first-hand-type', 'force-selection'
+  'reject-used-hand-type', 'debuff-by-rank-class', 'lock-first-hand-type'
 ];
 
 export const SPECIAL_RULES = [
@@ -219,8 +224,7 @@ export const SPECIAL_RULES = [
   ['one-hand-only', '單次出牌', 'set-round-actions', { hands: 1 }],
   ['hand-type-once', '牌型不可重複', 'reject-used-hand-type', { scope: 'round' }],
   ['face-cards-debuffed', '人頭牌失效', 'debuff-by-rank-class', { class: 'face' }],
-  ['single-hand-type', '鎖定首個牌型', 'lock-first-hand-type', { scope: 'round' }],
-  ['forced-selected-card', '單牌出擊', 'force-selection', { count: 1 }]
+  ['single-hand-type', '鎖定首個牌型', 'lock-first-hand-type', { scope: 'round' }]
 ].map(([id, name, handlerId, params]) => ({
   id,
   display: { name, description: name },

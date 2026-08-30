@@ -1,6 +1,6 @@
 import { MODIFIERS, POKER_RULES, PRIMARY_OPPONENT_ID, modifierById, opponentById, specialRuleById } from '../../data/poker/compatibility.js';
 import { assertZoneInvariant, createRoundZones, drawToHand, moveSelected } from './cards.js';
-import { generateShopOffers, openPack, rerollCost, settleRound } from './economy.js';
+import { generateShopOffers, openPack, rerollCost, settleRound, shopOfferCost } from './economy.js';
 import { scoreHand, updateModifiersAfterDiscard } from './effects.js';
 import { evaluateHand, handLabel } from './evaluate.js';
 import { choose, seedRandom } from './random.js';
@@ -119,7 +119,6 @@ export function actionViolation(state, actionType, evaluation = null) {
   if (actionType === 'DISCARD' && state.actions.discards < 1) return '棄牌次數已用完';
   if (actionType !== 'PLAY') return null;
   const ruleId = currentRound(state).specialRuleId;
-  if (ruleId === 'forced-selected-card' && selected !== 1) return '本回合每次必須剛好選一張牌';
   if (!evaluation) return null;
   if (ruleId === 'hand-type-once' && state.roundState.usedHandTypes[evaluation.type]) return `${handLabel(evaluation.type)}本回合已使用，請改選其他牌型`;
   if (ruleId === 'single-hand-type' && state.roundState.lockedHandType && state.roundState.lockedHandType !== evaluation.type) return `本回合已鎖定${handLabel(state.roundState.lockedHandType)}，請選出相同牌型`;
@@ -304,16 +303,17 @@ export function pokerRunReducer(state, action) {
     case 'BUY_OFFER': {
       if (state.phase !== 'shop' || !state.offers || state.transactionIds.includes(action.transactionId)) return state;
       const offer = state.offers.items.find((item) => item.offerId === action.offerId && !item.purchased);
-      if (!offer || state.coins < offer.cost) return state;
+      const cost = shopOfferCost(offer, state.completion.settledRoundIds.length);
+      if (!offer || state.coins < cost) return state;
       if (offer.type === 'modifier' && state.modifiers.length >= POKER_RULES.modifierCapacity.value) return state;
       const items = state.offers.items.map((item) => item.offerId === offer.offerId ? { ...item, purchased: true } : item);
       const transactionIds = [...state.transactionIds, action.transactionId];
       if (offer.type === 'modifier') {
         const instanceId = `${state.runId}-owned-${transactionIds.length}-${offer.itemId}`;
-        return cloneWithCommit(state, { coins: state.coins - offer.cost, offers: { ...state.offers, items }, modifiers: [...state.modifiers, { instanceId, catalogId: offer.itemId, counters: {} }], transactionIds, trace: [{ type: 'purchase', offerId: offer.offerId, itemId: offer.itemId, cost: offer.cost }] }, action.type, now);
+        return cloneWithCommit(state, { coins: state.coins - cost, offers: { ...state.offers, items }, modifiers: [...state.modifiers, { instanceId, catalogId: offer.itemId, counters: {} }], transactionIds, trace: [{ type: 'purchase', offerId: offer.offerId, itemId: offer.itemId, cost }] }, action.type, now);
       }
       const opened = openPack(offer.itemId, state.randomState, transactionIds.length);
-      return cloneWithCommit(state, { phase: 'pack', coins: state.coins - offer.cost, offers: { ...state.offers, items }, packState: opened.packState, randomState: opened.randomState, transactionIds, trace: [{ type: 'pack-opened', offerId: offer.offerId, packId: offer.itemId, cost: offer.cost }] }, action.type, now);
+      return cloneWithCommit(state, { phase: 'pack', coins: state.coins - cost, offers: { ...state.offers, items }, packState: opened.packState, randomState: opened.randomState, transactionIds, trace: [{ type: 'pack-opened', offerId: offer.offerId, packId: offer.itemId, cost }] }, action.type, now);
     }
     case 'TAKE_PACK_CHOICE': {
       if (state.phase !== 'pack' || !state.packState || state.packState.choicesRemaining < 1) return state;

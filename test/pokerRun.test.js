@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { PACKS } from '../src/data/poker/compatibility.js';
-import { openPack, rerollCost, settleRound } from '../src/lib/poker/economy.js';
+import { MODIFIERS, PACKS, POKER_RULES } from '../src/data/poker/compatibility.js';
+import { generateShopOffers, openPack, progressiveShopCost, rerollCost, settleRound } from '../src/lib/poker/economy.js';
 import { actionAvailability, addTestModifier, createNewRun, currentRound, pokerRunReducer, roundSettlementPreview } from '../src/lib/poker/run.js';
 import { seedRandom } from '../src/lib/poker/random.js';
 
@@ -100,12 +100,22 @@ test('researched special setup rules are applied to independent opponents', () =
   assert.match(actionAvailability(locked).playReason, /已鎖定一對/);
   assert.equal(pokerRunReducer(locked, { type: 'PLAY', now: 31 }), locked);
 
-  let forced = begin(advanceTo(createNewRun({ seed: 10, now: 1 }), 2, 2));
-  forced = pokerRunReducer(forced, { type: 'TOGGLE_CARD', cardId: forced.zones.hand[0].instanceId, now: 32 });
-  forced = pokerRunReducer(forced, { type: 'TOGGLE_CARD', cardId: forced.zones.hand[1].instanceId, now: 33 });
-  assert.equal(actionAvailability(forced).canPlay, false);
-  assert.match(actionAvailability(forced).playReason, /必須剛好選一張/);
-  assert.equal(pokerRunReducer(forced, { type: 'PLAY', now: 34 }), forced);
+  const finalRound = begin(advanceTo(createNewRun({ seed: 10, now: 1 }), 2, 2));
+  assert.equal(currentRound(finalRound).specialRuleId, null);
+  assert.equal(finalRound.actions.hands, POKER_RULES.playActions.value);
+});
+
+test('shop prices rise progressively and the first shop always has an affordable modifier', () => {
+  MODIFIERS.forEach((item) => {
+    const costs = Array.from({ length: 8 }, (_, index) => progressiveShopCost(item.price, index + 1));
+    assert.deepEqual(costs, costs.slice().sort((a, b) => a - b), item.id);
+  });
+  for (let seed = 1; seed <= 100; seed += 1) {
+    const generated = generateShopOffers(seedRandom(seed), 1);
+    const firstModifier = generated.offers.find((offer) => offer.type === 'modifier');
+    assert.ok(firstModifier.cost <= POKER_RULES.shopPricing.value.firstShopAffordableCost);
+  }
+  assert.ok(progressiveShopCost(8, 1) < progressiveShopCost(8, 8));
 });
 
 test('settlement, rerolls, offers, packs, purchases, reordering and selling are exactly once', () => {

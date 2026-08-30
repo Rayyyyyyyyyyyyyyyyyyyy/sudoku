@@ -39,7 +39,6 @@ test('rarity and every constrained special rule have localized operational copy'
   assert.deepEqual(['common', 'uncommon', 'rare'].map(rarityLabel), ['常見', '少見', '稀有']);
   assert.match(specialRuleDescription('single-hand-type'), /第一次出牌.*鎖定/);
   assert.match(specialRuleDescription('hand-type-once'), /最多打出 1 次/);
-  assert.match(specialRuleDescription('forced-selected-card'), /剛好選擇 1 張/);
   assert.match(specialRuleDescription('face-cards-debuffed'), /仍可組成牌型.*不提供牌面籌碼/);
 });
 

@@ -3,7 +3,7 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import PokerCard from '../components/PokerCard';
 import { POKER_RULES, modifierById, opponentById, packById, specialRuleById } from '../data/poker/compatibility';
 import { sortCardsForDisplay } from '../lib/poker/cards';
-import { rerollCost } from '../lib/poker/economy';
+import { rerollCost, shopOfferCost } from '../lib/poker/economy';
 import { handLabel } from '../lib/poker/evaluate';
 import { loadPokerSnapshot } from '../lib/poker/persistence';
 import { presentScoreTrace, rarityLabel, specialRuleDescription } from '../lib/poker/presentation';
@@ -111,8 +111,9 @@ function Shop({ state, dispatch, headingRef }) {
   const cost = rerollCost(state.offers.rerollCount);
   return <section className="pkr-shop"><header><span className="pkr-kicker">BETWEEN ROUNDS</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">補給站</h2><p>持有 {state.coins} 幣 · 效果牌 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p>{state.settlement && <div className="pkr-settlement" aria-label="上回合獎勵結算"><span>上回合結算</span><strong>基本 {state.settlement.base} + 剩餘出牌 {state.settlement.remainingHands} + 利息 {state.settlement.interest} = {state.settlement.total} 幣</strong><small>結算後共 {state.settlement.coinsAfter} 幣</small></div>}</header><div className="pkr-offers">{state.offers.items.map((offer) => {
     const item = offer.type === 'modifier' ? modifierById(offer.itemId) : packById(offer.itemId);
+    const offerCost = shopOfferCost(offer, state.completion.settledRoundIds.length);
     const full = offer.type === 'modifier' && state.modifiers.length >= POKER_RULES.modifierCapacity.value;
-    return <article key={offer.offerId} className="pkr-offer"><span>{offer.type === 'modifier' ? '效果牌' : '選擇包'}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={offer.purchased || state.coins < offer.cost || full} onClick={() => dispatch({ type: 'BUY_OFFER', offerId: offer.offerId, transactionId: `buy-${offer.offerId}`, now: Date.now() })}>{offer.purchased ? '已取得' : full ? '欄位已滿' : `${offer.cost} 幣取得`}</button></article>;
+    return <article key={offer.offerId} className="pkr-offer"><span>{offer.type === 'modifier' ? '效果牌' : '選擇包'}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={offer.purchased || state.coins < offerCost || full} onClick={() => dispatch({ type: 'BUY_OFFER', offerId: offer.offerId, transactionId: `buy-${offer.offerId}`, now: Date.now() })}>{offer.purchased ? '已取得' : full ? '欄位已滿' : `${offerCost} 幣取得`}</button></article>;
   })}</div><ModifierStrip state={state} dispatch={dispatch} shop /><div className="pkr-shop__actions"><button type="button" disabled={state.coins < cost} onClick={() => dispatch({ type: 'REROLL_SHOP', transactionId: `reroll-${currentRound(state).id}-${state.offers.rerollCount}`, now: Date.now() })}>刷新 · {cost} 幣</button><button className="pkr-btn--primary" type="button" onClick={() => dispatch({ type: 'CONTINUE', now: Date.now() })}>下一回合 →</button></div></section>;
 }
 
@@ -133,7 +134,6 @@ function ActivePokerGame({ initialState, navigate }) {
   const phaseHeadingRef = useRef(null);
   const handRootRef = useRef(null);
   const previousPhaseRef = useRef(null);
-  const settlementCommittedRoundIdRef = useRef(null);
   const round = currentRound(state);
   const opponent = opponentById(state.opponentId);
   const rule = specialRuleById(round.specialRuleId);
@@ -158,11 +158,7 @@ function ActivePokerGame({ initialState, navigate }) {
     presentation.acknowledgeSkipFocus();
   }, [presentation, state.phase]);
 
-  const settleOnce = () => {
-    if (settlementCommittedRoundIdRef.current === round.id || state.phase !== 'round-won') return;
-    settlementCommittedRoundIdRef.current = round.id;
-    dispatch({ type: 'SETTLE_ROUND', now: Date.now() });
-  };
+  const settleRound = () => dispatch({ type: 'SETTLE_ROUND', now: Date.now() });
   const phaseStatus = presentation.statusMessage
     || (state.phase === 'round-won' ? `目標達成，目前 ${state.roundScore.toLocaleString()} 分，結算可獲得 ${settlementPreview.total} 幣` : '')
     || (state.phase === 'run-lost' ? '本局結束' : state.phase === 'run-won' ? '牌局完成' : '');
@@ -186,9 +182,9 @@ function ActivePokerGame({ initialState, navigate }) {
     <section className="pkr-table" aria-label="撲克牌桌">
       <div className="pkr-section-title"><span>效果順序</span><small>由左至右</small></div>
       <ModifierStrip state={state} dispatch={dispatch} triggeredModifierIds={presentation.triggeredModifierIds} />
-      {state.phase === 'round-intro' && <div className="pkr-intro"><span>{round.type === 'special' ? '特殊規則已啟用' : '準備完成'}</span><h2>{round.target.toLocaleString()} 分達標</h2><p>基本獎勵 {round.reward} 幣；剩餘出牌與利息在回合結算。</p><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => dispatch({ type: 'BEGIN_ROUND', now: Date.now() })}>開始回合</button></div>}
+      {state.phase === 'round-intro' && <div className="pkr-intro"><span>{rule ? '特殊規則已啟用' : '準備完成'}</span><h2>{round.target.toLocaleString()} 分達標</h2><p>基本獎勵 {round.reward} 幣；剩餘出牌與利息在回合結算。</p><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => dispatch({ type: 'BEGIN_ROUND', now: Date.now() })}>開始回合</button></div>}
       {state.phase === 'resolving' && <ScoreStage state={state} presentation={presentation} />}
-      {state.phase === 'round-won' && <SettlementStage state={state} preview={settlementPreview} onSettle={settleOnce} />}
+      {state.phase === 'round-won' && <SettlementStage state={state} preview={settlementPreview} onSettle={settleRound} />}
       {state.phase === 'selecting' && <>
         <div className="pkr-discard-slot"><DiscardCue cue={presentation.discardCue} cards={allCards} /></div>
         <div className="pkr-preview" aria-live="polite"><span>{state.selection.length} 張已選</span><strong>{preview?.label || '選擇 1–5 張'}</strong></div>
