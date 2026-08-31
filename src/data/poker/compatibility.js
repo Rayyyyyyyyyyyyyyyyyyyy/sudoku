@@ -141,24 +141,28 @@ const modifier = (id, displayName, trigger, handlerId, params, rarity, price, sa
   provenance: provenance.communityIndex
 });
 
+const rankLabel = (rank) => ({ 14: 'A', 13: 'K', 12: 'Q', 11: 'J' })[rank] || String(rank);
+const rankList = (ranks = []) => ranks.map(rankLabel).join('、');
+const suitLabel = (suit) => ({ clubs: '梅花', diamonds: '方塊', hearts: '紅心', spades: '黑桃' })[suit] || suit;
+
 function neutralDescription(handlerId, params) {
   const descriptions = {
     'owned-count-mult': `每張已持有效果牌提供 +${params.amount} 倍率。`,
-    'rotating-suit-xmult': `指定花色的計分牌使倍率 ×${params.factor}。`,
+    'rotating-suit-xmult': `每回合隨機指定一種花色；該花色的計分牌使倍率 ×${params.factor}。`,
     'remaining-discard-chips': `每次剩餘棄牌提供 +${params.amount} 籌碼。`,
     'deck-remaining-chips': `牌庫每張牌提供 +${params.amount} 籌碼。`,
     'copy-right': '複製右側相容的效果。',
     'repeated-hand-xmult': `本回合重複牌型時倍率 ×${params.factor}。`,
-    'discard-suit-grow-chips': `棄掉指定花色時永久成長 ${params.amount} 籌碼。`,
-    'rank-add-mult': `指定點數的計分牌提供 +${params.amount} 倍率。`,
+    'discard-suit-grow-chips': `每回合隨機指定一種花色；每棄掉一張該花色，永久增加 ${params.amount} 籌碼。`,
+    'rank-add-mult': `${rankList(params.ranks)} 的計分牌每張提供 +${params.amount} 倍率。`,
     'four-suits-combo': `四種花色齊全時 +${params.chips} 籌碼且倍率 ×${params.factor}。`,
     'four-card-straight-flush': '順子與同花可由四張牌組成。',
-    'play-grow-discard-shrink-mult': `出牌時成長 +${params.amount} 倍率，棄牌時減少。`,
-    'retrigger-ranks': '指定點數的計分牌再觸發一次。',
+    'play-grow-discard-shrink-mult': `每次出牌永久 +${params.amount} 倍率；每次棄牌永久 -${params.amount} 倍率（最低 ${params.floor}）。`,
+    'retrigger-ranks': `${rankList(params.ranks)} 的計分牌各再觸發 ${params.repeats} 次。`,
     'small-play-mult': `打出少於 ${params.lessThan} 張時 +${params.amount} 倍率。`,
     'flat-add-mult': `計分時 +${params.amount} 倍率。`,
-    'suit-add-mult': `指定花色每張 +${params.amount} 倍率。`,
-    'adjust-round-actions': '調整本回合棄牌與手牌上限。',
+    'suit-add-mult': `${suitLabel(params.suit)}計分牌每張 +${params.amount} 倍率。`,
+    'adjust-round-actions': `每回合 +${params.discards} 次棄牌，手牌上限 ${params.handSize > 0 ? '+' : ''}${params.handSize} 張。`,
     'random-add-mult': `每手隨機 +${params.min}–${params.max} 倍率。`,
     'all-face': '所有牌都視為人頭牌。',
     'first-face-xmult': `第一張人頭計分牌使倍率 ×${params.factor}。`,

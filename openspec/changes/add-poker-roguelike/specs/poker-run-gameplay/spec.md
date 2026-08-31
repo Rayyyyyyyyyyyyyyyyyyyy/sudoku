@@ -60,7 +60,7 @@ The engine SHALL resolve scoring as an ordered event trace covering hand base va
 - **THEN** the game state contains an ordered trace of score-changing events sufficient for the interface and tests to explain the result
 
 ### Requirement: Opponent, stage, round, and run progression
-A compatibility match SHALL belong to one opponent and contain one or more stages. Every stage SHALL contain exactly three ordered rounds: a small round, a big round, and a special round with a configured rule. The primary playable run SHALL use the researched Junak progression of three stages and nine total rounds. The five researched villager opponents SHALL remain independent one-stage, three-round compatibility fixtures or tutorial variants and SHALL NOT be concatenated into the primary run. Each round SHALL define its score target, reward, and optional rule through the versioned compatibility catalog.
+A compatibility match SHALL belong to one opponent and contain one or more stages. Every stage SHALL contain exactly three ordered rounds: a small round, a big round, and a special round with an optional configured rule. The primary playable run SHALL use the researched Junak progression of three stages and nine total rounds. The five researched villager opponents SHALL remain independent one-stage, three-round compatibility fixtures or tutorial variants and SHALL NOT be concatenated into the primary run. Each round SHALL define its score target, reward, and optional rule through the versioned compatibility catalog.
 
 #### Scenario: Round target reached
 - **WHEN** accumulated round score reaches or exceeds the target
@@ -83,13 +83,13 @@ A compatibility match SHALL belong to one opponent and contain one or more stage
 - **THEN** its one-stage progression begins with a fresh economy and does not inherit Junak-run coins or modifiers
 
 ### Requirement: Selected-build progression table
-The compatibility catalog for Windows `v1.0.3.1551` SHALL encode the following researched targets, base rewards, and special rules. Each tuple is `target/reward`; the first two rounds have no special rule.
+The compatibility catalog for Windows `v1.0.3.1551` SHALL encode the following researched targets and base rewards. It SHALL preserve the explicitly documented product adjustment for the primary stage-three special round while keeping verified reference-only behavior distinguishable in the research notes. Each tuple is `target/reward`; the first two rounds have no special rule.
 
 | Opponent | Stage | Small | Big | Special | Special rule |
 | --- | ---: | ---: | ---: | ---: | --- |
 | Junak | 1 | 300/3 | 450/4 | 600/5 | Face cards are debuffed |
 | Junak | 2 | 1000/3 | 1500/4 | 1500/5 | Only one poker-hand type may be played |
-| Junak | 3 | 5000/3 | 7500/4 | 10000/5 | Exactly one card must be selected per play |
+| Junak | 3 | 5000/3 | 7500/4 | 10000/5 | No additional card-selection restriction (product adjustment) |
 | Gumo | 1 | 300/3 | 1050/4 | 2100/5 | Begin the special round with zero discards |
 | Mima | 1 | 300/3 | 1050/4 | 2100/5 | Cards played earlier in the stage are debuffed |
 | Kazhin | 1 | 300/3 | 1050/4 | 2100/5 | Hand size is reduced by one |

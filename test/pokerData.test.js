@@ -44,6 +44,11 @@ test('all 33 neutral modifiers carry stable typed metadata and use registered ha
   });
 });
 
+test('modifier descriptions name every fixed scoring condition instead of using placeholders', () => {
+  const fibonacci = MODIFIERS.find((item) => item.id === 'fibonacci-rank-mult');
+  assert.equal(fibonacci.display.description, 'A、2、3、5、8 的計分牌每張提供 +8 倍率。');
+});
+
 test('pack and special-rule catalogs remain separate and mark provisional distributions', () => {
   assert.equal(PACKS.length, 3);
   assert.equal(SPECIAL_RULES.length, 7);

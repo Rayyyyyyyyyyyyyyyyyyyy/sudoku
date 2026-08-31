@@ -72,6 +72,8 @@
 | Junak stage 2 | 1000 / 3 | 1500 / 4 | 1500 / 5 | `single-hand-type`（The Mouth）：此 round 只能打同一種 hand type | **已驗證／實機逐幀**：[27:40](https://www.youtube.com/watch?v=d7DQLiR42mU?t=1660)；[官方圖直接顯示 stage 2 small 1000/reward 3](https://clan.akamai.steamstatic.com/images/42281449/0b01afb3524b635442567101c8a0e0408a6922cf.png) |
 | Junak stage 3 | 5000 / 3 | 7500 / 4 | 10000 / 5 | `forced-selected-card`（Cerulean Bell）：總有 1 張牌被強制選取 | **已驗證／實機逐幀**：[32:51](https://www.youtube.com/watch?v=d7DQLiR42mU?t=1971) |
 
+上表的 Junak stage 3 規則保留為已驗證的 reference behavior；shipping product 刻意不實作額外選牌限制。`docs/poker-compatibility-matrix.md`、versioned catalog（`primary-3-special` 的 `specialRuleId: null`）、deterministic test 與 OpenSpec delta 均記錄同一項產品調整，不能把它誤標成未驗證或遺漏的 reference rule。
+
 這個表描述的是六次獨立對局，不是一次把五名村民與 Junak 串成可保留 token/Joker 的 run；玩家資料指出 token 與 Joker 不能跨對手保留。[Jimbo’s Game 玩家資料](https://davethediver.net/en/mechanic/jimbos-game/)（**推定／二手文字**）
 
 ### 經濟、interest、shop 與 reroll

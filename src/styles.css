@@ -923,10 +923,10 @@ a:hover {
 .pkr-empty { margin: 10px 0 20px; color: #868176; font-size: 13px; }
 .pkr-modifiers { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; margin: 10px 0 24px; }
 .pkr-mod { min-width: 0; border: 1px solid #d4cec0; border-radius: 10px; background: #faf8f1; padding: 0 9px; }
-.pkr-mod summary { min-height: 46px; display: flex; align-items: center; gap: 7px; cursor: pointer; list-style: none; font-size: 12px; }
-.pkr-mod summary span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #1d8668; color: white; font: 700 10px 'JetBrains Mono', monospace; flex: 0 0 auto; }
+.pkr-mod header { min-height: 46px; display: flex; align-items: center; gap: 7px; font-size: 12px; }
+.pkr-mod header span { width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: #1d8668; color: white; font: 700 10px 'JetBrains Mono', monospace; flex: 0 0 auto; }
 .pkr-mod p { font-size: 12px; line-height: 1.55; color: #69665f; }
-.pkr-mod summary em { margin-left: auto; color: #137f60; font-size: 10px; font-style: normal; }
+.pkr-mod header em { margin-left: auto; color: #137f60; font-size: 10px; font-style: normal; }
 .pkr-mod.is-triggered { border-color: #168866; outline: 3px solid rgba(22, 136, 102, 0.2); background: #f0fbf6; }
 .pkr-inline-actions { display: flex; flex-wrap: wrap; gap: 5px; padding-bottom: 9px; }
 .pkr-inline-actions button { min-height: 44px; flex: 1; padding: 5px; font-size: 11px; }

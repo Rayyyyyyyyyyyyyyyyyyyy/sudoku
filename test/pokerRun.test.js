@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { MODIFIERS, PACKS, POKER_RULES } from '../src/data/poker/compatibility.js';
-import { generateShopOffers, openPack, progressiveShopCost, rerollCost, settleRound } from '../src/lib/poker/economy.js';
+import { generateShopOffers, openPack, progressiveShopCost, rerollCost, settleRound, shopOfferCost } from '../src/lib/poker/economy.js';
 import { actionAvailability, addTestModifier, createNewRun, currentRound, pokerRunReducer, roundSettlementPreview } from '../src/lib/poker/run.js';
 import { seedRandom } from '../src/lib/poker/random.js';
 
@@ -113,7 +113,8 @@ test('shop prices rise progressively and the first shop always has an affordable
   for (let seed = 1; seed <= 100; seed += 1) {
     const generated = generateShopOffers(seedRandom(seed), 1);
     const firstModifier = generated.offers.find((offer) => offer.type === 'modifier');
-    assert.ok(firstModifier.cost <= POKER_RULES.shopPricing.value.firstShopAffordableCost);
+    assert.ok(shopOfferCost(firstModifier, 1) <= POKER_RULES.shopPricing.value.firstShopAffordableCost);
+    assert.equal(Object.hasOwn(firstModifier, 'cost'), false);
   }
   assert.ok(progressiveShopCost(8, 1) < progressiveShopCost(8, 8));
 });
@@ -157,6 +158,74 @@ test('settlement, rerolls, offers, packs, purchases, reordering and selling are 
   const sold = state;
   state = pokerRunReducer(state, { type: 'SELL_MODIFIER', instanceId: second, transactionId: 'sell-1', now: 25 });
   assert.equal(state, sold);
+});
+
+test('shop and pack generation never offer duplicate or already-owned modifiers', () => {
+  let shop = addTestModifier(createNewRun({ seed: 18, now: 1 }), 'all-face-classifier');
+  shop = winCurrentRound(shop);
+  const ownedIds = new Set(shop.modifiers.map((owned) => owned.catalogId));
+  const shopModifierIds = shop.offers.items.filter((offer) => offer.type === 'modifier').map((offer) => offer.itemId);
+  assert.equal(shopModifierIds.some((itemId) => ownedIds.has(itemId)), false);
+  assert.equal(new Set(shopModifierIds).size, shopModifierIds.length);
+
+  const opened = openPack('modifier-pack-small', seedRandom(1), 0, ['owned-modifier-mult']);
+  const choiceIds = opened.packState.choices.map((choice) => choice.itemId);
+  assert.equal(choiceIds.includes('owned-modifier-mult'), false);
+  assert.equal(new Set(choiceIds).size, choiceIds.length);
+});
+
+test('stale shop and pack payloads cannot grant an already-owned modifier', () => {
+  let state = addTestModifier(createNewRun({ seed: 19, now: 1 }), 'all-face-classifier');
+  state = {
+    ...state,
+    phase: 'shop',
+    coins: 100,
+    offers: {
+      items: [{ offerId: 'legacy-duplicate', type: 'modifier', itemId: 'all-face-classifier', cost: 1, purchased: false }],
+      rerollCount: 0,
+      nextCursor: { stageIndex: 0, roundIndex: 1, stageAdvanced: false },
+      distribution: 'legacy'
+    }
+  };
+  const afterShop = pokerRunReducer(state, { type: 'BUY_OFFER', offerId: 'legacy-duplicate', transactionId: 'legacy-buy', now: 2 });
+  assert.equal(afterShop, state);
+
+  state = {
+    ...state,
+    phase: 'pack',
+    packState: {
+      packId: 'modifier-pack-small',
+      choices: [{ choiceId: 'legacy-choice', itemId: 'all-face-classifier', taken: false }],
+      choicesRemaining: 1,
+      canSkip: true,
+      distribution: 'legacy'
+    }
+  };
+  const afterPack = pokerRunReducer(state, { type: 'TAKE_PACK_CHOICE', choiceId: 'legacy-choice', transactionId: 'legacy-take', now: 3 });
+  assert.equal(afterPack, state);
+});
+
+test('forged persisted prices cannot change affordability or coin deduction', () => {
+  let shop = winCurrentRound(createNewRun({ seed: 20, now: 1 }));
+  const offer = shop.offers.items.find((item) => item.type === 'modifier');
+  const authoritativeCost = shopOfferCost(offer, shop.completion.settledRoundIds.length);
+  const forgedItems = shop.offers.items.map((item) => item.offerId === offer.offerId ? { ...item, cost: 0 } : item);
+  shop = { ...shop, coins: authoritativeCost - 1, offers: { ...shop.offers, items: forgedItems } };
+  const unavailable = pokerRunReducer(shop, { type: 'BUY_OFFER', offerId: offer.offerId, transactionId: 'forged-cheap', now: 20 });
+  assert.equal(unavailable, shop);
+
+  const startingCoins = authoritativeCost + 5;
+  shop = {
+    ...shop,
+    coins: startingCoins,
+    offers: {
+      ...shop.offers,
+      items: shop.offers.items.map((item) => item.offerId === offer.offerId ? { ...item, cost: 9999 } : item)
+    }
+  };
+  const purchased = pokerRunReducer(shop, { type: 'BUY_OFFER', offerId: offer.offerId, transactionId: 'forged-expensive', now: 21 });
+  assert.equal(purchased.coins, startingCoins - authoritativeCost);
+  assert.equal(purchased.modifiers.at(-1).catalogId, offer.itemId);
 });
 
 test('committed play and discard metadata records ordered actual card replacements without changing randomness', () => {

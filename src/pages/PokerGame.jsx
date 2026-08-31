@@ -18,8 +18,8 @@ function ModifierStrip({ state, dispatch, shop = false, triggeredModifierIds = [
   return <div className="pkr-modifiers">{state.modifiers.map((owned, index) => {
     const item = modifierById(owned.catalogId);
     const triggered = triggeredModifierIds.includes(owned.instanceId);
-    return <details className={`pkr-mod ${triggered ? 'is-triggered' : ''}`} key={owned.instanceId} data-instance-id={owned.instanceId}>
-      <summary><span>{index + 1}</span><b>{item.display.name}</b>{triggered && <em>觸發</em>}</summary>
+    return <article className={`pkr-mod ${triggered ? 'is-triggered' : ''}`} key={owned.instanceId} data-instance-id={owned.instanceId}>
+      <header><span>{index + 1}</span><b>{item.display.name}</b>{triggered && <em>觸發</em>}</header>
       <p>{item.display.description}</p>
       {Object.keys(owned.counters).length > 0 && <p>目前計數：{Object.entries(owned.counters).map(([key, value]) => `${key} ${value}`).join(' · ')}</p>}
       <div className="pkr-inline-actions">
@@ -27,7 +27,7 @@ function ModifierStrip({ state, dispatch, shop = false, triggeredModifierIds = [
         <button type="button" disabled={index === state.modifiers.length - 1} aria-label={`將 ${item.display.name} 右移`} onClick={() => dispatch({ type: 'MOVE_MODIFIER', instanceId: owned.instanceId, direction: 1, now: Date.now() })}>右移 →</button>
         {shop && <button type="button" onClick={() => dispatch({ type: 'SELL_MODIFIER', instanceId: owned.instanceId, transactionId: `sell-${owned.instanceId}`, now: Date.now() })}>出售 +{item.saleValue}</button>}
       </div>
-    </details>;
+    </article>;
   })}</div>;
 }
 
@@ -113,13 +113,14 @@ function Shop({ state, dispatch, headingRef }) {
     const item = offer.type === 'modifier' ? modifierById(offer.itemId) : packById(offer.itemId);
     const offerCost = shopOfferCost(offer, state.completion.settledRoundIds.length);
     const full = offer.type === 'modifier' && state.modifiers.length >= POKER_RULES.modifierCapacity.value;
-    return <article key={offer.offerId} className="pkr-offer"><span>{offer.type === 'modifier' ? '效果牌' : '選擇包'}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={offer.purchased || state.coins < offerCost || full} onClick={() => dispatch({ type: 'BUY_OFFER', offerId: offer.offerId, transactionId: `buy-${offer.offerId}`, now: Date.now() })}>{offer.purchased ? '已取得' : full ? '欄位已滿' : `${offerCost} 幣取得`}</button></article>;
+    const alreadyOwned = offer.type === 'modifier' && state.modifiers.some((owned) => owned.catalogId === offer.itemId);
+    return <article key={offer.offerId} className="pkr-offer"><span>{offer.type === 'modifier' ? '效果牌' : '選擇包'}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={offer.purchased || alreadyOwned || state.coins < offerCost || full} onClick={() => dispatch({ type: 'BUY_OFFER', offerId: offer.offerId, transactionId: `buy-${offer.offerId}`, now: Date.now() })}>{offer.purchased ? '已取得' : alreadyOwned ? '已持有' : full ? '欄位已滿' : `${offerCost} 幣取得`}</button></article>;
   })}</div><ModifierStrip state={state} dispatch={dispatch} shop /><div className="pkr-shop__actions"><button type="button" disabled={state.coins < cost} onClick={() => dispatch({ type: 'REROLL_SHOP', transactionId: `reroll-${currentRound(state).id}-${state.offers.rerollCount}`, now: Date.now() })}>刷新 · {cost} 幣</button><button className="pkr-btn--primary" type="button" onClick={() => dispatch({ type: 'CONTINUE', now: Date.now() })}>下一回合 →</button></div></section>;
 }
 
 function Pack({ state, dispatch, headingRef }) {
   const pack = packById(state.packState.packId);
-  return <section className="pkr-pack"><span className="pkr-kicker">OPENED</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">{pack.display.name}</h2><p>還可選 {state.packState.choicesRemaining} 張 · 欄位 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p><div className="pkr-offers">{state.packState.choices.map((choice) => { const item = modifierById(choice.itemId); return <article className="pkr-offer" key={choice.choiceId}><span>{rarityLabel(item.rarity)}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={choice.taken || state.modifiers.length >= POKER_RULES.modifierCapacity.value} onClick={() => dispatch({ type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `take-${choice.choiceId}`, now: Date.now() })}>{choice.taken ? '已選' : '選這張'}</button></article>; })}</div>{state.packState.canSkip && <button className="pkr-btn pkr-btn--ghost" type="button" onClick={() => dispatch({ type: 'SKIP_PACK', now: Date.now() })}>略過並返回商店</button>}</section>;
+  return <section className="pkr-pack"><span className="pkr-kicker">OPENED</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">{pack.display.name}</h2><p>還可選 {state.packState.choicesRemaining} 張 · 欄位 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p><div className="pkr-offers">{state.packState.choices.map((choice) => { const item = modifierById(choice.itemId); const alreadyOwned = state.modifiers.some((owned) => owned.catalogId === choice.itemId); return <article className="pkr-offer" key={choice.choiceId}><span>{rarityLabel(item.rarity)}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={choice.taken || alreadyOwned || state.modifiers.length >= POKER_RULES.modifierCapacity.value} onClick={() => dispatch({ type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `take-${choice.choiceId}`, now: Date.now() })}>{choice.taken ? '已選' : alreadyOwned ? '已持有' : '選這張'}</button></article>; })}</div>{state.packState.canSkip && <button className="pkr-btn pkr-btn--ghost" type="button" onClick={() => dispatch({ type: 'SKIP_PACK', now: Date.now() })}>略過並返回商店</button>}</section>;
 }
 
 export default function PokerGame() {
@@ -162,6 +163,13 @@ function ActivePokerGame({ initialState, navigate }) {
   const phaseStatus = presentation.statusMessage
     || (state.phase === 'round-won' ? `目標達成，目前 ${state.roundScore.toLocaleString()} 分，結算可獲得 ${settlementPreview.total} 幣` : '')
     || (state.phase === 'run-lost' ? '本局結束' : state.phase === 'run-won' ? '牌局完成' : '');
+  const actionFeedback = state.selection.length === 0
+    ? '請先選擇 1–5 張牌。'
+    : !availability.canPlay
+      ? availability.playReason
+      : !availability.canDiscard
+        ? availability.discardReason
+        : '可點選牌面切換選取；參與目前牌型的牌會標記「計分」。';
 
   if (state.phase === 'shop') return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
   if (state.phase === 'pack') return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
@@ -189,8 +197,8 @@ function ActivePokerGame({ initialState, navigate }) {
         <div className="pkr-discard-slot"><DiscardCue cue={presentation.discardCue} cards={allCards} /></div>
         <div className="pkr-preview" aria-live="polite"><span>{state.selection.length} 張已選</span><strong>{preview?.label || '選擇 1–5 張'}</strong></div>
         <div className="pkr-hand" ref={handRootRef}>{sortedHand.map((card, index) => <PokerCard key={card.instanceId} card={card} selected={state.selection.includes(card.instanceId)} contributing={preview?.contributingIds.includes(card.instanceId)} fresh={presentation.freshCardIds.includes(card.instanceId)} presentationIndex={index} onToggle={(cardId) => dispatch({ type: 'TOGGLE_CARD', cardId, now: Date.now() })} />)}</div>
-        <div className="pkr-controls"><button className="pkr-btn pkr-btn--primary" type="button" disabled={!availability.canPlay} onClick={() => dispatch({ type: 'PLAY', now: Date.now() })}>出牌 · {state.actions.hands}</button><button className="pkr-btn pkr-btn--ghost" type="button" disabled={!availability.canDiscard} onClick={() => dispatch({ type: 'DISCARD', now: Date.now() })}>棄牌 · {state.actions.discards}</button></div>
-        <p className="pkr-feedback">{!availability.canPlay && state.selection.length ? availability.playReason : '可點選牌面切換選取；參與目前牌型的牌會標記「計分」。'}</p>
+        <div className="pkr-controls"><button className="pkr-btn pkr-btn--primary" type="button" disabled={!availability.canPlay} aria-describedby="pkr-action-feedback" onClick={() => dispatch({ type: 'PLAY', now: Date.now() })}>出牌 · {state.actions.hands}</button><button className="pkr-btn pkr-btn--ghost" type="button" disabled={!availability.canDiscard} aria-describedby="pkr-action-feedback" onClick={() => dispatch({ type: 'DISCARD', now: Date.now() })}>棄牌 · {state.actions.discards}</button></div>
+        <p className="pkr-feedback" id="pkr-action-feedback">{actionFeedback}</p>
       </>}
     </section>
     {state.trace.length > 0 && <ScoreTrace trace={state.trace} cards={allCards} />}

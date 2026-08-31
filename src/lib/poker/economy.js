@@ -36,33 +36,50 @@ function takeRandom(items, randomState) {
   return { item: items[rolled.value], state: rolled.state };
 }
 
-export function generateShopOffers(randomState, sequence = 0) {
+function takeRandomWithoutReplacement(items, randomState) {
+  const picked = takeRandom(items, randomState);
+  return {
+    ...picked,
+    remaining: items.filter((item) => item.id !== picked.item.id)
+  };
+}
+
+function availableModifiers(excludedItemIds = []) {
+  const excluded = new Set(excludedItemIds);
+  return MODIFIERS.filter((item) => !excluded.has(item.id));
+}
+
+export function generateShopOffers(randomState, sequence = 0, excludedItemIds = []) {
   let state = randomState;
   const offers = [];
+  let modifierPool = availableModifiers(excludedItemIds);
   for (let index = 0; index < POKER_RULES.shopDistribution.value.modifierOffers; index += 1) {
-    const firstShopAffordable = sequence <= 1 && index === 0
-      ? MODIFIERS.filter((item) => progressiveShopCost(item.price, 1) <= POKER_RULES.shopPricing.value.firstShopAffordableCost)
-      : MODIFIERS;
-    const picked = takeRandom(firstShopAffordable, state);
+    const candidatePool = sequence <= 1 && index === 0
+      ? modifierPool.filter((item) => progressiveShopCost(item.price, 1) <= POKER_RULES.shopPricing.value.firstShopAffordableCost)
+      : modifierPool;
+    const picked = takeRandom(candidatePool, state);
     state = picked.state;
-    offers.push({ offerId: `shop-${sequence}-modifier-${index}-${picked.item.id}`, type: 'modifier', itemId: picked.item.id, cost: progressiveShopCost(picked.item.price, sequence), purchased: false });
+    modifierPool = modifierPool.filter((item) => item.id !== picked.item.id);
+    offers.push({ offerId: `shop-${sequence}-modifier-${index}-${picked.item.id}`, type: 'modifier', itemId: picked.item.id, purchased: false });
   }
   for (let index = 0; index < POKER_RULES.shopDistribution.value.packOffers; index += 1) {
     const picked = takeRandom(PACKS, state);
     state = picked.state;
-    offers.push({ offerId: `shop-${sequence}-pack-${index}-${picked.item.id}`, type: 'pack', itemId: picked.item.id, cost: progressiveShopCost(picked.item.price, sequence), purchased: false });
+    offers.push({ offerId: `shop-${sequence}-pack-${index}-${picked.item.id}`, type: 'pack', itemId: picked.item.id, purchased: false });
   }
   return { offers, randomState: state, distribution: POKER_RULES.shopDistribution.value.id };
 }
 
-export function openPack(packId, randomState, sequence = 0) {
+export function openPack(packId, randomState, sequence = 0, excludedItemIds = []) {
   const pack = packById(packId);
   if (!pack) throw new Error(`Unknown pack: ${packId}`);
   let state = randomState;
   const choices = [];
+  let modifierPool = availableModifiers(excludedItemIds);
   for (let index = 0; index < pack.revealCount; index += 1) {
-    const picked = takeRandom(MODIFIERS, state);
+    const picked = takeRandomWithoutReplacement(modifierPool, state);
     state = picked.state;
+    modifierPool = picked.remaining;
     choices.push({ choiceId: `pack-${sequence}-${index}-${picked.item.id}`, itemId: picked.item.id, taken: false });
   }
   return {

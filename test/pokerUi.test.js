@@ -73,6 +73,10 @@ test('turn choreography source keeps score and settlement in-table with accessib
   assert.match(game, /帶著.*幣前往補給站/);
   assert.match(game, /收下.*幣，完成本局/);
   assert.doesNotMatch(game, /完成計分|領取獎勵/);
+  assert.doesNotMatch(game, /settlementCommittedRef/);
+  assert.match(game, /已持有/);
+  assert.doesNotMatch(game, /<details className=\{`pkr-mod/);
+  assert.match(game, /<article className=\{`pkr-mod/);
   assert.match(game, /focus\(\{ preventScroll: true \}\)/);
   assert.doesNotMatch(game, /scrollIntoView/);
   assert.match(card, /if \(!interactive\) return <li/);

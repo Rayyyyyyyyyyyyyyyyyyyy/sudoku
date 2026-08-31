@@ -182,6 +182,17 @@ function modifierClassifierOptions(modifiers) {
   return { fourCardStraightFlush: handlers.includes('four-card-straight-flush'), gapStraight: handlers.includes('gap-straight'), pairedSuits: handlers.includes('paired-suits') };
 }
 
+function ownedModifierIds(state) {
+  return state.modifiers.map((owned) => owned.catalogId);
+}
+
+function unavailablePackModifierIds(state) {
+  const offered = state.offers.items
+    .filter((offer) => offer.type === 'modifier' && !offer.purchased)
+    .map((offer) => offer.itemId);
+  return [...new Set([...ownedModifierIds(state), ...offered])];
+}
+
 export function pokerRunReducer(state, action) {
   if (!state || !action?.type) return state;
   const now = action.now;
@@ -284,7 +295,7 @@ export function pokerRunReducer(state, action) {
       const reward = { base, remainingHands, interest, total, coinsAfter };
       const completion = { ...state.completion, settledRoundIds: [...state.completion.settledRoundIds, round.id] };
       if (!cursor) return cloneWithCommit(state, { phase: 'run-won', coins: reward.coinsAfter, settlement: reward, completion, trace: [...state.trace, { type: 'settlement', ...reward }] }, action.type, now);
-      const generated = generateShopOffers(state.randomState, completion.settledRoundIds.length);
+      const generated = generateShopOffers(state.randomState, completion.settledRoundIds.length, ownedModifierIds(state));
       return cloneWithCommit(state, {
         phase: 'shop', coins: reward.coinsAfter, settlement: reward,
         offers: { items: generated.offers, rerollCount: 0, nextCursor: cursor, distribution: generated.distribution },
@@ -297,7 +308,7 @@ export function pokerRunReducer(state, action) {
       const cost = rerollCost(state.offers.rerollCount);
       if (state.coins < cost) return state;
       const rerollCount = state.offers.rerollCount + 1;
-      const generated = generateShopOffers(state.randomState, state.completion.settledRoundIds.length * 100 + rerollCount);
+      const generated = generateShopOffers(state.randomState, state.completion.settledRoundIds.length * 100 + rerollCount, ownedModifierIds(state));
       return cloneWithCommit(state, { coins: state.coins - cost, offers: { ...state.offers, items: generated.offers, rerollCount, distribution: generated.distribution }, randomState: generated.randomState, transactionIds: action.transactionId ? [...state.transactionIds, action.transactionId] : state.transactionIds, trace: [{ type: 'shop-reroll', cost, provisional: POKER_RULES.reroll.escalation.value }] }, action.type, now);
     }
     case 'BUY_OFFER': {
@@ -306,13 +317,14 @@ export function pokerRunReducer(state, action) {
       const cost = shopOfferCost(offer, state.completion.settledRoundIds.length);
       if (!offer || state.coins < cost) return state;
       if (offer.type === 'modifier' && state.modifiers.length >= POKER_RULES.modifierCapacity.value) return state;
+      if (offer.type === 'modifier' && ownedModifierIds(state).includes(offer.itemId)) return state;
       const items = state.offers.items.map((item) => item.offerId === offer.offerId ? { ...item, purchased: true } : item);
       const transactionIds = [...state.transactionIds, action.transactionId];
       if (offer.type === 'modifier') {
         const instanceId = `${state.runId}-owned-${transactionIds.length}-${offer.itemId}`;
         return cloneWithCommit(state, { coins: state.coins - cost, offers: { ...state.offers, items }, modifiers: [...state.modifiers, { instanceId, catalogId: offer.itemId, counters: {} }], transactionIds, trace: [{ type: 'purchase', offerId: offer.offerId, itemId: offer.itemId, cost }] }, action.type, now);
       }
-      const opened = openPack(offer.itemId, state.randomState, transactionIds.length);
+      const opened = openPack(offer.itemId, state.randomState, transactionIds.length, unavailablePackModifierIds(state));
       return cloneWithCommit(state, { phase: 'pack', coins: state.coins - cost, offers: { ...state.offers, items }, packState: opened.packState, randomState: opened.randomState, transactionIds, trace: [{ type: 'pack-opened', offerId: offer.offerId, packId: offer.itemId, cost }] }, action.type, now);
     }
     case 'TAKE_PACK_CHOICE': {
@@ -320,11 +332,16 @@ export function pokerRunReducer(state, action) {
       if (state.modifiers.length >= POKER_RULES.modifierCapacity.value || state.transactionIds.includes(action.transactionId)) return state;
       const choice = state.packState.choices.find((item) => item.choiceId === action.choiceId && !item.taken);
       if (!choice) return state;
+      if (ownedModifierIds(state).includes(choice.itemId)) return state;
       const remaining = state.packState.choicesRemaining - 1;
       const choices = state.packState.choices.map((item) => item.choiceId === choice.choiceId ? { ...item, taken: true } : item);
+      const offerItems = state.offers.items.map((offer) => (
+        offer.type === 'modifier' && offer.itemId === choice.itemId ? { ...offer, purchased: true } : offer
+      ));
       const transactionIds = [...state.transactionIds, action.transactionId];
       return cloneWithCommit(state, {
         phase: remaining === 0 ? 'shop' : 'pack',
+        offers: { ...state.offers, items: offerItems },
         modifiers: [...state.modifiers, { instanceId: `${state.runId}-owned-${transactionIds.length}-${choice.itemId}`, catalogId: choice.itemId, counters: {} }],
         packState: remaining === 0 ? null : { ...state.packState, choices, choicesRemaining: remaining },
         transactionIds,
