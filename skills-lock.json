@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "skills": {
+    "architecture-context": {
+      "source": "Rayyyyyyyyyyyyyyyyyyyy/ai-coding-architecture-skill",
+      "sourceType": "github",
+      "skillPath": "skills/architecture-context/SKILL.md",
+      "computedHash": "de6bab2f92dda5270984f3efcd980882dffb8dcb716df5d155ed8eca8b3bfb85"
+    },
+    "safe-change": {
+      "source": "Rayyyyyyyyyyyyyyyyyyyy/ai-coding-architecture-skill",
+      "sourceType": "github",
+      "skillPath": "skills/safe-change/SKILL.md",
+      "computedHash": "88b589eb6abc32da9d06910e1f673216ec3fc06f386effb8f1f600e6bd6c1261"
+    }
+  }
+}

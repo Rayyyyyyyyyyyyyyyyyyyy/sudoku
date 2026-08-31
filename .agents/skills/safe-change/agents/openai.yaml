@@ -1,0 +1,4 @@
+interface:
+  display_name: "Safe Change"
+  short_description: "Protect code, secrets, auth, and persistent data"
+  default_prompt: "Use $safe-change to implement this change without introducing hidden security, data, dependency, or runtime risk."
