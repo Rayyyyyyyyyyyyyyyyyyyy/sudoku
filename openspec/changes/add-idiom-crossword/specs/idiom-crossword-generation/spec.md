@@ -26,12 +26,22 @@ Every idiom SHALL occupy exactly four contiguous cells running left-to-right or 
 - **WHEN** generation completes
 - **THEN** the board is cropped to the bounding box of its occupied cells
 
-### Requirement: Parallel run separation
-Two runs of the same orientation SHALL NOT occupy adjacent rows or columns at overlapping positions; at least one empty cell SHALL separate them.
+### Requirement: No undeclared character strings
+Every maximal run of two or more orthogonally contiguous occupied cells SHALL be exactly one declared four-cell idiom run. Two cells of the same orientation MAY sit adjacent only when both belong to the same perpendicular declared run, which is what a crossing already is.
 
-#### Scenario: Adjacent parallel placement is rejected
-- **WHEN** a candidate placement would put a horizontal run directly above or below another horizontal run in overlapping columns
+This is the rule the board must satisfy; a blanket "parallel runs must be separated by an empty cell" is too strong and would reject a legal and desirable board, such as one where a single vertical idiom crosses three horizontal idioms placed in consecutive rows.
+
+#### Scenario: Unintended string is rejected
+- **WHEN** a candidate placement would extend an existing run to five or more contiguous cells, or would put two cells side by side that do not both belong to one perpendicular declared run
 - **THEN** the placement is rejected and generation tries another candidate
+
+#### Scenario: A shared crossing column is allowed
+- **WHEN** one vertical run crosses horizontal runs placed in adjacent rows, so those horizontal runs overlap in the crossing column
+- **THEN** the placement is accepted, because every contiguous string it forms is a declared run
+
+#### Scenario: Whole-board invariant holds
+- **WHEN** the generation test suite scans finished boards in both orientations
+- **THEN** every maximal string of length two or more is a declared run of exactly four cells
 
 ### Requirement: Board size bound
 A generated board SHALL NOT exceed nine cells in either dimension, so that every cell renders at no less than 36 CSS px within a 360 CSS px portrait viewport without horizontal page scrolling.
