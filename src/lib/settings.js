@@ -6,13 +6,15 @@ const KEY = 'sudoku-drill-settings-v1';
 export const DEFAULT_SETTINGS = {
   showErrors: true,
   highlightPeers: true,
-  autoCleanNotes: true
+  autoCleanNotes: true,
+  idiomShowErrors: true
 };
 
 export const SETTING_LABELS = {
   showErrors: '標示填錯的格子',
   highlightPeers: 'highlight 同列同行同宮',
-  autoCleanNotes: '填數字時自動清註記'
+  autoCleanNotes: '填數字時自動清註記',
+  idiomShowErrors: '成語填字：標示填錯的格子'
 };
 
 function read() {

@@ -39,11 +39,13 @@ This is preferred to the classical approach of designing a symmetric grid patter
 
 Rejected alternative: precomputing a library of hand-designed lattice shapes. It would bound generation time but would make difficulty tuning discrete and would need a shape set per board size.
 
-### 2. Forbid adjacent parallel runs
+### 2. Forbid undeclared character strings
 
-Two runs with the same orientation must be separated by at least one empty cell. Without this rule, two adjacent parallel idioms create vertical character pairs the player can read as fragments of intended answers, and the solver would have to reason about strings the design never declared to be words.
+Every maximal string of two or more contiguous cells must be exactly one declared four-cell run. Two same-orientation cells may sit adjacent only when both belong to the same perpendicular declared run — which is what a crossing already is. Without this, the board shows the player vertical character pairs that look like fragments of answers but were never declared, and the solver would have to reason about strings the design never defined.
 
-This is stricter than English crossword practice, where every adjacent letter pair must itself form a valid word. That rule is unavailable here because there is no Chinese equivalent of a complete two-character word list whose absence can be checked reliably.
+An earlier draft of this design stated the rule as "parallel runs must be separated by an empty cell". That is too strong and was corrected against the implementation: it would reject a legal and desirable board where one vertical idiom crosses three horizontal idioms placed in consecutive rows, since those horizontal runs then overlap in the crossing column. The declared-run formulation above is the rule that is actually enforced and tested.
+
+This is also why English crossword practice does not transfer. There, every adjacent letter pair must itself form a valid word; here there is no Chinese equivalent of a complete two-character word list whose absence can be checked reliably, so the rule is stated over declared runs instead.
 
 ### 3. Verify uniqueness by solving, and fix it by revealing
 
@@ -91,8 +93,29 @@ The build script therefore uses frequency only to order entries that already exi
 
 Additive. New modules under `src/lib/idiom/`, new generated data, new routes, and new localStorage keys. The hub gains a third card. No existing key, route, record, or setting changes, so a player who never opens the new game sees no behavioural difference and a downgrade leaves the new keys as inert orphans.
 
+## Resolved Questions
+
+**The daily puzzle uses a fixed difficulty (level 2).** Rotating by weekday would make
+the streak unfair — a player who misses the one easy day loses a streak built on
+harder days — and would make today's time incomparable to yesterday's. The Sudoku
+daily already works this way.
+
+**Assisted completions appear only as an aggregate counter,** not interleaved into
+the per-level list. They count toward the completion total and the streak, but never
+set a best time. Mixing a revealed run into the same list as an honest one makes the
+best-time column meaningless.
+
+**The 9×9 cap stays; the level 3 and 4 idiom targets came down instead** (10→9 and
+12→10). The cap is not arbitrary: at 360 CSS px a 9-wide board leaves 36 px per cell,
+which is already the accessibility floor, so raising it means panning, and a board
+that has to be panned defeats one-handed use on a moving vehicle — the whole point of
+the game. Measured shortfall against the shipped corpus fell from 25/60 and 42/60 to
+8/120 (6.7%) and 6/120 (5.0%), with the configured floors never breached and the
+smallest observed board at 8 runs for both levels. Level 3 and 4 now differ mainly by
+clue ratio, decoy ratio and frequency tier rather than by one extra idiom, which is
+the more meaningful difficulty axis anyway.
+
 ## Open Questions
 
-- Should the daily puzzle use a fixed difficulty, as the Sudoku daily does, or rotate difficulty by weekday?
-- Should assisted completions appear in the records list at all, or only in an aggregate assist counter?
-- Is a 9×9 cap right, or should level 4 be allowed a larger board with pan rather than a denser one?
+None outstanding for this change. Definition text remains deferred by decision 6; the
+UI reserves its place and says so.

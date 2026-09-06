@@ -4,6 +4,8 @@ import Game from './pages/Game';
 import GameHub from './pages/GameHub';
 import PokerHome from './pages/PokerHome';
 import PokerGame from './pages/PokerGame';
+import IdiomHome from './pages/IdiomHome';
+import IdiomGame from './pages/IdiomGame';
 import { useSettings } from './lib/settings';
 
 export default function App() {
@@ -21,6 +23,12 @@ export default function App() {
           element={<Game key={`${location.pathname}${location.search}`} settings={settings} />}
         />
         <Route path="/daily" element={<Game key="daily" daily settings={settings} />} />
+        <Route path="/idiom" element={<IdiomHome settings={settings} toggleSetting={toggleSetting} />} />
+        <Route
+          path="/idiom/play/:level"
+          element={<IdiomGame key={`${location.pathname}${location.search}`} settings={settings} />}
+        />
+        <Route path="/idiom/daily" element={<IdiomGame key="idiom-daily" daily settings={settings} />} />
         <Route path="/poker" element={<PokerHome />} />
         <Route path="/poker/play" element={<PokerGame />} />
         <Route path="*" element={<Navigate to="/" replace />} />

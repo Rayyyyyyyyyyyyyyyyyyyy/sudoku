@@ -1131,3 +1131,124 @@ a:hover {
   .pkr-score-beats li { opacity: 1; transform: none; }
   .pkr-target-progress__track i { transition: none; }
 }
+
+/* ---------- 成語填字 ---------- */
+/* 盤面最大 9 欄，360 CSS px 下每格仍在 36px 以上，不出現橫向捲動。 */
+
+.id-game { padding-bottom: 32px; }
+/* sd-shell 左右各留 18px,九欄盤面在 360px 下只剩 324px 可用,每格排不到 36px。
+   填字頁把那段內距取回來給盤面,其餘區塊仍由 sd-width 收在原本的寬度。 */
+.id-game { width: calc(100% + 36px); margin-inline: -18px; padding-inline: 4px; }
+.id-game__meta { display: block; font-size: 12px; font-weight: 500; color: #6B6558; }
+
+.id-board {
+  display: grid;
+  grid-template-columns: repeat(var(--id-cols), 1fr);
+  /* 9 欄是上限。360 CSS px 下盤面 352px,扣掉 8px 內距與 8px 間隙剩 336,
+     每格 37.3px,守住 36px 的下限。刻意不用 vw:vw 含捲軸寬度,桌機上會溢出。
+     max-width 讓欄數少的盤面不會把格子撐得過大。 */
+  width: 100%;
+  max-width: calc(var(--id-cols) * 72px);
+  gap: 1px;
+  margin: 12px auto;
+  padding: 4px;
+  background: #EFEBE1;
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.id-cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  border: 2px solid transparent;
+  border-radius: 6px;
+  background: #FFFFFF;
+  color: #0E8C6B;
+  font-size: clamp(15px, 5.2vw, 26px);
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+}
+.id-cell--void { background: transparent; border: none; cursor: default; }
+.id-cell--empty { background: #FBFAF6; }
+.id-cell--clue { background: #F1EEE5; color: #16181D; font-weight: 700; }
+/* 選取、揭示與填錯都另有非顏色的標記，不單靠色彩區分 */
+.id-cell--sel { border-color: #16181D; }
+.id-cell--revealed { color: #6B6558; }
+.id-cell--wrong { color: #B4551A; text-decoration: underline wavy currentColor; }
+.id-cell__mark { position: absolute; top: 1px; left: 2px; font-size: 8px; color: #A79E8C; line-height: 1; }
+.id-cell:disabled { cursor: default; }
+
+.id-actions { display: flex; gap: 8px; margin: 0 auto 12px; }
+.id-actions .sd-btn { flex: 1; min-height: 44px; }
+
+.id-pool { margin: 0 auto 16px; }
+.id-pool__head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 13px; color: #6B6558; margin-bottom: 6px;
+}
+.id-pool__count { font-variant-numeric: tabular-nums; }
+.id-pool__grid { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.id-chip {
+  min-width: 44px; min-height: 44px;
+  border: 1px solid #DED9CD; border-radius: 10px;
+  background: #FFFFFF; color: #16181D;
+  font-size: 20px; cursor: pointer;
+}
+.id-chip--used { background: #F1EEE5; color: #BBB4A4; text-decoration: line-through; cursor: default; }
+.id-chip:disabled { cursor: default; }
+
+.id-note { margin: 0 auto 12px; font-size: 14px; color: #B4551A; }
+.id-done {
+  margin: 0 auto 12px; padding: 12px; border-radius: 10px;
+  background: #D7EEE5; display: flex; flex-wrap: wrap; gap: 8px; align-items: center;
+}
+
+.id-runs { margin: 0 auto 16px; }
+.id-runs__toggle {
+  width: 100%; min-height: 44px; text-align: left;
+  background: none; border: 1px solid #DED9CD; border-radius: 10px;
+  padding: 0 12px; font-size: 14px; cursor: pointer; color: #16181D;
+}
+.id-runs__body { padding: 8px 4px; }
+.id-runs__list { list-style: none; margin: 0 0 8px; padding: 0; display: grid; gap: 4px; }
+.id-runs__dir {
+  display: inline-block; width: 1.6em; color: #6B6558; font-size: 12px;
+}
+.id-runs__word { font-size: 16px; }
+/* 釋義全文數 MB，依 design 決議延後收錄；容器捲動而非截斷，文字必須逐字照錄。 */
+.id-runs__pending { font-size: 12px; color: #6B6558; margin: 0; }
+.id-runs__definition { max-height: 40vh; overflow-y: auto; }
+
+.id-home__lede { font-size: 14px; color: #4A4639; line-height: 1.6; }
+.id-h2 { font-size: 14px; color: #6B6558; margin: 20px 0 8px; font-weight: 600; }
+.id-daily { width: 100%; min-height: 48px; }
+.id-levels { display: grid; gap: 8px; }
+.id-level {
+  display: grid; gap: 2px; text-align: left; min-height: 44px;
+  padding: 10px 12px; border: 1px solid #DED9CD; border-radius: 10px;
+  background: #FFFFFF; cursor: pointer;
+}
+.id-level__name { font-size: 16px; font-weight: 600; color: #16181D; }
+.id-level__desc { font-size: 13px; color: #6B6558; }
+.id-level__stat { font-size: 12px; color: #8C8474; font-variant-numeric: tabular-nums; }
+.id-records { font-size: 14px; color: #4A4639; }
+
+.id-resume {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center;
+  padding: 12px; border-radius: 10px; background: #F1EEE5; margin-bottom: 12px;
+}
+.id-resume span { display: block; font-size: 13px; color: #6B6558; }
+.id-resume__actions { display: flex; gap: 8px; }
+.id-resume--warning { background: #F8E2CE; }
+
+.hub-card--idiom .hub-card__mark { color: #0E8C6B; }
+
+@media (prefers-reduced-motion: reduce) {
+  .id-cell, .id-chip { transition: none !important; }
+}

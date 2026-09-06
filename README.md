@@ -2,7 +2,8 @@
 
 原本是一份 6.1 MB 的單檔 artifact bundle(base64 + gzip 塞在 `<script type="__bundler/manifest">` 裡),
 現在改寫成 Vite + React 的離線 SPA。既有數獨玩法、鍵盤操作與 localStorage 格式維持不變，
-並新增一套以有限牌庫、牌型計分、效果順序與回合經濟為核心的原創「通勤牌局」。
+並新增一套以有限牌庫、牌型計分、效果順序與回合經濟為核心的原創「通勤牌局」，
+以及一款以教育部《成語典》為題庫、確定性出題並保證唯一解的「成語填字」。
 
 ## 開發
 
@@ -24,6 +25,9 @@ npm test         # 全部 Node engine、資料、持久化與回歸測試
 | `/#/daily` | 每日一題(困難難度,seed 取當天日期,同一天永遠同一題) |
 | `/#/poker` | 通勤牌局首頁、新局/續玩、規則與紀錄 |
 | `/#/poker/play` | 目前牌局、回合、計分、商店與選擇包 |
+| `/#/idiom` | 成語填字首頁：每日一題、五種難度、紀錄與玩法設定 |
+| `/#/idiom/play/:level?seed=…` | 指定難度的盤面(`level` 為 0–4,seed 決定盤面) |
+| `/#/idiom/daily` | 每日一題(中等難度,seed 取當天日期) |
 
 不認得的路徑會導回 `/`。路由放在 URL hash 中，部署到一般靜態主機不需要額外 rewrite；
 手機回收分頁後重新載入，也不會把遊戲路徑當成伺服器檔案而回傳 404。
@@ -52,6 +56,19 @@ src/
   pages/GameHub.jsx            共用遊戲入口
   pages/PokerHome.jsx          牌局入口、resume/recovery/records/rules
   pages/PokerGame.jsx          portrait-first 牌桌、商店、pack 與 inspect UI
+  data/idioms.js               5,270 條四字成語與詞頻分層,由教育部《成語典》產生
+  lib/idiom/corpus.js          (字, 位置) -> 成語[] 放置索引
+  lib/idiom/board.js           盤面幾何、佔用表與「不得產生非宣告字串」的檢查
+  lib/idiom/generate.js        由詞生盤的回溯生成、挖空、候選字池與唯一解修補
+  lib/idiom/solve.js           以候選字池為值域的解題器,計數上限 2
+  lib/idiom/difficulty.js      五級難度表(純資料)與單調性檢查
+  lib/idiom/play.js            一局的純 reducer:填入、替換、清除、揭示、完成判定
+  lib/idiom/persistence.js     逐步存檔、版本不合的保留策略與紀錄
+  lib/idiom/useIdiomGame.js    reducer、存檔與計時的 React 綁定
+  pages/IdiomHome.jsx          成語填字首頁
+  pages/IdiomGame.jsx          盤面、候選字池、揭示與成語列表
+  components/IdiomBoard.jsx    縱橫盤面(每格一個原生 button)
+  components/IdiomPool.jsx     候選字池(點選填入,不用輸入法也不用拖曳)
 ```
 
 題目來自 public-domain 的
@@ -92,6 +109,31 @@ src/
 - 商店可購買、刷新、出售與打開選擇包；purchase、choice、sell 與 reroll 均有 transaction guard。
 - 每個 committed reducer transition 都會寫入 `sudoku-drill-poker-active-v1`；牌局紀錄另存於 `sudoku-drill-poker-records-v1`。
 - 介面在 360 CSS px 使用四欄、兩排手牌，沒有橫向 page scroll；選取與計分狀態不只靠顏色，並支援 `prefers-reduced-motion`。
+
+## 成語填字規則基線
+
+- 盤面是四格線段的網狀連接:成語一律四字,只有向右與向下,交叉處共用一個字。
+- **任何長度 ≥2 的連續字串都必須是宣告過的四字成語**;同向相鄰僅在兩格同屬
+  一條垂直詞條時允許(也就是交叉本身)。英文填字的黑格對稱慣例不適用。
+- 出題「由詞生盤」而非「由盤填詞」:因為詞長固定為 4,不必先設計網格再填詞,
+  迴避了一般填字生成的 NP-Complete 難題,回溯深度等於詞條數而非格數。
+- 每個盤面都以解題器驗證**恰好一組解**;不唯一就多揭示一格提示字後重驗,
+  超過上限則丟棄該 seed。與 `lib/sudoku.js` 的唯一解驗證是同一個思路。
+- 盤面上限 9×9,確保 360 CSS px 下每格仍在 36px 以上,不需要橫向捲動。
+- 五級難度調整詞條數(4→10)、提示字比例(50%→18%)、干擾字比例(0%→50%)
+  與可用詞頻層;L3/L4 的目標詞條數依實測短缺率訂為 9 與 10。
+- 填字方式是「點格子、再點候選字池的字」,**不使用輸入法、不使用拖曳**:
+  中文沒有 26 鍵字母表,自由輸入需要 IME(手機上是蓋住盤面的全螢幕模態),
+  拖曳則在晃動的車廂中命中率低且沒有鍵盤等價操作。
+- 存檔存**整個盤面**而非只存 seed:只存 seed 的話,語料或生成器一改,
+  進行中的題目會無聲換題。版本不合時保留紀錄、不載入,由玩家明示清除。
+- 用過「揭示」的完成照樣計數與續連續天數,但**不寫最佳時間**。
+
+成語資料取自教育部《成語典》正文(CC BY-ND 3.0 臺灣)。教育部對「禁止改作」的
+解釋是限制只及於文本本身,不限制格式轉換與後續應用;因此本專案只做格式轉換與
+子集篩選,若日後顯示釋義必須逐字照錄,不得濃縮或改寫。詳見
+[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) 與
+[`docs/idiom-crossword-research.md`](./docs/idiom-crossword-research.md)。
 
 ## 資產與相容性聲明
 

@@ -186,16 +186,31 @@ test('the same seed and level reproduce the board, clues, and pool exactly', () 
 });
 
 test('the engine never reaches for Math.random', () => {
+  // 生成必須是純的：同 seed 同盤。存檔與 React 綁定本來就要讀時鐘（計時、
+  // 連續天數），所以分開列。每個檔案都必須被歸類，新增模組不會靜悄悄逃掉檢查。
+  const PURE = ['board.js', 'corpus.js', 'difficulty.js', 'generate.js', 'index.js', 'play.js', 'solve.js'];
+  const CLOCK_ALLOWED = ['persistence.js', 'useIdiomGame.js'];
+
   const directory = fileURLToPath(new URL('../src/lib/idiom/', import.meta.url));
   const files = readdirSync(directory).filter((name) => name.endsWith('.js'));
   assert.ok(files.length >= 5, 'expected the engine modules to be present');
+  assert.deepEqual(
+    files.filter((name) => !PURE.includes(name) && !CLOCK_ALLOWED.includes(name)),
+    [],
+    'a new module under src/lib/idiom/ must be classified as pure or clock-allowed'
+  );
+
   files.forEach((name) => {
     // 註解裡會提到這條禁令本身，先把註解剝掉再掃描實際程式碼。
     const code = readFileSync(path.join(directory, name), 'utf8')
       .replace(/\/\*[\s\S]*?\*\//g, '')
       .replace(/(^|[^:])\/\/.*$/gm, '$1');
+    // Math.random 對每個模組都是禁令，包含存檔與 hook。
     assert.equal(/Math\s*\.\s*random/.test(code), false, `${name} calls Math.random`);
-    assert.equal(/\bDate\s*\.\s*now\s*\(/.test(code), false, `${name} reads the clock during generation`);
+    if (PURE.includes(name)) {
+      assert.equal(/\bDate\s*\.\s*now\s*\(/.test(code), false, `${name} reads the clock during generation`);
+      assert.equal(/\bnew\s+Date\s*\(/.test(code), false, `${name} constructs a Date during generation`);
+    }
   });
 });
 

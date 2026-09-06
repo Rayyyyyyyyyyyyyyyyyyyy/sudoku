@@ -3,11 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { opponentById } from '../data/poker/compatibility';
 import { loadAnyGameSession } from '../lib/gameSession';
 import { loadPokerSnapshot } from '../lib/poker/persistence';
+import { loadIdiomSnapshot } from '../lib/idiom/persistence';
+import { IDIOM_DIFFICULTY_LEVELS } from '../lib/idiom/index';
 
 export default function GameHub() {
   const navigate = useNavigate();
   const sudokuSession = useMemo(() => loadAnyGameSession(), []);
   const pokerSave = useMemo(() => loadPokerSnapshot(), []);
+  const idiomSave = useMemo(() => loadIdiomSnapshot(), []);
+  const activeIdiom = idiomSave.status === 'ok' ? idiomSave.snapshot : null;
   const poker = pokerSave.status === 'ok' ? pokerSave.state : null;
   const activePoker = poker && !['run-won', 'run-lost'].includes(poker.phase) ? poker : null;
   const terminalPoker = poker && ['run-won', 'run-lost'].includes(poker.phase) ? poker : null;
@@ -18,7 +22,7 @@ export default function GameHub() {
       <header className="hub-hero">
         <span className="hub-eyebrow">OFFLINE POCKET GAMES</span>
         <h1>通勤遊戲櫃</h1>
-        <p>兩種節奏，一個離線入口。進度會留在這台裝置。</p>
+        <p>三種節奏，一個離線入口。進度會留在這台裝置。</p>
       </header>
       <section className="hub-grid" aria-label="選擇遊戲">
         <article className="hub-card hub-card--sudoku">
@@ -38,6 +42,19 @@ export default function GameHub() {
           {terminalPoker && <p className="hub-session">上一局已結束 · 紀錄已保存</p>}
           {pokerSave.status === 'incompatible' && <p className="hub-session hub-session--warning">儲存版本需要處理</p>}
           <button className="hub-action" type="button" onClick={() => navigate('/poker')}>{activePoker ? '繼續牌局' : terminalPoker ? '查看紀錄' : '進入牌局'} <span>→</span></button>
+        </article>
+        <article className="hub-card hub-card--idiom">
+          <span className="hub-card__mark" aria-hidden="true">字</span>
+          <div><span className="hub-eyebrow">WORDS · DAILY</span><h2>成語填字</h2></div>
+          <p>縱橫交錯的成語盤面，點格子再點候選字，一到十五分鐘皆可。</p>
+          {activeIdiom && (
+            <p className="hub-session">
+              <span>●</span> 有未完成題目 · {IDIOM_DIFFICULTY_LEVELS[activeIdiom.level]?.name ?? `難度 ${activeIdiom.level}`}
+              {activeIdiom.daily && ' · 每日一題'}
+            </p>
+          )}
+          {idiomSave.status === 'incompatible' && <p className="hub-session hub-session--warning">儲存版本需要處理</p>}
+          <button className="hub-action" type="button" onClick={() => navigate('/idiom')}>{activeIdiom ? '繼續填字' : '進入填字'} <span>→</span></button>
         </article>
       </section>
       <footer className="hub-footer">本機儲存 · 不需登入 · 原創介面與幾何圖像</footer>

@@ -60,8 +60,8 @@ export const IDIOM_DIFFICULTY_LEVELS = [
   {
     level: 3,
     name: '困難',
-    desc: '10 條成語，含次常用詞條與四成干擾字',
-    idiomCount: 10,
+    desc: '9 條成語，含次常用詞條與四成干擾字',
+    idiomCount: 9,
     minIdiomCount: 6,
     minCrossings: 5,
     clueRatio: 0.26,
@@ -73,8 +73,8 @@ export const IDIOM_DIFFICULTY_LEVELS = [
   {
     level: 4,
     name: '專家',
-    desc: '12 條成語，含冷僻詞條與五成干擾字',
-    idiomCount: 12,
+    desc: '10 條成語，含冷僻詞條與五成干擾字',
+    idiomCount: 10,
     minIdiomCount: 7,
     minCrossings: 6,
     clueRatio: 0.18,
