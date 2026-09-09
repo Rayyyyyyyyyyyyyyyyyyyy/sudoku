@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { opponentById } from '../data/poker/compatibility';
-import { loadAnyGameSession } from '../lib/gameSession';
+import { gameSessionPath, loadAnyGameSession } from '../lib/gameSession';
 import { loadPokerSnapshot } from '../lib/poker/persistence';
 import { loadIdiomSnapshot } from '../lib/idiom/persistence';
 import { IDIOM_DIFFICULTY_LEVELS } from '../lib/idiom/index';
@@ -9,6 +9,7 @@ import { IDIOM_DIFFICULTY_LEVELS } from '../lib/idiom/index';
 export default function GameHub() {
   const navigate = useNavigate();
   const sudokuSession = useMemo(() => loadAnyGameSession(), []);
+  const sudokuResumePath = sudokuSession ? gameSessionPath(sudokuSession) : null;
   const pokerSave = useMemo(() => loadPokerSnapshot(), []);
   const idiomSave = useMemo(() => loadIdiomSnapshot(), []);
   const activeIdiom = idiomSave.status === 'ok' ? idiomSave.snapshot : null;
@@ -30,7 +31,13 @@ export default function GameHub() {
           <div><span className="hub-eyebrow">LOGIC</span><h2>數獨刷題</h2></div>
           <p>每日題、五種難度與原有個人紀錄完整保留。</p>
           {sudokuSession && <p className="hub-session"><span>●</span> 有未完成題目 · 難度 {sudokuSession.level + 1}</p>}
-          <button className="hub-action" type="button" onClick={() => navigate('/sudoku')}>進入數獨 <span>→</span></button>
+          <button
+            className="hub-action"
+            type="button"
+            onClick={() => navigate(sudokuResumePath ?? '/sudoku')}
+          >
+            {sudokuResumePath ? '繼續數獨' : '進入數獨'} <span>→</span>
+          </button>
         </article>
         <article className="hub-card hub-card--poker">
           <span className="hub-card__mark" aria-hidden="true">♠</span>

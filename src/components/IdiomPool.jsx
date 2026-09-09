@@ -11,7 +11,7 @@ export default function IdiomPool({ pool, freeSlots, disabled, onPick }) {
   const remaining = freeSlots.size;
 
   return (
-    <section className="id-pool sd-width" aria-label="候選字">
+    <section className="game-column id-pool" aria-label="候選字">
       <div className="id-pool__head">
         <span>候選字</span>
         <span className="id-pool__count">剩 {remaining} / {pool.length}</span>

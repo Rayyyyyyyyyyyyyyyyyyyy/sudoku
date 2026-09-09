@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest';
 import App from '../../src/App.jsx';
 import { generatePuzzle } from '../../src/lib/idiom/index.js';
 import { IDIOM_SNAPSHOT_KEY, snapshotOf } from '../../src/lib/idiom/persistence.js';
-import { createPlayState, isLocked } from '../../src/lib/idiom/play.js';
+import { createPlayState, idiomPlayReducer, isLocked } from '../../src/lib/idiom/play.js';
 
 const renderAt = (path) =>
   render(
@@ -138,6 +138,24 @@ describe('idiom crossword routes', () => {
     renderAt('/idiom');
     expect(await screen.findByText('有未完成的題目')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: '繼續' })).toBeInTheDocument();
+  });
+
+  it('plays the stored board when current generation for the route has drifted', async () => {
+    const storedPuzzle = generatePuzzle(0, 7920);
+    const { cell, position, answer } = firstBlank(storedPuzzle);
+    const slot = storedPuzzle.pool.findIndex((char) => char === answer);
+    const saved = idiomPlayReducer(createPlayState(storedPuzzle), { type: 'place', cell, slot });
+    localStorage.setItem(
+      IDIOM_SNAPSHOT_KEY,
+      JSON.stringify(
+        snapshotOf(saved, { level: 0, seed: 7919, daily: false, startedAt: 0, elapsedMs: 9000 })
+      )
+    );
+
+    renderAt('/idiom/play/0?seed=7919');
+
+    const label = new RegExp(`^第 ${position.row + 1} 列第 ${position.col + 1} 行，${answer}`);
+    expect(await screen.findByRole('gridcell', { name: label })).toBeInTheDocument();
   });
 
   it('reports an incompatible save without discarding it', async () => {

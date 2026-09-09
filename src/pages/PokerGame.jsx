@@ -109,7 +109,7 @@ function PokerStatus({ message }) {
 
 function Shop({ state, dispatch, headingRef }) {
   const cost = rerollCost(state.offers.rerollCount);
-  return <section className="pkr-shop"><header><span className="pkr-kicker">BETWEEN ROUNDS</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">補給站</h2><p>持有 {state.coins} 幣 · 效果牌 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p>{state.settlement && <div className="pkr-settlement" aria-label="上回合獎勵結算"><span>上回合結算</span><strong>基本 {state.settlement.base} + 剩餘出牌 {state.settlement.remainingHands} + 利息 {state.settlement.interest} = {state.settlement.total} 幣</strong><small>結算後共 {state.settlement.coinsAfter} 幣</small></div>}</header><div className="pkr-offers">{state.offers.items.map((offer) => {
+  return <section className="game-stage game-stage--wide pkr-shop"><header><span className="pkr-kicker">BETWEEN ROUNDS</span><h1 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">補給站</h1><p>持有 {state.coins} 幣 · 效果牌 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p>{state.settlement && <div className="pkr-settlement" aria-label="上回合獎勵結算"><span>上回合結算</span><strong>基本 {state.settlement.base} + 剩餘出牌 {state.settlement.remainingHands} + 利息 {state.settlement.interest} = {state.settlement.total} 幣</strong><small>結算後共 {state.settlement.coinsAfter} 幣</small></div>}</header><div className="pkr-offers">{state.offers.items.map((offer) => {
     const item = offer.type === 'modifier' ? modifierById(offer.itemId) : packById(offer.itemId);
     const offerCost = shopOfferCost(offer, state.completion.settledRoundIds.length);
     const full = offer.type === 'modifier' && state.modifiers.length >= POKER_RULES.modifierCapacity.value;
@@ -120,7 +120,7 @@ function Shop({ state, dispatch, headingRef }) {
 
 function Pack({ state, dispatch, headingRef }) {
   const pack = packById(state.packState.packId);
-  return <section className="pkr-pack"><span className="pkr-kicker">OPENED</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">{pack.display.name}</h2><p>還可選 {state.packState.choicesRemaining} 張 · 欄位 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p><div className="pkr-offers">{state.packState.choices.map((choice) => { const item = modifierById(choice.itemId); const alreadyOwned = state.modifiers.some((owned) => owned.catalogId === choice.itemId); return <article className="pkr-offer" key={choice.choiceId}><span>{rarityLabel(item.rarity)}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={choice.taken || alreadyOwned || state.modifiers.length >= POKER_RULES.modifierCapacity.value} onClick={() => dispatch({ type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `take-${choice.choiceId}`, now: Date.now() })}>{choice.taken ? '已選' : alreadyOwned ? '已持有' : '選這張'}</button></article>; })}</div>{state.packState.canSkip && <button className="pkr-btn pkr-btn--ghost" type="button" onClick={() => dispatch({ type: 'SKIP_PACK', now: Date.now() })}>略過並返回商店</button>}</section>;
+  return <section className="game-stage game-stage--wide pkr-pack"><span className="pkr-kicker">OPENED</span><h1 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">{pack.display.name}</h1><p>還可選 {state.packState.choicesRemaining} 張 · 欄位 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p><div className="pkr-offers">{state.packState.choices.map((choice) => { const item = modifierById(choice.itemId); const alreadyOwned = state.modifiers.some((owned) => owned.catalogId === choice.itemId); return <article className="pkr-offer" key={choice.choiceId}><span>{rarityLabel(item.rarity)}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={choice.taken || alreadyOwned || state.modifiers.length >= POKER_RULES.modifierCapacity.value} onClick={() => dispatch({ type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `take-${choice.choiceId}`, now: Date.now() })}>{choice.taken ? '已選' : alreadyOwned ? '已持有' : '選這張'}</button></article>; })}</div>{state.packState.canSkip && <button className="pkr-btn pkr-btn--ghost" type="button" onClick={() => dispatch({ type: 'SKIP_PACK', now: Date.now() })}>略過並返回商店</button>}</section>;
 }
 
 export default function PokerGame() {
@@ -171,23 +171,23 @@ function ActivePokerGame({ initialState, navigate }) {
         ? availability.discardReason
         : '可點選牌面切換選取；參與目前牌型的牌會標記「計分」。';
 
-  if (state.phase === 'shop') return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
-  if (state.phase === 'pack') return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
+  if (state.phase === 'shop') return <main className="game-frame pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
+  if (state.phase === 'pack') return <main className="game-frame pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
   if (['run-won', 'run-lost'].includes(state.phase)) {
     const lost = state.phase === 'run-lost';
     const shortfall = Math.max(0, round.target - state.roundScore);
-    return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><section className="pkr-terminal"><span aria-hidden="true">{lost ? '◇' : '◆'}</span><h1 ref={phaseHeadingRef} className="pkr-phase-anchor" tabIndex="-1">{lost ? '本局結束' : '牌局完成'}</h1>{lost ? <><p>第 {state.stageIndex + 1} 階 · {ROUND_LABELS[round.type]}</p><div className="pkr-terminal__result"><strong>{state.roundScore.toLocaleString()} / {round.target.toLocaleString()}</strong><span>還差 {shortfall.toLocaleString()} 分</span></div></> : <p>你完成了三階九回合。</p>}<strong>{state.totalScore.toLocaleString()}</strong><small>累計分數 · {state.coins} 幣</small><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker')}>查看紀錄</button></section></main>;
+    return <main className="game-frame pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><section className="game-stage game-stage--wide pkr-terminal"><span aria-hidden="true">{lost ? '◇' : '◆'}</span><h1 ref={phaseHeadingRef} className="pkr-phase-anchor" tabIndex="-1">{lost ? '本局結束' : '牌局完成'}</h1>{lost ? <><p>第 {state.stageIndex + 1} 階 · {ROUND_LABELS[round.type]}</p><div className="pkr-terminal__result"><strong>{state.roundScore.toLocaleString()} / {round.target.toLocaleString()}</strong><span>還差 {shortfall.toLocaleString()} 分</span></div></> : <p>你完成了三階九回合。</p>}<strong>{state.totalScore.toLocaleString()}</strong><small>累計分數 · {state.coins} 幣</small><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker')}>查看紀錄</button></section></main>;
   }
 
-  return <main className={`pkr-game ${presentation.reducedMotion ? 'is-reduced-motion' : ''}`}>
+  return <main className={`game-frame pkr-game ${presentation.reducedMotion ? 'is-reduced-motion' : ''}`}>
     <TopNav navigate={navigate} />
     <PokerStatus message={phaseStatus} />
-    <header className="pkr-round-head">
+    <header className="game-stage game-stage--wide pkr-round-head">
       <div><span className="pkr-kicker">{opponent.display.name} · STAGE {state.stageIndex + 1}/{opponent.stages.length}</span><h1 ref={state.phase === 'round-intro' ? phaseHeadingRef : null} className="pkr-phase-anchor" tabIndex="-1">{ROUND_LABELS[round.type]}</h1><p>{rule ? `${rule.display.name}：${specialRuleDescription(rule.id)}` : '標準規則：選擇 1–5 張牌出牌或棄牌，達到目標分數即可過關。'}</p></div>
       <div className="pkr-score"><span>目前 / 目標</span><strong>{state.roundScore.toLocaleString()} <i>/</i> {round.target.toLocaleString()}</strong></div>
     </header>
-    <section className="pkr-metrics" aria-label="牌局狀態"><span><b>{state.coins}</b>幣</span><span className={presentation.discardCue ? 'is-drawing' : ''}><b>{state.zones.drawPile.length}</b>牌庫{presentation.discardCue && <small>補 {presentation.discardCue.drawnCardIds.length} 張</small>}</span><span><b>{state.actions.hands}</b>出牌</span><span><b>{state.actions.discards}</b>棄牌</span></section>
-    <section className="pkr-table" aria-label="撲克牌桌">
+    <section className="game-status game-stage game-stage--wide pkr-metrics" aria-label="牌局狀態"><span><b>{state.coins}</b>幣</span><span className={presentation.discardCue ? 'is-drawing' : ''}><b>{state.zones.drawPile.length}</b>牌庫{presentation.discardCue && <small>補 {presentation.discardCue.drawnCardIds.length} 張</small>}</span><span><b>{state.actions.hands}</b>出牌</span><span><b>{state.actions.discards}</b>棄牌</span></section>
+    <section className="game-stage game-stage--wide pkr-table" aria-label="撲克牌桌">
       <div className="pkr-section-title"><span>效果順序</span><small>由左至右</small></div>
       <ModifierStrip state={state} dispatch={dispatch} triggeredModifierIds={presentation.triggeredModifierIds} />
       {state.phase === 'round-intro' && <div className="pkr-intro"><span>{rule ? '特殊規則已啟用' : '準備完成'}</span><h2>{round.target.toLocaleString()} 分達標</h2><p>基本獎勵 {round.reward} 幣；剩餘出牌與利息在回合結算。</p><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => dispatch({ type: 'BEGIN_ROUND', now: Date.now() })}>開始回合</button></div>}
@@ -201,11 +201,11 @@ function ActivePokerGame({ initialState, navigate }) {
         <p className="pkr-feedback" id="pkr-action-feedback">{actionFeedback}</p>
       </>}
     </section>
-    {state.trace.length > 0 && <ScoreTrace trace={state.trace} cards={allCards} />}
-    <details className="pkr-sheet"><summary>牌型、牌面與牌庫說明</summary><p>牌庫共 52 張；目前抽牌堆 {state.zones.drawPile.length}、手牌 {state.zones.hand.length}、已出 {state.zones.played.length}、已棄 {state.zones.discarded.length}。</p><p>所選牌：{state.zones.hand.filter((card) => state.selection.includes(card.instanceId)).map((card) => `${card.rank}/${card.suit}`).join('、') || '無'}。高牌、一對、兩對、三條、順子、同花、葫蘆、四條、同花順皆可計分。</p></details>
+    <div className="game-stage game-stage--wide">{state.trace.length > 0 && <ScoreTrace trace={state.trace} cards={allCards} />}
+    <details className="pkr-sheet"><summary>牌型、牌面與牌庫說明</summary><p>牌庫共 52 張；目前抽牌堆 {state.zones.drawPile.length}、手牌 {state.zones.hand.length}、已出 {state.zones.played.length}、已棄 {state.zones.discarded.length}。</p><p>所選牌：{state.zones.hand.filter((card) => state.selection.includes(card.instanceId)).map((card) => `${card.rank}/${card.suit}`).join('、') || '無'}。高牌、一對、兩對、三條、順子、同花、葫蘆、四條、同花順皆可計分。</p></details></div>
   </main>;
 }
 
 function TopNav({ navigate }) {
-  return <nav className="pkr-nav"><button type="button" onClick={() => navigate('/poker')}>← 牌局首頁</button><button type="button" onClick={() => navigate('/')}>遊戲櫃</button></nav>;
+  return <nav className="game-topbar game-stage game-stage--wide pkr-nav" aria-label="牌局導覽"><button type="button" onClick={() => navigate('/poker')}>← 牌局首頁</button><button type="button" onClick={() => navigate('/')}>遊戲櫃</button></nav>;
 }

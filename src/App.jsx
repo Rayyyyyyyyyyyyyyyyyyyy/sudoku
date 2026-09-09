@@ -13,7 +13,7 @@ export default function App() {
   const [settings, toggleSetting] = useSettings();
 
   return (
-    <div className="sd-shell">
+    <div className="app-shell">
       <Routes location={location}>
         <Route path="/" element={<GameHub />} />
         <Route path="/sudoku" element={<Home settings={settings} toggleSetting={toggleSetting} />} />

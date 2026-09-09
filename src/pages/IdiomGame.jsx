@@ -46,31 +46,33 @@ export default function IdiomGame({ daily = false, settings }) {
   const marked = settings.idiomShowErrors ? wrongCells : new Set();
 
   return (
-    <div className="sd-game id-game">
-      <div className="sd-game__bar sd-width">
+    <main className="game-frame id-game">
+      <header className="game-topbar game-column">
         <button type="button" className="sd-btn sd-back" onClick={() => navigate('/idiom')}>
           ← 成語填字
         </button>
-        <div className="sd-game__title">
+        <h1 className="game-heading">
           {daily ? '每日一題' : config.name}
           <span className="id-game__meta">
             {puzzle.runs.length} 條 · {fmt(elapsed)}
             {reveals > 0 && ` · 揭示 ${reveals}`}
           </span>
-        </div>
-      </div>
+        </h1>
+      </header>
 
-      <IdiomBoard
-        puzzle={puzzle}
-        sel={sel}
-        charAt={game.charAt}
-        isLocked={game.isLocked}
-        wrongCells={marked}
-        revealed={game.state.revealed}
-        onSelect={game.select}
-      />
+      <section className="game-stage game-stage--board game-stage--idiom" aria-label="成語填字盤面">
+        <IdiomBoard
+          puzzle={puzzle}
+          sel={sel}
+          charAt={game.charAt}
+          isLocked={game.isLocked}
+          wrongCells={marked}
+          revealed={game.state.revealed}
+          onSelect={game.select}
+        />
+      </section>
 
-      <div className="id-actions sd-width">
+      <div className="game-controls game-column id-actions">
         <button
           type="button"
           className="sd-btn"
@@ -95,14 +97,14 @@ export default function IdiomGame({ daily = false, settings }) {
       <IdiomPool pool={puzzle.pool} freeSlots={freeSlots} disabled={solved} onPick={game.pick} />
 
       {full && !solved && (
-        <p className="id-note sd-width" role="status">
+        <p className="game-status game-column id-note" role="status">
           盤面填滿了，但還有位置不對。
           {!settings.idiomShowErrors && '（可在首頁打開「標示填錯的格子」）'}
         </p>
       )}
 
       {solved && (
-        <div className="id-done sd-width" role="status">
+        <div className="game-status game-column id-done" role="status">
           <strong>完成！</strong> 用時 {fmt(elapsed)}
           {reveals > 0 ? `，揭示 ${reveals} 格（不列入最佳時間）` : '，沒有使用揭示'}
           <button type="button" className="sd-btn" onClick={again}>
@@ -111,7 +113,7 @@ export default function IdiomGame({ daily = false, settings }) {
         </div>
       )}
 
-      <section className="id-runs sd-width">
+      <section className="game-column id-runs">
         <button
           type="button"
           className="id-runs__toggle"
@@ -136,6 +138,6 @@ export default function IdiomGame({ daily = false, settings }) {
           </div>
         )}
       </section>
-    </div>
+    </main>
   );
 }

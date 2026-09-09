@@ -24,7 +24,7 @@ export default function Board({ board, values, notes, sel, onSelect, settings })
   const sb = sel >= 0 ? Math.floor(sr / 3) * 3 + Math.floor(sc / 3) : -1;
 
   return (
-    <div className="sd-board sd-width">
+    <div className="sd-board" role="grid" aria-label="數獨棋盤">
       {values.map((val, i) => {
         const r = Math.floor(i / 9);
         const c = i % 9;
@@ -44,6 +44,8 @@ export default function Board({ board, values, notes, sel, onSelect, settings })
             className="sd-cell"
             style={cellStyle({ fixed, wrong, isSel, peer, same, r, c })}
             aria-label={`第 ${r + 1} 列第 ${c + 1} 行${val ? ` · ${val}` : ' · 空白'}`}
+            aria-selected={isSel}
+            role="gridcell"
             onClick={() => onSelect(i)}
           >
             {val ? (

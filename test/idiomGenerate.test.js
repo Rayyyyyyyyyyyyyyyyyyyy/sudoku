@@ -7,7 +7,7 @@ import { attachmentRejection, boundingBox, canAttach, latticeOccupancy, maximalS
 import { buildPlacementIndex, eligibleCharacters, eligibleIdioms, idiomsAt } from '../src/lib/idiom/corpus.js';
 import { IDIOM_DIFFICULTY_LEVELS, idiomDifficulty } from '../src/lib/idiom/difficulty.js';
 import { GROWTH_LIMITS, generateIdiomPuzzle, growLattice, mixIdiomSeed, selectClues } from '../src/lib/idiom/generate.js';
-import { seedRandom } from '../src/lib/poker/random.js';
+import { seedRandom } from '../src/lib/seededRandom.js';
 
 // 固定的小語料。引擎的所有測試都跑在這份手寫語料上，不依賴 build-time
 // 產生的 `src/data/idioms.js`，那份檔案由另一條工作線產出。

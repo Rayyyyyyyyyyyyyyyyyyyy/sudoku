@@ -94,7 +94,7 @@ by clue ratio, decoy ratio and frequency tier, which is the more meaningful axis
 - [x] 7.1 Add the third hub card with resume state, and test that the Sudoku and poker cards are unaffected whether or not idiom data exists.
 - [x] 7.2 Update `README.md` with the new routes, structure entries, and rules baseline.
 - [x] 7.3 Resolve the open questions in `design.md` on daily difficulty, assisted-record display, and the board-size cap, and record the decisions.
-- [ ] 7.4 Re-verify the `snippet`-graded citations in `docs/idiom-crossword-research.md` from primary sources when an environment with wider network egress is available, and upgrade or correct their grades.
+- [x] 7.4 Re-verify the `snippet`-graded citations in `docs/idiom-crossword-research.md` from primary sources when an environment with wider network egress is available, and upgrade or correct their grades.
 
 ### Layout verification (2026-09-06)
 
@@ -122,4 +122,3 @@ horizontal scrolling, so this is recorded rather than fixed.
 
 This is a manual measurement, not an automated test: jsdom performs no layout, and the
 repository has no end-to-end harness to add one to.
-

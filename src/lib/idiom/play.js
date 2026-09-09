@@ -137,7 +137,7 @@ export function idiomPlayReducer(state, action) {
       return revealCell(state, action.cell ?? state.sel);
 
     case 'restore':
-      return checkSolved({ ...action.state, puzzle: state.puzzle });
+      return checkSolved(action.state);
 
     default:
       return state;

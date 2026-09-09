@@ -1,13 +1,13 @@
 # 成語填字研究與規則設計
 
-研究日期：2026-09-06
+研究日期：2026-09-06；主要來源覆核：2026-09-09
 適用 OpenSpec 變更：`add-idiom-crossword`
 
 ## 結論
 
 成語填字沒有單一權威規則，市面上的「成語填字」其實是三種不同的遊戲共用一個名字。要先選定是哪一種，否則規格會自相矛盾：
 
-1. **縱橫填字（crossword lattice）**：盤面由縱橫交錯的四格詞條組成，交叉處共用一個字，玩家把散落的候選字填進空格。這是 App 市場上「成語填填字」類產品的主流玩法。
+1. **縱橫填字（crossword lattice）**：盤面由縱橫交錯的四格詞條組成，交叉處共用一個字，玩家把散落的候選字填進空格。本次直接查核的 App Store 與 Google Play「成語填填字」產品皆採這種玩法；研究沒有據此推論整體市場占比。
 2. **成語填空（cloze）**：單一成語挖掉 1–2 個字，從選項中選出正確的字。題目彼此獨立，沒有交叉限制。
 3. **成語 Wordle（漢兜類）**：猜一個四字成語，每次猜完用顏色回報字與讀音的正確程度。
 
@@ -17,23 +17,25 @@
 
 | 標記 | 意義 | 可否直接鎖進實作 |
 | --- | --- | --- |
-| `verified` | 已直接讀取原始頁面全文並確認 | 可 |
-| `snippet` | 僅取自搜尋結果摘要，原文未能讀取 | 否，實作前需補驗 |
+| `verified` | 已直接讀取原始頁面、官方文件、論文或原始碼並確認 | 可 |
 | `inferred` | 由二手介紹或同類產品行為推定 | 可，但需標記為可替換 |
 | `designed` | 本專案自行決定，外部無對應規則 | 可，需在 spec 說明理由 |
 
-### 本次研究的取材限制
+### 來源覆核範圍
 
-這個 session 的 egress 政策只放行 `github.com`，其餘網域對 CONNECT 一律回應 403（已由 agent proxy 的 `recentRelayFailures` 確認為 policy denial，非連線故障）。因此：
+2026-09-09 已在可直接讀取原文的環境重新查核關鍵來源。證據只涵蓋各來源明載的內容，不把產品文案、授權條款或演算法論文延伸成未寫出的結論：
 
-- **能直接讀到全文的只有 GitHub 上的六個 repo**，它們的結論標為 `verified`。
-- 維基百科、arXiv、教育部辭典網、App Store／Google Play、少數派、痞客邦等頁面全部被擋，相關結論只能取自搜尋結果摘要，一律標為 `snippet`。
-- 好消息是**沒有任何一項設計決策的唯一依據是 `snippet` 來源**。最關鍵的授權判斷來自直接讀取的 g0v README；`snippet` 來源全部只擔任佐證或規模估算。
-- 若要把 `snippet` 項目升級為 `verified`，需要在 egress 政策較寬的環境重跑，或由人工提供原文。
+| 來源 | 直接來源與存取日 | 本文採用的證據 | 限制 |
+| --- | --- | --- | --- |
+| Apple App Store、Google Play | [App Store 產品頁](https://apps.apple.com/tw/app/%E6%88%90%E8%AA%9E%E5%A1%AB%E5%A1%AB%E5%AD%97-%E6%88%90%E8%AA%9E%E6%8E%A5%E9%BE%8D%E7%9B%8A%E6%99%BA%E8%A7%A3%E8%AC%8E%E5%B0%8F%E9%81%8A%E6%88%B2/id1466180579)、[Google Play 產品頁](https://play.google.com/store/apps/details?id=com.wordpuzzle.chengyu&hl=zh_TW)，2026-09-09 | 交錯詞格、下方候選字、難度遞增、逐關解鎖、提示／求助 | 只代表這個被查核產品，不代表整體市場占比 |
+| 教育部語文成果網 | [公眾授權網](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/index.html)、[成語典使用說明](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/idiomsdict_10409.pdf)，2026-09-09 | CC BY-ND 3.0 TW、標示方式、個別條目不得改寫或簡化、發布版本 | 是否能只發布條目的單一欄位未被文件明說，本文不自行擴張授權解釋 |
+| 國家教育研究院 | [FAQ 第 2 頁](https://www.naer.edu.tw/PageFaq/go_page?page=2)，2026-09-09 | 正文 5,000 餘條、附錄 20,000 餘條、合計可查詢超過 25,000 條 | 這是官方概數，不用來取代特定下載檔的逐筆量測 |
+| 演算法論文 | [Filling Crosswords Is Very Hard](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ISAAC.2021.36)、[Conflict-Directed Backjumping Revisited](https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume14/chen01a.pdf)、[Automation Strategies for Unconstrained Crossword Puzzle Generation](https://arxiv.org/abs/2007.04663)，2026-09-09 | 固定盤面不重用詞的 NP-hard 結果、CSP 建模、回溯策略 | 三篇分別支持不同主張，不混為單一複雜度證明 |
+| Handle 原始碼 | [constants.ts](https://github.com/antfu/handle/blob/main/src/logic/constants.ts)、[types.ts](https://github.com/antfu/handle/blob/main/src/logic/types.ts)、[utils.ts](https://github.com/antfu/handle/blob/main/src/logic/utils.ts)，2026-09-09 | 四字、十次、exact／misplaced／none 等結果語意 | CSS theme token 不足以證明使用者看見的固定色名 |
 
-**Task 1 的覆核結果（2026-09-06）**：實作 corpus pipeline 時把三個資料來源整個 clone 下來直接讀檔，因此以下三項已由 `snippet` 升為 `verified`，其中兩項的原數字是錯的：
+**Task 1 的覆核結果（2026-09-06）**：實作 corpus pipeline 時把三個資料來源整個 clone 下來直接讀檔，其中兩項原數字需更正：
 
-| 項目 | 原記載（`snippet`） | 覆核後（`verified`） |
+| 項目 | 初次記載 | 覆核後（`verified`） |
 | --- | --- | --- |
 | 成語典正文筆數 | 5,123 條 | **5,450 筆**（四字且不重複者 5,270） |
 | THUOCL 成語表授權 | Apache-2.0 | **MIT** |
@@ -43,7 +45,7 @@
 
 ### 縱橫填字型（本專案採用）
 
-「成語填填字」類 App 的盤面由不同的橫豎空格組成，在已知文字的提示下，把下方的零散文字填入縱橫交錯的詞語空格中，組成正確的成語即過關；設計上採階梯闖關、難度遞增，並提供提示與求助功能。[App Store 成語填填字](https://apps.apple.com/tw/app/%E6%88%90%E8%AA%9E%E5%A1%AB%E5%A1%AB%E5%AD%97-%E6%88%90%E8%AA%9E%E6%8E%A5%E9%BE%8D%E7%9B%8A%E6%99%BA%E8%A7%A3%E8%AC%8E%E5%B0%8F%E9%81%8A%E6%88%B2/id1466180579)、[Google Play 成語填填字](https://play.google.com/store/apps/details?id=com.wordpuzzle.chengyu)（`snippet`／商店文案，原頁被 egress 政策擋下）
+「成語填填字」產品頁直接描述：盤面由橫豎空格組成，玩家依已知文字把下方零散候選字填入縱橫交錯的詞語空格；產品並明載難度逐步提高、關卡逐步解鎖，以及提示或好友求助功能。[App Store 成語填填字](https://apps.apple.com/tw/app/%E6%88%90%E8%AA%9E%E5%A1%AB%E5%A1%AB%E5%AD%97-%E6%88%90%E8%AA%9E%E6%8E%A5%E9%BE%8D%E7%9B%8A%E6%99%BA%E8%A7%A3%E8%AC%8E%E5%B0%8F%E9%81%8A%E6%88%B2/id1466180579)、[Google Play 成語填填字](https://play.google.com/store/apps/details?id=com.wordpuzzle.chengyu&hl=zh_TW)（`verified`／2026-09-09 直接查核商店產品頁）
 
 線上題庫型產品會提供橫縱向提示，玩家可自選要顯示哪一格的答案，也可以單字或單詞為單位求助。[線上版成語填字遊戲](https://briian.com/79061/)、[Holyfree 成語填字](https://www.holyfree.net/cw/)（`inferred`／二手介紹）
 
@@ -53,15 +55,17 @@
 - 難度以關卡遞增，而不是以時間壓力呈現。
 - 提示分層：先給單字，再給整個詞條。
 
-### 傳統填字遊戲的通則
+### 結構來源的限制
 
-填字遊戲給出一個矩形表格，分割成大小相同的方格，白格組成長度不等的交叉行列，玩家依提示把答案填入，每個白格只能填一個字；提示分橫向與縱向兩類。市面上絕大多數的中文填字遊戲以成語或俚語為題。[維基百科：填字遊戲](https://zh.wikipedia.org/zh-tw/%E5%A1%AB%E5%AD%97%E6%B8%B8%E6%88%8F)（`snippet`）
+本專案所需的結構證據只取自上列已直接查核的商店產品頁：橫豎詞格彼此交錯、每格容納一個候選字。產品頁不支持對所有中文填字遊戲題材或市場占比的概括，因此原先「中文填字大多使用成語或俚語」的說法已移除。（`verified`／2026-09-09）
 
 英文填字的黑格對稱慣例（180 度旋轉對稱、無孤立白格）源自報紙排版傳統，對成語盤面沒有意義：成語一律四字，盤面是四格線段的網狀連接，不是可變長度的詞彙填充。**不採用對稱慣例。**（`designed`）
 
 ### 生成演算法
 
-填字生成在一般情況下是 NP-Complete：每個交叉格都對兩個詞產生約束，約束在盤面上相乘造成組合爆炸。標準解法是把它視為 CSP，每個未知詞是一個變數、值域是詞典，二元約束要求交叉處字元一致且同一解中詞不重複，並以回溯法求解。填盤與解盤可以用同一套演算法。[Automation Strategies for Unconstrained Crossword Puzzle Generation](https://arxiv.org/pdf/2007.04663)、[Algorithmically Generated Crosswords](https://blog.eyas.sh/2025/12/algorithmic-crosswords/)（`snippet`／論文與工程文章；NP-Complete 與 CSP 表述為填字生成的通識結論，但本次未能讀取原文）
+已知較精確的複雜度結論是：給定固定格局與詞典、每詞不可重用的填字問題，即使格局圖受嚴格結構限制，仍為 **NP-hard**；本文不把它改寫成所有「填字生成」問題皆為 NP-Complete。[Filling Crosswords Is Very Hard](https://drops.dagstuhl.de/entities/document/10.4230/LIPIcs.ISAAC.2021.36)（`verified`／ISAAC 2021 原始論文）
+
+工程上可把固定格局填詞建模為 CSP：每個未知詞槽是變數、值域是詞典，二元約束要求交叉字一致，並加上詞不得重用的限制。[Conflict-Directed Backjumping Revisited](https://www.cs.cmu.edu/afs/cs/project/jair/pub/volume14/chen01a.pdf) 第 5.3 節（`verified`／JAIR 原始論文）。回溯是另一個分開的實作策略來源，[Automation Strategies for Unconstrained Crossword Puzzle Generation](https://arxiv.org/abs/2007.04663) 明述以後進先出與貪婪選擇進行 backtracking（`verified`／原始論文）。
 
 **成語盤面比一般填字容易得多**，因為所有詞長固定為 4：
 
@@ -75,19 +79,21 @@
 
 ### 教育部《成語典》（採用）
 
-**正文實際筆數（task 1.1 覆核，`verified`）**：直接讀取資料檔 `dict_idioms_2020_20240926.xls`（2020 年版，檔案日期 2024-09-26）的既有 JSON 轉換 `database.json`，取自 [`c5b5eae` of jfsblog/Idiom-Search-Engine](https://github.com/jfsblog/Idiom-Search-Engine/tree/c5b5eae731fb3f4e565f802aa91be354cb91bcd9)，得到 **5,450 筆**正文條目，不是先前引用的 5,123 條。5,123 這個數字取自搜尋摘要（國家教育研究院 FAQ），未經原檔覆核，**予以更正**；本節的筆數結論等級由 `snippet` 升為 `verified`，來源改記為資料檔本身。
+**正文實際筆數（task 1.1 覆核，`verified`）**：直接讀取資料檔 `dict_idioms_2020_20240926.xls`（2020 年版，檔案日期 2024-09-26）的既有 JSON 轉換 `database.json`，取自 [`c5b5eae` of jfsblog/Idiom-Search-Engine](https://github.com/jfsblog/Idiom-Search-Engine/tree/c5b5eae731fb3f4e565f802aa91be354cb91bcd9)，得到 **5,450 筆**正文條目。這是特定來源檔的逐筆量測，不是官方網站對所有可查內容的統計。
 
 5,450 筆中字面恰為四字者 **5,271 筆**，其餘 179 筆為三字（124）、五字（23）、六字（11）、七字（7）、九字（13）、十字（1），例如「依樣畫葫蘆」「不入虎穴，焉得虎子」「破天荒」。另有 1 筆重複字面（「含沙射影」）。剔除後入庫 **5,270 條**。
 
-附錄二萬三千餘條、合計 28,508 條的說法仍僅有搜尋摘要，未取用亦未覆核。[國家教育研究院 FAQ](https://www.naer.edu.tw/PageFaq/go_page?page=2)、[教育部《成語典》資料下載](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/dict_idiomsdict_download.html)（`snippet`；本專案不採用附錄，見「待決事項」）
+[國家教育研究院 FAQ](https://www.naer.edu.tw/PageFaq/go_page?page=2) 的官方概數為：正文收錄 **5,000 餘條**、附錄收錄 **20,000 餘條**，合計可查詢 **超過 25,000 條**（`verified`／2026-09-09 直接查核）。本文已移除先前無法由原頁支持的精確總數；本專案仍不採用附錄，見「待決事項」。
 
-授權為 **創用 CC 姓名標示－禁止改作 3.0 臺灣**。教育部對「禁止改作」的解釋是：限制只及於文本資料本身，**不限制格式轉換與後續應用**。g0v 萌典系列即依此解釋把辭典轉為 JSON 發布，格式轉換與重新整理的編輯著作權另以 CC0 釋出。使用時必須標示原著作人（教育部）、維護單位（國家教育研究院）與版本。[g0v/moedict-data](https://github.com/g0v/moedict-data)、[教育部國語辭典公眾授權網](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/index.html)（g0v README `verified`／已直接讀取；教育部公眾授權網頁面 `snippet`／被擋。授權判斷以 g0v README 明載的教育部解釋為準）
+[教育部國語辭典公眾授權網](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/index.html) 於 2026-09-09 公布的《成語典》最新版為 **2020_20260625**，授權為 **創用 CC 姓名標示－禁止改作 3.0 臺灣**，允許重製、散布及傳輸（包含商業利用），但不得改作，且須依使用說明標示教育部、辭典名稱、版本與網址。[官方使用說明](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/idiomsdict_10409.pdf) 另明載個別條目的成語、注音、釋義、典源、書證及用法說明不得修改或簡化；依官方對照表轉換字碼，或不影響完整條目內容的調整，才可能不構成改作（`verified`／2026-09-09）。
+
+本專案目前只發布成語字面與自行計算的 tier。官方文件沒有明說「只發布單一欄位」是否屬允許利用，因此本文不再宣稱可任意篩選欄位；若擴充或重新發布完整資料，應先依官方條款另行確認。g0v 的 JSON 轉換可作工程參考，但不能取代官方授權文字。[g0v/moedict-data](https://github.com/g0v/moedict-data)
 
 **這對實作有三個硬性約束：**
 
-- 可以轉成 JS 陣列、可以篩選子集、可以只取成語字面而不取釋義。
+- 可以依官方明載範圍重製、散布與傳輸；格式或字碼調整必須維持個別條目完整內容，本文不推定單欄位摘錄的法律效果。
 - **不可以改寫釋義文字**。若要在遊戲內顯示釋義，必須逐字照錄，不可為了排版而濃縮或改寫。
-- 必須在 `THIRD_PARTY_NOTICES.md` 加上教育部、國教院與版本標示，比照現有 Sudoku Exchange Puzzle Bank 的作法。
+- 必須在 `THIRD_PARTY_NOTICES.md` 依官方格式標示教育部、辭典名稱、版本與網址，比照現有 Sudoku Exchange Puzzle Bank 的作法。
 
 已有第三方完成格式轉換可直接參考：[wastu01/chinese_dictionary_collection](https://github.com/wastu01/chinese_dictionary_collection)（成語典轉 JSON，明列 CC BY-ND 3.0 TW 與 CC0 雙層授權）、[jfsblog/Idiom-Search-Engine](https://github.com/jfsblog/Idiom-Search-Engine)（僅取成語典正文，排除重編國語辭典的四字常用詞；未載明授權）。
 
@@ -141,7 +147,7 @@
 
 ## 三、為什麼不先做 Wordle 型
 
-漢兜（[antfu/handle](https://github.com/antfu/handle)，MIT）給十次機會猜一個四字詞，每格的**字、聲母、韻母、聲調各自獨立著色**：青色表示該元素在答案中且位置正確，橙色表示在答案中但位置不對。[汉兜](https://handle.antfu.me)（`snippet`；antfu 的 README 已直接讀取但未載明次數與顏色規則，這兩項僅有搜尋摘要）另一個開源實作 [AllanChain/chinese-wordle](https://github.com/AllanChain/chinese-wordle)（BSD-3-Clause）以聲母韻母為比對單位，並在雙方聲母韻母都被猜中時額外提示組合，答案取自 THUOCL 人工篩選、驗證表取自漢典並以 pypinyin 驗證。
+漢兜（[antfu/handle](https://github.com/antfu/handle)，MIT）的原始碼把答案長度固定為四字、嘗試上限設為十次；比對結果型別包含 `exact`、`misplaced`、`none` 與內部使用的 `deleted`，其中 `exact` 表示同位置命中，`misplaced` 表示仍存在於尚未配對的答案元素，全部為 `exact` 才通過。[constants.ts](https://github.com/antfu/handle/blob/main/src/logic/constants.ts)、[types.ts](https://github.com/antfu/handle/blob/main/src/logic/types.ts)、[utils.ts](https://github.com/antfu/handle/blob/main/src/logic/utils.ts)（`verified`／2026-09-09 直接查核原始碼）。元件以 theme token 呈現狀態，原始碼不足以支持固定的人類色名，故本文不聲稱青色或橙色規則。另一個開源實作 [AllanChain/chinese-wordle](https://github.com/AllanChain/chinese-wordle)（BSD-3-Clause）以聲母韻母為比對單位，並在雙方聲母韻母都被猜中時額外提示組合，答案取自 THUOCL 人工篩選、驗證表取自漢典並以 pypinyin 驗證。
 
 這個玩法本身很適合通勤，但**成本全部集中在讀音資料**：
 
@@ -161,7 +167,7 @@
 | --- | --- | --- |
 | 詞條長度 | 一律 4 格 | `verified`／成語定義 |
 | 方向 | 只有向右與向下 | `designed` |
-| 交叉 | 兩個垂直詞條共用一格，該格同時屬於一橫一豎 | `snippet`／填字通則 |
+| 交叉 | 兩個垂直詞條共用一格，該格同時屬於一橫一豎 | `verified`／商店產品頁直接描述縱橫交錯詞格 |
 | 平行相鄰 | 兩個平行詞條之間至少隔一個空格 | `designed`，避免產生非預期的相鄰字串 |
 | 盤面尺寸 | 裁切到內容的外接矩形，最大 9×9 | `designed`，360 CSS px 下每格 ≥ 36px |
 | 對稱 | 不要求 | `designed`，見上文 |

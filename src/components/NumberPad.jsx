@@ -7,7 +7,7 @@ export default function NumberPad({ values, pencil, onPlace }) {
   });
 
   return (
-    <div className="sd-pad sd-width">
+    <div className="game-controls game-column sd-pad" aria-label="數字鍵盤">
       {DIGITS.map((d) => {
         const left = 9 - (used[d] || 0);
         const out = left <= 0;

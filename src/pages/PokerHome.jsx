@@ -30,11 +30,18 @@ export default function PokerHome() {
   };
 
   return (
-    <main className="pkr-landing">
-      <nav className="pkr-nav"><button type="button" onClick={() => navigate('/')}>← 遊戲櫃</button><span>POCKET TABLE / 01</span></nav>
-      <header className="pkr-landing__hero">
-        <span className="pkr-kicker">SEE THE HAND. SHAPE THE SCORE.</span>
-        <h1>通勤牌局</h1>
+    <main className="game-home">
+      <header className="game-home__header">
+        <div className="game-brand">
+          <span className="sd-diamond" />
+          <h1 className="game-title">通勤牌局</h1>
+        </div>
+        <span className="game-kicker">Pocket Table</span>
+      </header>
+      <nav className="game-home__nav pkr-nav" aria-label="返回遊戲櫃"><button type="button" onClick={() => navigate('/')}>← 遊戲櫃</button><span>POCKET TABLE / 01</span></nav>
+      <section className="game-card game-card--primary pkr-landing__hero" aria-labelledby="poker-start-title">
+        <span className="game-kicker pkr-kicker">SEE THE HAND. SHAPE THE SCORE.</span>
+        <h2 id="poker-start-title">穿過三階九回合</h2>
         <p>在有限牌庫裡組成牌型，安排效果順序，穿過三階九回合。</p>
         <div className="pkr-landing__actions">
           {active && <button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker/play')}>繼續牌局</button>}
@@ -44,14 +51,18 @@ export default function PokerHome() {
         {save.status === 'incompatible' && (
           <div className="pkr-warning" role="alert"><strong>舊牌局無法安全續玩</strong><p>{save.reason} 個人紀錄仍保留。</p><button type="button" onClick={discardIncompatible}>清除舊牌局，再開始</button></div>
         )}
-      </header>
-      <section className="pkr-records" aria-label="牌局紀錄">
-        <div><strong>{records.runsStarted}</strong><span>開始局數</span></div>
-        <div><strong>{records.runsWon}</strong><span>獲勝局數</span></div>
-        <div><strong>{records.highestCompletedScore}</strong><span>最高總分</span></div>
-        <div><strong>{records.winStreak}</strong><span>連勝</span></div>
       </section>
-      <details className="pkr-guide"><summary>規則與牌型表</summary><p>每回合抽到最多 {POKER_RULES.handSize.value} 張；每次選 1–5 張出牌或棄牌。計分為籌碼 × 倍率，達標會提早結束回合。</p><div className="pkr-guide__grid">{Object.entries(POKER_RULES.handValues).map(([id, entry]) => <span key={id}><b>{handLabel(id)}</b>{entry.value.chips} × {entry.value.mult}</span>)}</div><p>回合獎勵包含基本獎勵、剩餘出牌次數及每 5 幣 1 幣的利息（最多 5）。所有機制隨牌局自動保存。</p></details>
+      <section className="game-section" aria-labelledby="poker-records-title">
+        <h2 className="game-kicker" id="poker-records-title">牌局紀錄</h2>
+        <div className="game-stats pkr-records">
+          <div className="game-stat"><strong>{records.runsStarted}</strong><span>開始局數</span></div>
+          <div className="game-stat"><strong>{records.runsWon}</strong><span>獲勝局數</span></div>
+          <div className="game-stat"><strong>{records.highestCompletedScore}</strong><span>最高總分</span></div>
+          <div className="game-stat"><strong>{records.winStreak}</strong><span>連勝</span></div>
+        </div>
+      </section>
+      <details className="game-card pkr-guide"><summary>規則與牌型表</summary><p>每回合抽到最多 {POKER_RULES.handSize.value} 張；每次選 1–5 張出牌或棄牌。計分為籌碼 × 倍率，達標會提早結束回合。</p><div className="pkr-guide__grid">{Object.entries(POKER_RULES.handValues).map(([id, entry]) => <span key={id}><b>{handLabel(id)}</b>{entry.value.chips} × {entry.value.mult}</span>)}</div><p>回合獎勵包含基本獎勵、剩餘出牌次數及每 5 幣 1 幣的利息（最多 5）。所有機制隨牌局自動保存。</p></details>
+      <footer className="game-footer">本機保存 · 牌型計分 · 效果排序</footer>
     </main>
   );
 }

@@ -1,7 +1,7 @@
 /**
  * 由詞長出盤面：晶格生長、挖空、候選字池、唯一解修補。
  *
- * 全程用 `src/lib/poker/random.js` 的可序列化 xorshift32，狀態顯式傳遞，
+ * 全程用 `src/lib/seededRandom.js` 的可序列化 xorshift32，狀態顯式傳遞，
  * 模組內禁用 `Math.random()`（由 `test/idiomGenerate.test.js` 掃描原始碼驗證）。
  * 同一個 seed 與難度必然產出同一個盤面、同一組提示字與同一個候選字池。
  *
@@ -17,7 +17,7 @@
  *   6. 加入難度對應比例的干擾字，加完再驗一次唯一解。
  */
 
-import { choose, randomInt, seedRandom, shuffle } from '../poker/random.js';
+import { choose, randomInt, seedRandom, shuffle } from '../seededRandom.js';
 import { MAX_DIMENSION, canAttach, latticeContext, normaliseBoard, perpendicular, runCellPositions } from './board.js';
 import { IDIOM_LENGTH, eligibleCharacters, eligibleIdioms, idiomsAt } from './corpus.js';
 import { idiomDifficulty } from './difficulty.js';

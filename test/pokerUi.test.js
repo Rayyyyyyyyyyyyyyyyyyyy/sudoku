@@ -19,7 +19,7 @@ test('Sudoku storage keys and direct-route implementation remain unchanged', asy
   assert.match(stats, /sudoku-drill-v1/);
 });
 
-test('portrait poker UI exposes native keyboard controls, state markers, 44px targets, reduced motion, and no page overflow', async () => {
+test('portrait poker UI exposes native keyboard controls, state markers, 44px targets, reduced motion, and a bounded wide stage', async () => {
   const [card, game, css] = await Promise.all([
     readFile(new URL('../src/components/PokerCard.jsx', import.meta.url), 'utf8'),
     readFile(new URL('../src/pages/PokerGame.jsx', import.meta.url), 'utf8'),
@@ -39,7 +39,8 @@ test('portrait poker UI exposes native keyboard controls, state markers, 44px ta
   assert.doesNotMatch(game, /<code>\{event\.type\}<\/code>/);
   assert.match(css, /min-height:\s*44px/);
   assert.match(css, /min-width:\s*44px/);
-  assert.match(css, /overflow-x:\s*clip/);
+  assert.match(game, /game-stage--wide/);
+  assert.match(css, /\.game-stage--wide[^}]*--game-wide-max/);
   assert.match(css, /pkr-trace__copy/);
   assert.doesNotMatch(css, /pkr-trace li span \{ display:\s*none/);
   assert.match(css, /@media \(max-width: 640px\)/);

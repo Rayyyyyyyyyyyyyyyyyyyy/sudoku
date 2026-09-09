@@ -17,6 +17,9 @@ export const SETTING_LABELS = {
   idiomShowErrors: '成語填字：標示填錯的格子'
 };
 
+export const SUDOKU_SETTING_KEYS = ['showErrors', 'highlightPeers', 'autoCleanNotes'];
+export const IDIOM_SETTING_KEYS = ['idiomShowErrors'];
+
 function read() {
   try {
     const raw = localStorage.getItem(KEY);

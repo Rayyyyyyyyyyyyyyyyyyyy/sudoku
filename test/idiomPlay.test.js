@@ -154,13 +154,14 @@ test('isFull reports a filled board that may still be wrong', () => {
   assert.equal(isFull(state), true);
 });
 
-test('restore keeps the puzzle and recomputes completion', () => {
-  const state = createPlayState(puzzleAt(0, 7919));
-  const solved = solve(state);
-  const restored = idiomPlayReducer(state, {
+test('restore uses the stored puzzle after generator drift and recomputes completion', () => {
+  const generated = createPlayState(puzzleAt(0, 7920));
+  const stored = solve(createPlayState(puzzleAt(0, 7919)));
+  const restored = idiomPlayReducer(generated, {
     type: 'restore',
-    state: { ...solved, solved: false, puzzle: null }
+    state: { ...stored, solved: false }
   });
   assert.equal(restored.solved, true, 'completion is derived, not trusted from the snapshot');
-  assert.equal(restored.puzzle, state.puzzle);
+  assert.equal(restored.puzzle, stored.puzzle, 'the stored puzzle is authoritative');
+  assert.notEqual(restored.puzzle, generated.puzzle, 'current generation must not replace the stored puzzle');
 });

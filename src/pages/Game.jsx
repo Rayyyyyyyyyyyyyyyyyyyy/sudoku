@@ -41,19 +41,19 @@ export default function Game({ daily = false, settings }) {
   }, [daily, level, navigate]);
 
   return (
-    <div className="sd-game">
-      <div className="sd-game__bar sd-width">
+    <main className="game-frame">
+      <header className="game-topbar game-column">
         <button type="button" className="sd-btn sd-back" onClick={() => navigate('/sudoku')}>
           ← 數獨首頁
         </button>
-        <div className="sd-game__title">
+        <h1 className="game-heading">
           {LEVELS[level].name}
           {board ? ` · SE ${board.rating}` : ''}
           {daily ? ' · 每日一題' : ''} · {fmt(elapsed)}
-        </div>
-      </div>
+        </h1>
+      </header>
 
-      <div className="sd-board-wrap">
+      <section className="game-stage game-stage--board sd-board-wrap" aria-label="數獨盤面">
         {board && values ? (
           <Board
             board={board}
@@ -64,7 +64,7 @@ export default function Game({ daily = false, settings }) {
             settings={settings}
           />
         ) : (
-          <div className="sd-loading sd-width">產生題目中…</div>
+          <div className="sd-loading">產生題目中…</div>
         )}
 
         {solved && (
@@ -84,11 +84,11 @@ export default function Game({ daily = false, settings }) {
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       {values && <NumberPad values={values} pencil={pencil} onPlace={game.place} />}
 
-      <div className="sd-tools sd-width">
+      <div className="game-controls game-column sd-tools">
         <button
           type="button"
           className={'sd-btn sd-tool' + (pencil ? ' sd-tool--on' : '')}
@@ -104,7 +104,7 @@ export default function Game({ daily = false, settings }) {
         </button>
       </div>
 
-      <div className="sd-hint">鍵盤：1–9 填入 · 0/Backspace 清除 · 方向鍵移動 · N 切換註記</div>
-    </div>
+      <div className="game-status game-column sd-hint">鍵盤：1–9 填入 · 0/Backspace 清除 · 方向鍵移動 · N 切換註記</div>
+    </main>
   );
 }
