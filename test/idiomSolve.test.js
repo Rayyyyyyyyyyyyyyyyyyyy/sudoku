@@ -5,7 +5,7 @@ import { buildPlacementIndex } from '../src/lib/idiom/corpus.js';
 import { IDIOM_DIFFICULTY_LEVELS, idiomDifficulty } from '../src/lib/idiom/difficulty.js';
 import { addDecoys, generateIdiomPuzzle, growLattice, repairUniqueness, selectClues } from '../src/lib/idiom/generate.js';
 import { countIdiomSolutions, hasUniqueSolution } from '../src/lib/idiom/solve.js';
-import { seedRandom } from '../src/lib/poker/random.js';
+import { seedRandom } from '../src/lib/seededRandom.js';
 
 // 與 idiomGenerate.test.js 相同的手寫語料，測試不依賴 build-time 產生的資料檔。
 const FIXTURE = [

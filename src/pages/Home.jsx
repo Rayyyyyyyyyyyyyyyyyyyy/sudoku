@@ -1,5 +1,10 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  clearGameSession,
+  gameSessionPath,
+  loadAnyGameSession
+} from '../lib/gameSession';
 import { DAILY_LEVEL, LEVELS } from '../lib/sudoku';
 import { dayKey, emptyStats, fmt, loadStats, persistStats } from '../lib/stats';
 import { SETTING_LABELS } from '../lib/settings';
@@ -7,6 +12,8 @@ import { SETTING_LABELS } from '../lib/settings';
 export default function Home({ settings, toggleSetting }) {
   const navigate = useNavigate();
   const [stats, setStats] = useState(loadStats);
+  const activeSession = useMemo(() => loadAnyGameSession(), []);
+  const resumePath = activeSession ? gameSessionPath(activeSession) : null;
 
   const today = dayKey();
   const dailyMs = stats.daily && stats.daily[today];
@@ -14,6 +21,20 @@ export default function Home({ settings, toggleSetting }) {
   const resetStats = useCallback(() => {
     if (confirm('清除所有紀錄？')) setStats(persistStats(emptyStats()));
   }, []);
+
+  const startNewGame = useCallback(
+    (path) => {
+      if (
+        activeSession &&
+        !confirm('開始新題目會放棄目前未完成的進度。確定要繼續嗎？')
+      ) {
+        return;
+      }
+      if (activeSession) clearGameSession();
+      navigate(path);
+    },
+    [activeSession, navigate]
+  );
 
   return (
     <div className="sd-home">
@@ -28,6 +49,25 @@ export default function Home({ settings, toggleSetting }) {
         ← 遊戲櫃
       </button>
 
+      {activeSession && resumePath && (
+        <section className="sd-resume" aria-label="未完成的數獨">
+          <div className="sd-resume__meta">
+            <strong>有未完成的題目</strong>
+            <span>
+              {LEVELS[activeSession.level]?.name ?? `難度 ${activeSession.level + 1}`}
+              {activeSession.isDaily && ' · 每日一題'}
+            </span>
+          </div>
+          <button
+            type="button"
+            className="sd-btn sd-btn--primary"
+            onClick={() => navigate(resumePath)}
+          >
+            繼續
+          </button>
+        </section>
+      )}
+
       <div className="sd-daily">
         <div className="sd-daily__meta">
           <span className="sd-daily__date">{today.replace(/-/g, ' / ')}</span>
@@ -36,7 +76,7 @@ export default function Home({ settings, toggleSetting }) {
             {dailyMs ? '已完成 · ' + fmt(dailyMs) : `${LEVELS[DAILY_LEVEL].name}難度 · 每天換一題`}
           </span>
         </div>
-        <button type="button" className="sd-btn sd-btn--primary" onClick={() => navigate('/daily')}>
+        <button type="button" className="sd-btn sd-btn--primary" onClick={() => startNewGame('/daily')}>
           {dailyMs ? '再挑戰' : '開始'}
         </button>
       </div>
@@ -48,7 +88,7 @@ export default function Home({ settings, toggleSetting }) {
             key={level.name}
             type="button"
             className={'sd-btn sd-level' + (i === LEVELS.length - 1 ? ' sd-level--expert' : '')}
-            onClick={() => navigate(`/play/${i}`)}
+            onClick={() => startNewGame(`/play/${i}`)}
           >
             <span className="sd-level__left">
               <span className="sd-level__name">{level.name}</span>

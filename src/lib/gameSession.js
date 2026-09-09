@@ -66,6 +66,11 @@ export function loadAnyGameSession(storage = defaultStorage()) {
   }
 }
 
+export function gameSessionPath(session) {
+  if (!validSession(session)) return null;
+  return session.isDaily ? '/daily' : `/play/${session.level}?seed=${session.seed}`;
+}
+
 export function persistGameSession(session, storage = defaultStorage()) {
   if (!storage || !validSession(session)) return;
   try {

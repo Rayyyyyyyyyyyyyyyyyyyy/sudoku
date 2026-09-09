@@ -1,7 +1,7 @@
 # 通勤遊戲櫃
 
 原本是一份 6.1 MB 的單檔 artifact bundle(base64 + gzip 塞在 `<script type="__bundler/manifest">` 裡),
-現在改寫成 Vite + React 的離線 SPA。既有數獨玩法、鍵盤操作與 localStorage 格式維持不變，
+現在改寫成 Vite + React、具離線快取的 SPA。既有數獨玩法、鍵盤操作與 localStorage 格式維持不變，
 並新增一套以有限牌庫、牌型計分、效果順序與回合經濟為核心的原創「通勤牌局」，
 以及一款以教育部《成語典》為題庫、確定性出題並保證唯一解的「成語填字」。
 
@@ -14,6 +14,17 @@ npm run build    # 產出 dist/
 npm run preview  # 預覽 production build
 npm test         # 全部 Node engine、資料、持久化與回歸測試
 ```
+
+## 離線使用
+
+production build 會產生同源的 `service-worker.js`。第一次以網路成功開啟部署完成的網站後，
+service worker 會預先快取該版本的 HTML、JavaScript、CSS、題庫與本機靜態資產；安裝完成後，
+重新開啟已完成快取的網址即可離線遊玩。開發伺服器不會註冊 service worker。
+
+離線能力以「至少成功載入並安裝過一次」為前提，從未開啟過的部署網址無法在離線時首次安裝。
+部署服務必須以 HTTPS（localhost 除外）提供網站，且不能阻擋 `service-worker.js` 或 precache
+清單內的檔案。新版 service worker 啟用時只清除本應用程式的舊版 Cache Storage，
+不會清除 localStorage 進度或同源其他應用程式的 cache。
 
 ## 路由
 
@@ -83,7 +94,8 @@ src/
 - 原本寫死在 artifact 編輯器裡的三個參數(標示錯誤、highlight 同列同行同宮、自動清註記)
   變成首頁的「玩法設定」,存在 localStorage。
 - 盤面狀態改用 reducer,不再從 closure 讀舊的 `values`,連續快速輸入不會掉格。
-- 字體改用 Google Fonts 連結(原版把 woff2 全部 inline 成 base64,佔了那 6 MB 的大半)。
+- 字體改用作業系統內建字型堆疊，不需要下載遠端字型（原版把 woff2 全部 inline 成 base64，
+  佔了那 6 MB 的大半）。
 
 `sudoku-drill-v1` 這個 localStorage key 沒有變,舊的紀錄會直接沿用。
 未完成題目的 seed、輸入、註記和計時起點也會保存，完整重載後可接著作答。

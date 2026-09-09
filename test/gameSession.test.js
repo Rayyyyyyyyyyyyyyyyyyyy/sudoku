@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { clearGameSession, loadGameSession, persistGameSession } from '../src/lib/gameSession.js';
+import {
+  clearGameSession,
+  gameSessionPath,
+  loadGameSession,
+  persistGameSession
+} from '../src/lib/gameSession.js';
 
 function memoryStorage() {
   const data = new Map();
@@ -45,4 +50,10 @@ test('ignores malformed saved data and can clear a completed game', () => {
   persistGameSession(session(), storage);
   clearGameSession(storage);
   assert.equal(loadGameSession({ level: 2, seed: 123456, isDaily: false }, storage), null);
+});
+
+test('reconstructs the exact continuation route from a compatible session', () => {
+  assert.equal(gameSessionPath(session()), '/play/2?seed=123456');
+  assert.equal(gameSessionPath(session({ isDaily: true })), '/daily');
+  assert.equal(gameSessionPath({ level: 2, seed: 123456, isDaily: false }), null);
 });

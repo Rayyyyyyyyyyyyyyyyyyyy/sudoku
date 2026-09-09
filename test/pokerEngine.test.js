@@ -6,6 +6,7 @@ import { interestFor } from '../src/lib/poker/economy.js';
 import { assertRegisteredHandlers, resolveScoreOperations, scoreHand, updateModifiersAfterDiscard } from '../src/lib/poker/effects.js';
 import { evaluateHand } from '../src/lib/poker/evaluate.js';
 import { nextRandom, seedRandom, shuffle } from '../src/lib/poker/random.js';
+import * as sharedRandom from '../src/lib/seededRandom.js';
 
 const cards = (...codes) => codes.map((code, index) => cardFromCode(code, `t${index}`));
 
@@ -22,6 +23,15 @@ test('serialized PRNG produces identical streams and resumes at the exact next v
   const saved = JSON.parse(JSON.stringify(a));
   assert.deepEqual(nextRandom(a), nextRandom(saved));
   assert.deepEqual(shuffle([1, 2, 3, 4], seedRandom(9)), shuffle([1, 2, 3, 4], seedRandom(9)));
+});
+
+test('the poker compatibility boundary exposes the unchanged shared PRNG stream', () => {
+  assert.deepEqual(seedRandom(42), sharedRandom.seedRandom(42));
+  assert.deepEqual(nextRandom(seedRandom(42)), sharedRandom.nextRandom(sharedRandom.seedRandom(42)));
+  assert.deepEqual(
+    shuffle([1, 2, 3, 4], seedRandom(9)),
+    sharedRandom.shuffle([1, 2, 3, 4], sharedRandom.seedRandom(9))
+  );
 });
 
 test('card transitions keep all 52 unique instances in exactly one explicit zone', () => {
