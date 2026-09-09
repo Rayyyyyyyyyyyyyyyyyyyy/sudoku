@@ -7,7 +7,10 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "npm run test:engine && npm run test:ui",
+    "test": "npm run test:engine && npm run test:rpg && npm run test:ui",
+    "typecheck": "tsc -p tsconfig.rpg.json",
+    "test:rpg": "vitest run --config vitest.rpg.config.js",
+    "rpg:text": "node --experimental-strip-types scripts/exportRpgStory.mjs",
     "test:engine": "node --test test/*.test.js",
     "test:ui": "vitest run --config vitest.config.js"
   },
@@ -22,6 +25,7 @@
     "@testing-library/user-event": "^14.6.6",
     "@vitejs/plugin-react": "^4.3.4",
     "jsdom": "^29.1.1",
+    "typescript": "^7.0.2",
     "vite": "^5.4.11",
     "vitest": "^4.1.11"
   }

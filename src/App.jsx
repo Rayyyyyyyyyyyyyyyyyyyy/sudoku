@@ -6,6 +6,7 @@ import PokerHome from './pages/PokerHome';
 import PokerGame from './pages/PokerGame';
 import IdiomHome from './pages/IdiomHome';
 import IdiomGame from './pages/IdiomGame';
+import RpgGame from './pages/RpgGame';
 import { useSettings } from './lib/settings';
 
 export default function App() {
@@ -31,6 +32,7 @@ export default function App() {
         <Route path="/idiom/daily" element={<IdiomGame key="idiom-daily" daily settings={settings} />} />
         <Route path="/poker" element={<PokerHome />} />
         <Route path="/poker/play" element={<PokerGame />} />
+        <Route path="/rpg" element={<RpgGame />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </div>

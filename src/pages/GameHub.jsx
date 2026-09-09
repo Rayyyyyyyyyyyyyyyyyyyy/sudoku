@@ -23,7 +23,7 @@ export default function GameHub() {
       <header className="hub-hero">
         <span className="hub-eyebrow">OFFLINE POCKET GAMES</span>
         <h1>通勤遊戲櫃</h1>
-        <p>三種節奏，一個離線入口。進度會留在這台裝置。</p>
+        <p>四種節奏，一個離線入口。進度會留在這台裝置。</p>
       </header>
       <section className="hub-grid" aria-label="選擇遊戲">
         <article className="hub-card hub-card--sudoku">
@@ -62,6 +62,13 @@ export default function GameHub() {
           )}
           {idiomSave.status === 'incompatible' && <p className="hub-session hub-session--warning">儲存版本需要處理</p>}
           <button className="hub-action" type="button" onClick={() => navigate('/idiom')}>{activeIdiom ? '繼續填字' : '進入填字'} <span>→</span></button>
+        </article>
+        <article className="hub-card hub-card--rpg">
+          <span className="hub-card__mark" aria-hidden="true">⚔</span>
+          <div><span className="hub-eyebrow">STORY · RPG</span><h2>夢魘堡壘</h2></div>
+          <p>劍與魔法的文字冒險。探索、鑄劍、挑戰夢魘，帶回見聞培養下一趟的角色。</p>
+          <p className="hub-session">短篇冒險 · 自動保存 · 村莊養成</p>
+          <button className="hub-action" type="button" onClick={() => navigate('/rpg')}>進入夢魘堡壘 <span>→</span></button>
         </article>
       </section>
       <footer className="hub-footer">本機儲存 · 不需登入 · 原創介面與幾何圖像</footer>

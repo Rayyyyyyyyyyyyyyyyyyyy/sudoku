@@ -1,0 +1,50 @@
+.rpg-page { width: 100%; max-width: 700px; color: #292721; }
+.rpg-header, .rpg-character-heading { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; }
+.rpg-header { font-size: 13px; color: #625c51; }
+.rpg-header a { display: inline-flex; align-items: center; min-height: 44px; }
+.rpg-title { padding: 24px 0 12px; }
+.rpg-title h1 { font-size: clamp(30px, 8vw, 42px); letter-spacing: .08em; margin: 8px 0 14px; }
+.rpg-title > p:last-child { line-height: 1.8; color: #625c51; }
+.rpg-eyebrow { font-size: 11px; font-weight: 700; letter-spacing: .13em; color: #716143; }
+.rpg-panel { background: #fffcf5; border: 1px solid #d9d1c1; border-radius: 12px; padding: clamp(18px, 4vw, 30px); margin: 18px 0; }
+.rpg-panel h2 { font-size: 21px; line-height: 1.5; margin: 0 0 16px; }
+.rpg-panel p { line-height: 1.85; }
+.rpg-story > p:not(.rpg-eyebrow) { font-size: 16px; line-height: 2; }
+.rpg-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin: 20px 0 12px; }
+.rpg-stats dt { font-size: 12px; color: #625c51; margin-bottom: 7px; }
+.rpg-stats dd { margin: 0; font-size: 15px; font-variant-numeric: tabular-nums; font-weight: 700; }
+.rpg-page small { color: #625c51; font-size: 12px; line-height: 1.7; }
+.rpg-character-heading > span { font-size: 12px; color: #625c51; }
+.rpg-omen { display: grid; gap: 3px; margin: 14px 0 8px; padding: 12px 14px; border-left: 3px solid #79533d; background: #f5efdf; }
+.rpg-omen strong { font-size: 13px; }
+.rpg-omen span, .rpg-progress { color: #625c51; font-size: 12px; line-height: 1.65; }
+.rpg-progress { margin: 8px 0; }
+.rpg-choices { display: grid; gap: 10px; }
+.rpg-page button { font: inherit; min-height: 48px; border-radius: 8px; border: 1px solid #b8aa90; color: #30291f; background: #fffcf5; padding: 14px 16px; cursor: pointer; text-align: left; }
+.rpg-choices button { display: grid; gap: 7px; width: 100%; }
+.rpg-choices button span { font-size: 13px; line-height: 1.6; color: #625c51; }
+.rpg-page button:hover:not(:disabled) { background: #eee6d5; border-color: #736247; }
+.rpg-page button:disabled { cursor: not-allowed; color: #70695f; background: #ece8de; border-color: #d8d0c2; }
+.rpg-page :is(button, a, input, textarea, summary):focus-visible, .rpg-story h2:focus-visible { outline: 3px solid #876d37; outline-offset: 4px; }
+.rpg-consequence { border-left: 3px solid #857046; padding-left: 16px; background: #f5efdf; }
+.rpg-enemy { border-top: 3px solid #93483a; }
+.rpg-intent { padding: 12px; background: #f3e6da; border-radius: 6px; }
+.rpg-save { font-size: 12px; color: #526849; line-height: 1.6; }
+.rpg-warning { color: #8c3e22; }
+.rpg-journal summary, .rpg-footer summary { min-height: 44px; padding: 12px 0; cursor: pointer; }
+.rpg-journal li { margin-bottom: 8px; line-height: 1.7; }
+.rpg-live { font-size: 13px; color: #625c51; margin-bottom: 0; }
+.rpg-retreat { width: 100%; margin-bottom: 20px; }
+.rpg-classes { border: 0; padding: 0; margin: 24px 0; display: grid; gap: 10px; min-width: 0; }
+.rpg-classes legend { margin-bottom: 12px; font-size: 14px; }
+.rpg-classes label { display: flex; align-items: center; gap: 12px; border: 1px solid #d9d1c1; padding: 14px; border-radius: 8px; cursor: pointer; }
+.rpg-classes label.is-selected { outline: 2px solid #857046; background: #f4eddd; }
+.rpg-classes input { flex: 0 0 auto; accent-color: #75603c; }
+.rpg-classes small { display: block; margin-top: 5px; }
+.rpg-seed { display: grid; gap: 8px; font-size: 14px; }
+.rpg-seed input, .rpg-panel textarea { font: inherit; width: 100%; min-height: 44px; padding: 10px; border: 1px solid #a59a85; border-radius: 6px; background: #fff; box-sizing: border-box; }
+.rpg-page .rpg-primary { display: block; width: 100%; margin-top: 20px; background: #3d4b39; color: #fff; border-color: #3d4b39; text-align: center; }
+.rpg-page .rpg-primary:hover:not(:disabled) { background: #293726; color: #fff; }
+.rpg-page .rpg-primary:disabled { background: #ece8de; color: #70695f; }
+.rpg-footer { font-size: 12px; line-height: 1.8; padding: 14px 0; overflow-wrap: anywhere; color: #625c51; }
+@media (max-width: 380px) { .rpg-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

@@ -57,3 +57,28 @@ Traditional-to-Simplified character table `TSCharacters.txt` from
 [`2675388` of BYVoid/OpenCC](https://github.com/BYVoid/OpenCC/tree/26753884f1984add422f3b0249ccee8613deaff6),
 licensed [Apache-2.0](https://github.com/BYVoid/OpenCC/blob/master/LICENSE).
 The table is a build-time input only and is not redistributed here.
+
+## Text RPG literary source
+
+*The Nightmare Fortress* (夢魘堡壘) adapts motifs from Lord Dunsany's
+*The Fortress Unvanquishable, Save for Sacnoth*, collected in
+*The Sword of Welleran and Other Stories*.
+
+- English source: [Project Gutenberg eBook #10806](https://www.gutenberg.org/cache/epub/10806/pg10806-images.html).
+- Source edition: updated 2024-11-03, as recorded in the
+  [Gutenberg catalogue](https://www.gutenberg.org/ebooks/10806).
+- The catalogue identifies the author as 1878–1957 and labels the work
+  **Public domain in the USA**. This is not a worldwide rights determination.
+
+The game bundles newly written Traditional Chinese narrative, not a modern
+Chinese translation or a copy of the complete Gutenberg eBook. Classes,
+branching choices, combat rules, progression and connective scenes are new game
+designs rather than mechanics present in the literary source. Each story node
+in `src/data/rpg/story.ts` records its adaptation provenance; the UI also credits
+the author and links to the English text. No source illustrations, cover art or
+modern adaptation assets are bundled.
+
+The research note records the preliminary Taiwan public-domain assessment and
+its territorial limits: [text RPG adaptation research](./docs/text-rpg-adaptation-research.md).
+Confirm applicable rights before distribution in additional territories; do not
+extend the US catalogue label to every jurisdiction or to modern translations.

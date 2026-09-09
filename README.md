@@ -4,6 +4,8 @@
 現在改寫成 Vite + React、具離線快取的 SPA。既有數獨玩法、鍵盤操作與 localStorage 格式維持不變，
 並新增一套以有限牌庫、牌型計分、效果順序與回合經濟為核心的原創「通勤牌局」，
 以及一款以教育部《成語典》為題庫、確定性出題並保證唯一解的「成語填字」。
+「夢魘堡壘」是以全新繁中敘事改編 Lord Dunsany 原作的劍與魔法文字 RPG，
+目前提供可走到終戰的第一輪擴寫版、三職業與永久養成，尚未承諾三小時內容。
 
 ## 開發
 
@@ -12,7 +14,9 @@ npm install
 npm run dev      # http://localhost:5173
 npm run build    # 產出 dist/
 npm run preview  # 預覽 production build
-npm test         # 全部 Node engine、資料、持久化與回歸測試
+npm test         # 全部 engine、資料、持久化與 UI 回歸測試
+npm run test:rpg # RPG 引擎、劇情圖與存檔測試
+npm run typecheck # RPG TypeScript 範圍的嚴格型別檢查
 ```
 
 ## 離線使用
@@ -30,7 +34,7 @@ service worker 會預先快取該版本的 HTML、JavaScript、CSS、題庫與�
 
 | 路徑 | 說明 |
 | --- | --- |
-| `/#/` | 共用遊戲櫃，顯示兩款遊戲與可恢復進度 |
+| `/#/` | 共用遊戲櫃，顯示四款遊戲 |
 | `/#/sudoku` | 數獨首頁：每日一題、五種難度、個人紀錄、玩法設定 |
 | `/#/play/:level?seed=…` | 指定難度的題目(`level` 為 0–4,seed 決定盤面) |
 | `/#/daily` | 每日一題(困難難度,seed 取當天日期,同一天永遠同一題) |
@@ -39,6 +43,7 @@ service worker 會預先快取該版本的 HTML、JavaScript、CSS、題庫與�
 | `/#/idiom` | 成語填字首頁：每日一題、五種難度、紀錄與玩法設定 |
 | `/#/idiom/play/:level?seed=…` | 指定難度的盤面(`level` 為 0–4,seed 決定盤面) |
 | `/#/idiom/daily` | 每日一題(中等難度,seed 取當天日期) |
+| `/#/rpg` | 夢魘堡壘：職業選擇、遠征、續玩、終戰與村莊養成 |
 
 不認得的路徑會導回 `/`。路由放在 URL hash 中，部署到一般靜態主機不需要額外 rewrite；
 手機回收分頁後重新載入，也不會把遊戲路徑當成伺服器檔案而回傳 404。
@@ -73,6 +78,9 @@ src/
   lib/idiom/generate.js        由詞生盤的回溯生成、挖空、候選字池與唯一解修補
   lib/idiom/solve.js           以候選字池為值域的解題器,計數上限 2
   lib/idiom/difficulty.js      五級難度表(純資料)與單調性檢查
+  data/rpg/story.ts            文字 RPG 節點、選項、條件分支與逐節改編來源
+  lib/rpg/                     純 TS 狀態轉換、戰鬥、養成、內容驗證與存檔邊界
+  pages/RpgGame.jsx            文字閱讀、戰鬥意圖、異象、背包與村莊養成介面
   lib/idiom/play.js            一局的純 reducer:填入、替換、清除、揭示、完成判定
   lib/idiom/persistence.js     逐步存檔、版本不合的保留策略與紀錄
   lib/idiom/useIdiomGame.js    reducer、存檔與計時的 React 綁定
@@ -146,6 +154,22 @@ src/
 子集篩選,若日後顯示釋義必須逐字照錄,不得濃縮或改寫。詳見
 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) 與
 [`docs/idiom-crossword-research.md`](./docs/idiom-crossword-research.md)。
+
+## 夢魘堡壘：文字與引擎骨架
+
+- 30 節點、67 選項：村莊準備 → 沼澤、擺渡河與古墓 → 追蹤龍鱷、鑄劍 → 堡壘外圍三路 → 夢城探索與巫師終戰；包含勝利、撤離與戰敗結局。
+- 戰士、法師、遊俠各有技能；探索選項受職業、線索、物品和資源限制，介面顯示不可選原因。
+- 戰鬥可普攻、技能、格擋調息、用藥或撤離；敵方意圖可見，致勝一擊不受反擊。
+- 每趟升級與裝備選擇之外，首次里程碑及勝利帶回永久見聞；六項村莊養成可強化生命、魔力、補給、攻擊、煉金或解鎖暗渠路線。
+- 旅程編號控制戰鬥亂數及血月、黑雨、靜星三種異象；相同版本、起始配置、編號與選擇可重現結果。目前不會依編號生成新劇情或新地圖。
+- 規則以 TypeScript 執行，不依賴伺服器或語言模型。故事隨程式打包；離線安裝前提同上，只有另開英文原典連結需要網路。
+- 存檔只使用 `sudoku-drill-rpg-v1`，不修改其他遊戲資料。儲存失敗會明示僅能暫存在記憶體；讀取受阻時該次頁面不再寫入，避免覆蓋未讀到的舊進度。
+- 版本不合或損毀的存檔不會自動覆寫，可先複製原始資料；只有確認重建才會清除 RPG 遠征與永久養成。
+
+可讀文本見 [`docs/rpg-story.md`](./docs/rpg-story.md)，唯一維護來源是
+[`src/data/rpg/story.ts`](./src/data/rpg/story.ts)。設計約束見
+[`docs/rpg-architecture.md`](./docs/rpg-architecture.md)，原典研究及尚未實作的長篇方向見
+[`docs/text-rpg-adaptation-research.md`](./docs/text-rpg-adaptation-research.md)。
 
 ## 資產與相容性聲明
 
