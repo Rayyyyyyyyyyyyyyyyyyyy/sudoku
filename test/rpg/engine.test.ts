@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { createGame, getAvailableActions, transition, unmetRequirement } from '../../src/lib/rpg/engine.ts';
 import { CLASSES, ENEMIES, getOmen, OMENS, UPGRADES } from '../../src/lib/rpg/catalog.ts';
-import { NODES, STORY } from '../../src/data/rpg/story.ts';
+import { EVENT_POOLS, NODES, STORY } from '../../src/data/rpg/story.ts';
 import { validateStory } from '../../src/lib/rpg/contentValidation.ts';
 import { deserializeGame, loadGame, saveGame, STORAGE_KEY, validGame } from '../../src/lib/rpg/persistence.ts';
 import type { Action, ClassId, GameState } from '../../src/lib/rpg/types.ts';
@@ -18,6 +18,12 @@ function start(classId: ClassId = 'warrior', seed = 42) {
 }
 
 function choose(game: GameState, id: string) { return act(game, { type: 'choose', id }); }
+
+function reachWildsEvent(seed = 42) {
+  let game = start('warrior', seed);
+  for (const id of ['listen', 'supplies', 'bridge', 'leave', 'staff']) game = choose(game, id);
+  return game;
+}
 
 function battleAction(game: GameState): string {
   const run = game.run!;
@@ -70,6 +76,13 @@ describe('authored text and story graph', () => {
     const cycle = structuredClone(STORY);
     cycle.find(n => n.id === 'camp')!.choices[0].next = 'village';
     expect(validateStory(cycle).join(' ')).toMatch(/cycle/);
+
+    const unknownPool = structuredClone(STORY);
+    unknownPool.find(n => n.id === 'camp')!.choices[0].eventPool = 'missing' as never;
+    expect(validateStory(unknownPool).join(' ')).toMatch(/unknown event pool/);
+    const unknownLoot = structuredClone(STORY);
+    unknownLoot.find(n => n.id === 'wild-witchfire')!.choices[0].effects = [{ kind: 'loot', table: 'missing' as never }];
+    expect(validateStory(unknownLoot).join(' ')).toMatch(/unknown loot table/);
   });
 });
 
@@ -98,6 +111,47 @@ describe('deterministic adventure and progression', () => {
     expect(restored.status).toBe('ok');
     if (restored.status !== 'ok') throw new Error('cannot restore checkpoint');
     expect(play(restored.state).at(-1)).toEqual(first.at(-1));
+  });
+
+  it('selects every wilds event deterministically and resumes the selected scene exactly', () => {
+    const selected = new Set<string>();
+    for (const seed of [0, 1, 8192, 12288]) {
+      const first = reachWildsEvent(seed);
+      const replay = reachWildsEvent(seed);
+      expect(replay).toEqual(first);
+      expect(EVENT_POOLS.wilds).toContain(first.run!.nodeId);
+      selected.add(first.run!.nodeId);
+    }
+    expect(selected).toEqual(new Set(EVENT_POOLS.wilds));
+
+    const checkpoint = reachWildsEvent(1066);
+    const restored = deserializeGame(JSON.stringify(checkpoint));
+    expect(restored).toEqual({ status: 'ok', state: checkpoint });
+  });
+
+  it('rolls every fortress loot outcome and replaces exhausted unique loot with gold', () => {
+    const found = new Set<string>();
+    for (const seed of [0, 1, 8192, 12288]) {
+      const game = start('warrior', seed);
+      game.run!.nodeId = 'fortress-armory';
+      game.run!.visited.push('fortress-armory');
+      const before = new Set(game.run!.hero.inventory);
+      const looted = choose(game, 'armory-take');
+      for (const item of looted.run!.hero.inventory) if (!before.has(item)) found.add(item);
+    }
+    expect(found).toEqual(new Set(['moonstone', 'ember', 'iron', 'bell']));
+
+    const exhausted = start('warrior', 7);
+    exhausted.run!.nodeId = 'fortress-armory';
+    exhausted.run!.visited.push('fortress-armory');
+    exhausted.run!.hero.inventory.push('moonstone', 'ember', 'iron', 'bell');
+    const beforeGold = exhausted.run!.hero.gold;
+    const beforeCalls = exhausted.run!.random.calls;
+    const looted = choose(exhausted, 'armory-take');
+    expect(looted.run!.hero.gold).toBe(beforeGold + 2);
+    expect(looted.run!.hero.inventory.filter(item => ['moonstone', 'ember', 'iron', 'bell'].includes(item))).toHaveLength(4);
+    expect(looted.run!.random.calls).toBe(beforeCalls + 1);
+    expect(looted.run!.log.at(-1)).toMatch(/2 枚金幣/);
   });
 
   it('has a different viable route with merchant, defensive rune and class bypass', () => {

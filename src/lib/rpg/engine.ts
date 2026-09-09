@@ -1,7 +1,7 @@
 import { nextRandom, seedRandom } from '../seededRandom.js';
-import { NODES } from '../../data/rpg/story.ts';
-import { CLASSES, CLASS_IDS, CONTENT_VERSION, DISCOVERY_IDS, ENEMIES, getOmen, ITEMS, UPGRADES } from './catalog.ts';
-import type { Action, ActionOption, Effect, GameState, Requirement, Run, TransitionResult } from './types.ts';
+import { EVENT_POOLS, NODES } from '../../data/rpg/story.ts';
+import { CLASSES, CLASS_IDS, CONTENT_VERSION, DISCOVERY_IDS, ENEMIES, getOmen, ITEMS, LOOT_TABLES, UPGRADES } from './catalog.ts';
+import type { Action, ActionOption, Choice, Effect, GameState, Requirement, Run, TransitionResult } from './types.ts';
 
 export function createGame(): GameState {
   return { schemaVersion: 1, contentVersion: CONTENT_VERSION, revision: 0,
@@ -40,10 +40,34 @@ function apply(run: Run, effects: Effect[]) {
     } else if (effect.kind === 'consume') {
       const index = hero.inventory.indexOf(effect.value);
       if (index >= 0) hero.inventory.splice(index, 1);
+    } else if (effect.kind === 'loot') {
+      const table = LOOT_TABLES[effect.table];
+      const eligible = table.outcomes.filter(outcome => outcome.effects.every(outcomeEffect =>
+        outcomeEffect.kind !== 'item' || outcomeEffect.value === 'potion' || !hero.inventory.includes(outcomeEffect.value)));
+      const rolled = nextRandom(run.random);
+      run.random = rolled.state;
+      if (!eligible.length) {
+        hero.gold = Math.min(999, hero.gold + 2);
+        log(run, `${table.name}已搜刮一空，改找到 2 枚金幣。`);
+      } else {
+        const outcome = eligible[Math.floor(rolled.value * eligible.length)]!;
+        apply(run, outcome.effects);
+        log(run, `找到${outcome.name}。`);
+      }
     } else {
       experience(run, effect.amount);
     }
   }
+}
+
+function resolveDestination(run: Run, choice: Choice): string {
+  if (!choice.eventPool) return choice.next;
+  const pool = EVENT_POOLS[choice.eventPool];
+  const rolled = nextRandom(run.random);
+  run.random = rolled.state;
+  const destination = pool[Math.floor(rolled.value * pool.length)]!;
+  log(run, `遭遇異事：${NODES[destination]!.title}。`);
+  return destination;
 }
 
 export function unmetRequirement(run: Run, requirement: Requirement): string {
@@ -215,11 +239,12 @@ export function transition(state: GameState, action: Action): TransitionResult {
     apply(current, choice.effects ?? []);
     if (current.hero.hp === 0) enter(game, 'defeat');
     else if (choice.encounter) {
+      const destination = resolveDestination(current, choice);
       const enemy = ENEMIES[choice.encounter];
       current.phase = 'combat';
-      current.battle = { enemyId: enemy.id, hp: enemy.hp, round: 1, intent: 0, next: choice.next };
+      current.battle = { enemyId: enemy.id, hp: enemy.hp, round: 1, intent: 0, next: destination };
       log(current, `遭遇${enemy.name}。先觀察下一個招式。`);
-    } else enter(game, choice.next);
+    } else enter(game, resolveDestination(current, choice));
   }
   return { state: game, accepted: true };
 }

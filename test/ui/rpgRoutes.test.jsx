@@ -8,6 +8,15 @@ import { getOmen, loadGame, STORAGE_KEY } from '../../src/lib/rpg/index.ts';
 function renderRpg(path = '/rpg') { return render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>); }
 
 describe('RPG story reader', () => {
+  it('bundles the pixel atlas locally and exposes class artwork accessibly', () => {
+    renderRpg();
+    const atlas = screen.getByRole('img', { name: /十六格像素圖鑑/ });
+    expect(atlas).toHaveAttribute('src', '/assets/rpg-pixel-atlas.png');
+    expect(screen.getByRole('img', { name: '戰士像素圖' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '法師像素圖' })).toBeInTheDocument();
+    expect(screen.getByRole('img', { name: '遊俠像素圖' })).toBeInTheDocument();
+  });
+
   it('opens from the hub, makes a choice, and resumes the exact scene after remount', async () => {
     const user = userEvent.setup();
     const page = renderRpg('/');
@@ -41,7 +50,10 @@ describe('RPG story reader', () => {
     renderRpg();
     for (const name of ['開始遠征', /聽法師/, /帶上乾糧/, /走木橋/]) await user.click(screen.getByRole('button', { name }));
     expect(screen.getByRole('button', { name: /沿河找/ })).toBeDisabled();
-    for (const name of [/確認方向/, /削一根/, /追蹤巨獸/, /迎戰鐵脊/]) await user.click(screen.getByRole('button', { name }));
+    for (const name of [/確認方向/, /削一根/]) await user.click(screen.getByRole('button', { name }));
+    const eventChoices = within(screen.getByRole('region', { name: '故事選擇' })).getAllByRole('button');
+    await user.click(eventChoices.find(button => !button.disabled));
+    for (const name of [/追蹤巨獸/, /迎戰鐵脊/]) await user.click(screen.getByRole('button', { name }));
     const combat = screen.getByRole('region', { name: '當前戰鬥' });
     expect(within(combat).getByText(/張口蓄勢/)).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: /破甲重擊/ }));

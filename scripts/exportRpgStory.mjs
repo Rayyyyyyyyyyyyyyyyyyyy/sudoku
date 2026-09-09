@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { STORY, SOURCE } from '../src/data/rpg/story.ts';
-import { CLASSES, ENEMIES, ITEMS, UPGRADES } from '../src/lib/rpg/catalog.ts';
+import { CLASSES, ENEMIES, ITEMS, LOOT_TABLES, UPGRADES } from '../src/lib/rpg/catalog.ts';
 
 const target = fileURLToPath(new URL('../docs/rpg-story.md', import.meta.url));
 const resources = { hp: '生命', mana: '魔力', gold: '金幣', supplies: '補給' };
@@ -19,6 +19,7 @@ function effect(value) {
   if (value.kind === 'flag') return `取得線索：${value.value}`;
   if (value.kind === 'item') return `取得物品：${ITEMS[value.value].name}`;
   if (value.kind === 'consume') return `消耗物品：${ITEMS[value.value].name}`;
+  if (value.kind === 'loot') return `隨機戰利品：${LOOT_TABLES[value.table].name}`;
   return `經驗 +${value.amount}`;
 }
 
@@ -49,6 +50,7 @@ for (const node of STORY) {
       if (choice.requires?.length) notes.push(`條件：${choice.requires.map(requirement).join('、')}`);
       if (choice.effects?.length) notes.push(`效果：${choice.effects.map(effect).join('、')}`);
       if (choice.encounter) notes.push(`遭遇：${ENEMIES[choice.encounter].name}`);
+      if (choice.eventPool) notes.push(`隨機事件池：${choice.eventPool}`);
       lines.push(`- **${choice.label}**：${choice.detail} → \`${choice.next}\`${notes.length ? `；${notes.join('；')}` : ''}`);
     }
     lines.push('');

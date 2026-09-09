@@ -5,6 +5,8 @@ export type Flag = 'rescued' | 'weakness' | 'staff' | 'merchant' | 'rune' | 'tru
   'pilgrim' | 'ferryman' | 'sigil' | 'prisoner' | 'choir';
 export type EnemyId = 'crocodile' | 'spider' | 'guardian' | 'gaznak' | 'wraith' | 'knight' | 'wolf';
 export type OmenId = 'blood-moon' | 'black-rain' | 'still-star';
+export type EventPoolId = 'wilds' | 'fortress';
+export type LootTableId = 'wilds' | 'fortress';
 export type Phase = 'story' | 'combat' | 'ended';
 
 export interface Hero {
@@ -34,6 +36,7 @@ export type Effect =
   | { kind: 'flag'; value: Flag }
   | { kind: 'item'; value: ItemId }
   | { kind: 'consume'; value: ItemId }
+  | { kind: 'loot'; table: LootTableId }
   | { kind: 'xp'; amount: number };
 
 export interface Choice {
@@ -44,6 +47,7 @@ export interface Choice {
   requires?: Requirement[];
   effects?: Effect[];
   encounter?: EnemyId;
+  eventPool?: EventPoolId;
 }
 
 export interface StoryNode {

@@ -6,6 +6,17 @@ import {
 } from '../lib/rpg/index.ts';
 import './rpg.css';
 
+const PIXEL_ATLAS = `${import.meta.env.BASE_URL}assets/rpg-pixel-atlas.png`;
+const CLASS_SPRITES = { warrior: 0, mage: 1, ranger: 2 };
+const ENEMY_SPRITES = { crocodile: 4, spider: 5, guardian: 6, gaznak: 7, wraith: 3, knight: 0, wolf: 12 };
+const ITEM_SPRITES = { potion: 13, ward: 3, sacnoth: 0, ember: 10, iron: 11, moonstone: 9, bell: 8 };
+
+function PixelIcon({ cell, label, size = 'normal' }) {
+  const x = (cell % 4) * (100 / 3);
+  const y = Math.floor(cell / 4) * (100 / 3);
+  return <span className={`rpg-pixel-icon is-${size}`} role="img" aria-label={label} style={{ backgroundImage: `url(${PIXEL_ATLAS})`, backgroundPosition: `${x}% ${y}%` }} />;
+}
+
 function storage() {
   try { return window.localStorage; } catch { return null; }
 }
@@ -95,7 +106,7 @@ export default function RpgGame() {
               <div><dt>金幣</dt><dd>{run.hero.gold}</dd></div>
               <div><dt>補給</dt><dd>{run.hero.supplies}</dd></div>
             </dl>
-            <p className="rpg-omen"><strong>{omen.name}</strong><span>{omen.description}</span></p>
+            <p className="rpg-omen"><PixelIcon cell={3} label="月色異象" size="small" /><strong>{omen.name}</strong><span>{omen.description}</span></p>
             <p className="rpg-progress">本趟探索 {run.visited.filter(id => !NODES[id].ending).length} / {storyNodeCount} 節 · 累積發現 {game.profile.discoveries.length}</p>
             <small>{run.hero.level < 4 ? `升級經驗 ${run.hero.xp} / ${run.hero.level * 6}` : '已達本篇等級上限'} · 升級會提升能力並恢復部分狀態</small>
           </section>
@@ -109,7 +120,7 @@ export default function RpgGame() {
 
           {enemy && <section className="rpg-panel rpg-enemy" aria-label="當前戰鬥">
             <p className="rpg-eyebrow">第 {run.battle.round} 回合</p>
-            <h2>{enemy.name}</h2>
+            <h2 className="rpg-icon-heading"><PixelIcon cell={ENEMY_SPRITES[enemy.id]} label={`${enemy.name}像素圖`} />{enemy.name}</h2>
             <p>{enemy.description}</p>
             <p>敵方生命 {run.battle.hp} / {enemy.hp} · 護甲 {enemy.intents[run.battle.intent].exposed ? 0 : enemy.armor}</p>
             <p className="rpg-intent"><strong>敵方意圖：</strong>{enemy.intents[run.battle.intent].label}</p>
@@ -130,7 +141,7 @@ export default function RpgGame() {
           <section className="rpg-panel rpg-journal" aria-label="背包與行動記錄">
             <details>
               <summary>背包 · {run.hero.inventory.length} 件物品</summary>
-              {Object.entries(ITEMS).filter(([id]) => run.hero.inventory.includes(id)).map(([id, item]) => <p key={id}><strong>{item.name} ×{run.hero.inventory.filter(v => v === id).length}</strong><br />{item.description}</p>)}
+              {Object.entries(ITEMS).filter(([id]) => run.hero.inventory.includes(id)).map(([id, item]) => <p className="rpg-item" key={id}><PixelIcon cell={ITEM_SPRITES[id]} label={`${item.name}像素圖`} size="small" /><span><strong>{item.name} ×{run.hero.inventory.filter(v => v === id).length}</strong><br />{item.description}</span></p>)}
             </details>
             <details>
               <summary>最近行動</summary>
@@ -145,9 +156,14 @@ export default function RpgGame() {
           <section className="rpg-panel" aria-labelledby="rpg-preparation">
             <h2 id="rpg-preparation">準備出發</h2>
             <p>一段可從村莊走到終戰的短篇冒險。選擇職業，觀察敵方招式，帶回見聞讓村莊成長。</p>
+            <figure className="rpg-pixel-atlas">
+              <img src={PIXEL_ATLAS} alt="劍、法杖、弓、怪物、符文與堡壘組成的十六格像素圖鑑" width="1254" height="1254" />
+              <figcaption>旅途中可能遇見的武器、怪物與夢城遺物</figcaption>
+            </figure>
             <fieldset className="rpg-classes"><legend>選擇職業</legend>
               {CLASS_IDS.map(id => <label key={id} className={classId === id ? 'is-selected' : ''}>
                 <input type="radio" name="rpg-class" value={id} checked={classId === id} onChange={() => setClassId(id)} />
+                <PixelIcon cell={CLASS_SPRITES[id]} label={`${CLASSES[id].name}像素圖`} />
                 <span><strong>{CLASSES[id].name}</strong><small>{CLASSES[id].description}</small></span>
               </label>)}
             </fieldset>
@@ -179,7 +195,7 @@ export default function RpgGame() {
         <details><summary>原典與改編說明</summary>
           <p>{SOURCE.notice}</p>
           <p><a href={SOURCE.url} target="_blank" rel="noreferrer">{SOURCE.title}（英文原典，開啟需網路）</a></p>
-          <p>目前是第一輪內容擴寫版，尚未宣稱有三小時內容。遊戲內文字已隨程式保存。</p>
+          <p>目前是第二輪事件與掉落擴寫版，尚未宣稱有三小時內容。文字與像素圖已隨程式保存。</p>
         </details>
       </footer>
     </main>

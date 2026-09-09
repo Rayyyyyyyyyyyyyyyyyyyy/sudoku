@@ -1,4 +1,4 @@
-import { NODES } from '../../data/rpg/story.ts';
+import { EVENT_POOLS, NODES } from '../../data/rpg/story.ts';
 import { CLASSES, CONTENT_VERSION, DISCOVERY_IDS, ENEMIES, FLAG_IDS, ITEMS, UPGRADES } from './catalog.ts';
 import type { ClassId, EnemyId, GameState, UpgradeId } from './types.ts';
 
@@ -53,7 +53,8 @@ export function validGame(value: unknown): value is GameState {
   const enemy = ENEMIES[battle.enemyId as EnemyId];
   return integer(battle.hp, 1, enemy.hp) && integer(battle.round, 1) &&
     integer(battle.intent, 0, enemy.intents.length - 1) && battle.intent === (battle.round - 1) % enemy.intents.length &&
-    node.choices.some(choice => choice.encounter === battle.enemyId && choice.next === battle.next);
+    node.choices.some(choice => choice.encounter === battle.enemyId &&
+      (choice.next === battle.next || Boolean(choice.eventPool && EVENT_POOLS[choice.eventPool].includes(battle.next as string))));
 }
 
 export function deserializeGame(raw: string): LoadResult {

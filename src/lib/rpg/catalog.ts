@@ -1,4 +1,4 @@
-import type { ClassId, Enemy, EnemyId, Flag, Hero, ItemId, OmenId, UpgradeId } from './types.ts';
+import type { ClassId, Effect, Enemy, EnemyId, Flag, Hero, ItemId, LootTableId, OmenId, UpgradeId } from './types.ts';
 
 export const CONTENT_VERSION = 'nightmare-fortress-1';
 export const CLASS_IDS: ClassId[] = ['warrior', 'mage', 'ranger'];
@@ -25,6 +25,27 @@ export const UPGRADES: Record<UpgradeId, { name: string; cost: number; descripti
   steel: { name: '百鍛刃口', cost: 2, description: '以後出發時，攻擊 +1。' },
   alchemy: { name: '黑雨煉金術', cost: 2, description: '療傷藥的恢復量額外 +4。' },
   map: { name: '失落路圖', cost: 2, description: '解鎖需要古地圖知識的故事選項。' },
+};
+
+export interface LootOutcome {
+  id: string;
+  name: string;
+  effects: Effect[];
+}
+
+export const LOOT_TABLES: Record<LootTableId, { name: string; outcomes: LootOutcome[] }> = {
+  wilds: { name: '沼澤遺物', outcomes: [
+    { id: 'healing-roots', name: '採藥人的止血根', effects: [{ kind: 'item', value: 'potion' }] },
+    { id: 'dry-rations', name: '封蠟乾糧', effects: [{ kind: 'resource', resource: 'supplies', amount: 2 }] },
+    { id: 'ward-knot', name: '銀線護符結', effects: [{ kind: 'item', value: 'ward' }] },
+    { id: 'old-coins', name: '沉船舊幣', effects: [{ kind: 'resource', resource: 'gold', amount: 3 }] },
+  ] },
+  fortress: { name: '夢城遺物', outcomes: [
+    { id: 'moonstone', name: '月長石碎片', effects: [{ kind: 'item', value: 'moonstone' }] },
+    { id: 'ember', name: '餘燼符文片', effects: [{ kind: 'item', value: 'ember' }] },
+    { id: 'iron', name: '鎮鐵符文片', effects: [{ kind: 'item', value: 'iron' }] },
+    { id: 'bell', name: '無舌送魂鈴', effects: [{ kind: 'item', value: 'bell' }] },
+  ] },
 };
 
 export interface Omen {

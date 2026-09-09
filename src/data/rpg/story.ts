@@ -1,4 +1,4 @@
-import type { StoryNode } from '../../lib/rpg/types.ts';
+import type { EventPoolId, StoryNode } from '../../lib/rpg/types.ts';
 
 export const SOURCE = {
   author: 'Lord Dunsany',
@@ -107,10 +107,62 @@ export const STORY: StoryNode[] = [
       '沼澤裡傳來鐘一樣的撞擊聲。每隔幾息，地上的水就顫一下。今晚你得決定，身上的力氣究竟要留給趕路，還是留給見到那東西的時候。',
     ],
     choices: [
-      { id: 'rest', label: '生火休整後出發', detail: '補給 -1；生命 +12、魔力 +6（不超過上限）。', next: 'marsh', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'resource', resource: 'hp', amount: 12 }, { kind: 'resource', resource: 'mana', amount: 6 }] },
-      { id: 'staff', label: '削一根結實的榛木杖', detail: '取得驅獸手段，對龍鱷的攻擊可無視護甲。', next: 'marsh', effects: [{ kind: 'flag', value: 'staff' }] },
+      { id: 'rest', label: '生火休整後出發', detail: '補給 -1；生命 +12、魔力 +6（不超過上限），途中遭遇一件荒野異事。', next: 'marsh', eventPool: 'wilds', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'resource', resource: 'hp', amount: 12 }, { kind: 'resource', resource: 'mana', amount: 6 }] },
+      { id: 'staff', label: '削一根結實的榛木杖', detail: '取得驅獸手段，對龍鱷的攻擊可無視護甲；途中遭遇一件荒野異事。', next: 'marsh', eventPool: 'wilds', effects: [{ kind: 'flag', value: 'staff' }] },
     ],
     provenance: { source: 'sacnoth', note: '榛木杖取自原作；營地休整和戰鬥效果為改編。' },
+  },
+  {
+    id: 'wild-witchfire', act: '荒野異事・北方沼澤', title: '磷火在替死人帶路',
+    paragraphs: [
+      '離開灰圈不久，三團綠火從蘆葦間升起。它們排成一列，照著一條地圖上沒有的石路；每當你停步，最後一團火便回頭，像在確認你仍跟著。',
+      '石路盡頭陷著一輛百年前的郵車。車門內沒有屍骨，只有一只仍繫著封蠟的皮囊。火光貼在鎖孔上，等你決定要不要替這封遲到的信找到收件人。',
+    ],
+    choices: [
+      { id: 'witchfire-open', label: '切開皮囊，取出可用的東西', detail: '生命 -2；抵抗冰冷磷火，從荒野戰利品中取得一件物資。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'loot', table: 'wilds' }] },
+      { id: 'witchfire-mark', label: '抄下收件人的墓碑位置', detail: '辨認亡者的舊路；經驗 +2，讓磷火自行散去。', next: 'marsh', effects: [{ kind: 'xp', amount: 2 }] },
+      { id: 'witchfire-ward', label: '以守夜護符遮住鎖孔', detail: '需要守夜護符；不消耗護符，安全取得一份荒野戰利品。', next: 'marsh', requires: [{ kind: 'item', value: 'ward' }], effects: [{ kind: 'loot', table: 'wilds' }] },
+    ],
+    provenance: { source: 'original', note: '帶路磷火、失事郵車與遲到的亡者書信為原創荒野事件。' },
+  },
+  {
+    id: 'wild-grave-cart', act: '荒野異事・北方沼澤', title: '空棺材比滿棺材更重',
+    paragraphs: [
+      '一匹沒有騎手的灰馬拖著板車迎面而來。車上綁著一口空棺，輪子每陷進泥裡一次，棺材裡就有人敲一下；繩結已經磨得只剩幾根纖維。',
+      '灰馬在你面前低下頭。牠的韁繩掛著一塊木牌：把空位送到北方，讓該躺進去的人知道自己仍會死。',
+    ],
+    choices: [
+      { id: 'cart-rope', label: '重新綁牢棺材', detail: '花力氣修好繩結；生命 -2，取得一份藏在車底的荒野物資。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'loot', table: 'wilds' }] },
+      { id: 'cart-name', label: '刮掉木牌上的自己名字', detail: '拒絕預先寫好的死法；經驗 +2。', next: 'marsh', effects: [{ kind: 'xp', amount: 2 }] },
+      { id: 'cart-guide', label: '替灰馬指出北方', detail: '跟著牠走過一段不會下陷的路；魔力 +2。', next: 'marsh', effects: [{ kind: 'resource', resource: 'mana', amount: 2 }] },
+    ],
+    provenance: { source: 'original', note: '運送空棺的灰馬與預寫死名為原創荒野事件。' },
+  },
+  {
+    id: 'wild-moonwell', act: '荒野異事・北方沼澤', title: '井裡的月亮沒有跟著天亮',
+    paragraphs: [
+      '一座矮井立在枯樹中央，井繩乾燥，石緣卻結著薄冰。天色已亮，水底仍懸著一輪完整的月；當你俯身時，倒影比你慢了一個呼吸才抬頭。',
+      '桶子沉下去，碰到的不是水，而是一層像玻璃的東西。井壁刻著旅人的短句：只拿走月亮願意忘記的東西。',
+    ],
+    choices: [
+      { id: 'moonwell-draw', label: '打碎薄冰，拉起井桶', detail: '生命 -2；寒意割傷手指，取得一份荒野戰利品。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'loot', table: 'wilds' }] },
+      { id: 'moonwell-mana', label: '讓倒影先喝一口', detail: '倒影帶走疲憊；魔力 +4。', next: 'marsh', effects: [{ kind: 'resource', resource: 'mana', amount: 4 }] },
+      { id: 'moonwell-pass', label: '在井緣留下一枚石子', detail: '不向井索取任何東西；經驗 +2。', next: 'marsh', effects: [{ kind: 'xp', amount: 2 }] },
+    ],
+    provenance: { source: 'original', note: '留住夜月的古井與延遲倒影為原創荒野事件。' },
+  },
+  {
+    id: 'wild-white-stag', act: '荒野異事・北方沼澤', title: '白鹿背著一座小教堂',
+    paragraphs: [
+      '霧裡走出一頭白鹿，兩角之間托著一座巴掌大的石教堂。小窗透出燭光，門內有人影跪坐；你聽見極細的鐘聲，像從很遠的山谷傳來。',
+      '白鹿在一株倒木前停下。樹洞裡塞滿旅行者留下的物品，每一件都綁著一小段願望。牠偏過頭，允許你取走一件，也像是在提醒你必須留下什麼。',
+    ],
+    choices: [
+      { id: 'stag-trade', label: '留下一段旅途記憶', detail: '魔力 -2；換取一份荒野戰利品。', next: 'marsh', requires: [{ kind: 'resource', resource: 'mana', amount: 2 }], effects: [{ kind: 'resource', resource: 'mana', amount: -2 }, { kind: 'loot', table: 'wilds' }] },
+      { id: 'stag-follow', label: '跟隨白鹿直到鐘聲停止', detail: '走上安全的獸徑；生命 +4。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: 4 }] },
+      { id: 'stag-bow', label: '向角間的小教堂行禮', detail: '什麼也不拿；經驗 +2。', next: 'marsh', effects: [{ kind: 'xp', amount: 2 }] },
+    ],
+    provenance: { source: 'original', note: '角負微型教堂的白鹿與願望交換為原創荒野事件。' },
   },
   {
     id: 'marsh', act: '第一章・北方沼澤', title: '會留下犁溝的腳印',
@@ -291,10 +343,62 @@ export const STORY: StoryNode[] = [
       '下一段走廊沒有欄杆。你聽見風從下面吹上來，那聲音很遠，遠得不像一座城裡會有的距離。',
     ],
     choices: [
-      { id: 'rest', label: '吃一份補給，處理傷口', detail: '補給 -1；生命 +16、魔力 +8。', next: 'abyss', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'resource', resource: 'hp', amount: 16 }, { kind: 'resource', resource: 'mana', amount: 8 }] },
-      { id: 'focus', label: '靠牆調息，隨即動身', detail: '魔力 +3，不消耗補給。此處只能休整一次。', next: 'abyss', effects: [{ kind: 'resource', resource: 'mana', amount: 3 }] },
+      { id: 'rest', label: '吃一份補給，處理傷口', detail: '補給 -1；生命 +16、魔力 +8，途中遭遇一件夢城異事。', next: 'abyss', eventPool: 'fortress', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'resource', resource: 'hp', amount: 16 }, { kind: 'resource', resource: 'mana', amount: 8 }] },
+      { id: 'focus', label: '靠牆調息，隨即動身', detail: '魔力 +3，不消耗補給；途中遭遇一件夢城異事。', next: 'abyss', eventPool: 'fortress', effects: [{ kind: 'resource', resource: 'mana', amount: 3 }] },
     ],
     provenance: { source: 'original', note: '一次性休整節點，避免反覆免費恢復。' },
+  },
+  {
+    id: 'fortress-armory', act: '夢城異事・白色堡壘', title: '軍械庫替每把劍安排主人',
+    paragraphs: [
+      '石門後整齊掛著數百把武器，每一把的刃口都刻著名字。當你踏進去，最靠近門的一排同時轉動，讓刀尖朝向你；薩克諾斯的劍眼則盯住一只沒有銘牌的舊盾。',
+      '盾後藏著一個狹窄壁龕，裡面堆著從戰敗者身上拆下的護符與符文。軍械庫開始低聲念你的名字，試圖替你挑選一種死法。',
+    ],
+    choices: [
+      { id: 'armory-take', label: '在名字念完以前伸手取物', detail: '生命 -3；避開自行揮舞的兵刃，取得一件夢城遺物。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'armory-break', label: '用薩克諾斯劃掉自己的名字', detail: '讓整排武器失去目標；經驗 +3。', next: 'abyss', effects: [{ kind: 'xp', amount: 3 }] },
+      { id: 'armory-listen', label: '記住武器報出的敗者姓名', detail: '不取遺物；把名冊帶回成為見聞，經驗 +2。', next: 'abyss', effects: [{ kind: 'xp', amount: 2 }] },
+    ],
+    provenance: { source: 'original', note: '會為兵刃分配主人與死法的軍械庫為原創夢城事件。' },
+  },
+  {
+    id: 'fortress-mirror', act: '夢城異事・白色堡壘', title: '鏡中人已經從堡壘回來',
+    paragraphs: [
+      '轉角立著一面落地銀鏡。鏡中的你穿著破裂鎧甲，背後卻是村莊的井；那個人先你一步抬手，掌心放著一件你還沒見過的遺物。',
+      '「別再往前，」倒影說。「我替你贏過一次，所以知道代價。」它的嘴在說話，地板上的影子卻正無聲地寫：鏡子從沒離開過這座城。',
+    ],
+    choices: [
+      { id: 'mirror-reach', label: '把手伸進冰冷鏡面', detail: '生命 -3；拒絕倒影的勸告，取得一件夢城遺物。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'mirror-question', label: '問倒影哪一道傷最痛', detail: '從它的謊言辨認守城者的招式；經驗 +3。', next: 'abyss', effects: [{ kind: 'xp', amount: 3 }] },
+      { id: 'mirror-cover', label: '用舊毯蓋住鏡面', detail: '拒絕觀看預演的歸途；魔力 +3。', next: 'abyss', effects: [{ kind: 'resource', resource: 'mana', amount: 3 }] },
+    ],
+    provenance: { source: 'original', note: '自稱已歸鄉的未來倒影與影子示警為原創夢城事件。' },
+  },
+  {
+    id: 'fortress-scriptorium', act: '夢城異事・白色堡壘', title: '抄寫室裡只剩羽毛筆醒著',
+    paragraphs: [
+      '長桌兩旁坐著披灰袍的抄寫員，頭全伏在空白紙上。數十枝羽毛筆仍自行書寫，把同一句話抄滿羊皮紙：來者將忘記自己帶來的火。',
+      '墨水瓶底沉著幾塊微光碎片。每當筆尖寫到「火」字，碎片便暗一次；只要改掉一個字，整個房間或許就會記起另一種結局。',
+    ],
+    choices: [
+      { id: 'script-change', label: '把「忘記」改成「帶走」', detail: '魔力 -2；改寫房間的規則，取得一件夢城遺物。', next: 'abyss', requires: [{ kind: 'resource', resource: 'mana', amount: 2 }], effects: [{ kind: 'resource', resource: 'mana', amount: -2 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'script-burn', label: '點燃寫滿預言的羊皮紙', detail: '讓抄寫員從同一句夢話中驚醒；經驗 +3。', next: 'abyss', effects: [{ kind: 'xp', amount: 3 }] },
+      { id: 'script-copy', label: '抄下城堡用來改寫記憶的句法', detail: '不驚動羽毛筆；經驗 +2。', next: 'abyss', effects: [{ kind: 'xp', amount: 2 }] },
+    ],
+    provenance: { source: 'original', note: '自動書寫的抄寫室與可改動的房間規則為原創夢城事件。' },
+  },
+  {
+    id: 'fortress-sleepwalker', act: '夢城異事・白色堡壘', title: '夢遊騎士捧著自己的頭盔',
+    paragraphs: [
+      '一名披甲騎士從暗廊走來，雙眼緊閉，兩手捧著自己的頭盔。頭盔裡盛著黑水，水面倒映的不是天花板，而是一場仍未結束的圍城。',
+      '騎士在你面前單膝跪下，把頭盔高舉。黑水裡漂著一件微光遺物；遠處號角一響，他握劍的手便抽動一下，像隨時會在睡夢中恢復守衛職責。',
+    ],
+    choices: [
+      { id: 'sleepwalker-take', label: '從黑水中取出遺物', detail: '生命 -3；寒水喚醒騎士的劍，仍取得一件夢城遺物。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'sleepwalker-oath', label: '說出終止徵召的承諾', detail: '若你帶著舊軍印，話語更顯真實；經驗 +3。', next: 'abyss', effects: [{ kind: 'xp', amount: 3 }] },
+      { id: 'sleepwalker-pass', label: '扶他靠牆坐下', detail: '不驚醒這名守衛；生命 +4。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: 4 }] },
+    ],
+    provenance: { source: 'original', note: '以頭盔承載圍城夢境的夢遊騎士為原創夢城事件。' },
   },
   {
     id: 'abyss', act: '第三章・夢築的城', title: '星星在腳下',
@@ -393,3 +497,8 @@ export const STORY: StoryNode[] = [
 ];
 
 export const NODES: Record<string, StoryNode> = Object.fromEntries(STORY.map(node => [node.id, node]));
+
+export const EVENT_POOLS: Record<EventPoolId, string[]> = {
+  wilds: ['wild-witchfire', 'wild-grave-cart', 'wild-moonwell', 'wild-white-stag'],
+  fortress: ['fortress-armory', 'fortress-mirror', 'fortress-scriptorium', 'fortress-sleepwalker'],
+};

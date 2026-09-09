@@ -1,5 +1,5 @@
-import { STORY } from '../../data/rpg/story.ts';
-import { ENEMIES } from './catalog.ts';
+import { EVENT_POOLS, STORY } from '../../data/rpg/story.ts';
+import { ENEMIES, LOOT_TABLES } from './catalog.ts';
 import type { StoryNode } from './types.ts';
 
 /** Authoring check: dangling exits and impossible costs must fail before ship. */
@@ -16,7 +16,9 @@ export function validateStory(nodes: StoryNode[] = STORY): string[] {
       if (!byId.has(choice.next)) errors.push(`${node.id}/${choice.id}: missing target ${choice.next}`);
       if (!choice.label || !choice.detail) errors.push(`${node.id}/${choice.id}: missing choice text`);
       if (choice.encounter && !Object.hasOwn(ENEMIES, choice.encounter)) errors.push(`${node.id}: unknown enemy`);
+      if (choice.eventPool && !Object.hasOwn(EVENT_POOLS, choice.eventPool)) errors.push(`${node.id}/${choice.id}: unknown event pool`);
       for (const effect of choice.effects ?? []) {
+        if (effect.kind === 'loot' && !Object.hasOwn(LOOT_TABLES, effect.table)) errors.push(`${node.id}/${choice.id}: unknown loot table`);
         if (effect.kind === 'resource' && effect.amount < 0 && effect.resource !== 'hp') {
           const totalCost = -(choice.effects ?? []).filter(e => e.kind === 'resource' && e.resource === effect.resource && e.amount < 0).reduce((sum, e) => sum + (e.kind === 'resource' ? e.amount : 0), 0);
           if (!choice.requires?.some(r => r.kind === 'resource' && r.resource === effect.resource && r.amount >= totalCost)) errors.push(`${node.id}/${choice.id}: cost is not guarded`);
@@ -27,12 +29,22 @@ export function validateStory(nodes: StoryNode[] = STORY): string[] {
   }
   const seen = new Set<string>();
   const visiting = new Set<string>();
+  for (const [poolId, pool] of Object.entries(EVENT_POOLS)) {
+    if (!pool.length) errors.push(`${poolId}: empty event pool`);
+    if (new Set(pool).size !== pool.length) errors.push(`${poolId}: duplicate event node`);
+    for (const id of pool) if (!byId.has(id)) errors.push(`${poolId}: missing event node ${id}`);
+  }
   function walk(id: string) {
     if (visiting.has(id)) { errors.push(`${id}: cycle permits repeated scene rewards`); return; }
     if (seen.has(id)) return;
     seen.add(id);
     visiting.add(id);
-    for (const choice of byId.get(id)?.choices ?? []) walk(choice.next);
+    for (const choice of byId.get(id)?.choices ?? []) {
+      walk(choice.next);
+      if (choice.eventPool && Object.hasOwn(EVENT_POOLS, choice.eventPool)) {
+        for (const eventId of EVENT_POOLS[choice.eventPool]) if (byId.has(eventId)) walk(eventId);
+      }
+    }
     visiting.delete(id);
   }
   walk('village');
