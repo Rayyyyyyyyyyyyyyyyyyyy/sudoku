@@ -1,8 +1,15 @@
 export type ClassId = 'warrior' | 'mage' | 'ranger';
-export type ItemId = 'potion' | 'ward' | 'sacnoth' | 'ember' | 'iron' | 'moonstone' | 'bell';
+export type RelicId = 'covenant-knot' | 'candle-mirror';
+export type ItemId = 'potion' | 'ward' | 'sacnoth' | 'ember' | 'iron' | 'moonstone' | 'bell' | RelicId;
 export type UpgradeId = 'vigor' | 'focus' | 'supplies' | 'steel' | 'alchemy' | 'map';
+export type SpecializationId = 'warrior-sunder' | 'warrior-riposte' | 'mage-ember' | 'mage-spellcharge' | 'ranger-pierce' | 'ranger-opening';
+export type SpecializationMode = 'direct' | 'prepared';
+export type TaleId = 'hero-return' | 'fever-account' | 'nameless-account';
 export type Flag = 'rescued' | 'weakness' | 'staff' | 'merchant' | 'rune' | 'truth' | 'counterspell' |
-  'pilgrim' | 'ferryman' | 'sigil' | 'prisoner' | 'choir';
+  'pilgrim' | 'ferryman' | 'sigil' | 'prisoner' | 'choir' | 'covenant-kept' | 'covenant-broken' |
+  'siege-supported' | 'alert' | 'parley-route' | 'dream-route' | 'guard-intel' | 'dream-intel' |
+  'reed-sign' | 'herb-cache' | 'ash-warning' | 'marsh-oath' | 'servant-key' | 'wolf-name' |
+  'candle-sign' | 'fortress-map';
 export type EnemyId = 'crocodile' | 'spider' | 'guardian' | 'gaznak' | 'wraith' | 'knight' | 'wolf';
 export type OmenId = 'blood-moon' | 'black-rain' | 'still-star';
 export type EventPoolId = 'wilds' | 'fortress';
@@ -37,6 +44,8 @@ export type Effect =
   | { kind: 'item'; value: ItemId }
   | { kind: 'consume'; value: ItemId }
   | { kind: 'loot'; table: LootTableId }
+  | { kind: 'specialization'; value: SpecializationMode }
+  | { kind: 'tale'; value: TaleId }
   | { kind: 'xp'; amount: number };
 
 export interface Choice {
@@ -69,7 +78,7 @@ export interface Enemy {
   xp: number;
   gold: number;
   description: string;
-  intents: { label: string; damage: number; exposed?: boolean; drainsMana?: number }[];
+  intents: { label: string; damage: number; exposed?: boolean; drainsMana?: number; piercing?: number }[];
 }
 
 export interface Battle {
@@ -78,6 +87,7 @@ export interface Battle {
   round: number;
   intent: number;
   next: string;
+  prepared: boolean;
 }
 
 export interface Run {
@@ -88,16 +98,18 @@ export interface Run {
   nodeId: string;
   hero: Hero;
   flags: Flag[];
+  specialization: SpecializationId | null;
+  equippedRelic: RelicId | null;
   visited: string[];
   battle: Battle | null;
   log: string[];
 }
 
 export interface GameState {
-  schemaVersion: 1;
+  schemaVersion: 2;
   contentVersion: string;
   revision: number;
-  profile: { insight: number; victories: number; expeditions: number; upgrades: UpgradeId[]; discoveries: string[] };
+  profile: { insight: number; victories: number; expeditions: number; upgrades: UpgradeId[]; discoveries: string[]; tales: TaleId[] };
   run: Run | null;
 }
 
@@ -105,6 +117,7 @@ export type Action =
   | { type: 'start'; classId: ClassId; seed: number; revision: number }
   | { type: 'choose'; id: string; revision: number }
   | { type: 'combat'; id: 'attack' | 'skill' | 'guard' | 'potion' | 'flee'; revision: number }
+  | { type: 'equip'; id: RelicId | null; revision: number }
   | { type: 'upgrade'; id: UpgradeId; revision: number }
   | { type: 'retreat'; revision: number };
 

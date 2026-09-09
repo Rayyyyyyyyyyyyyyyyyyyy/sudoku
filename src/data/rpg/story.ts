@@ -1,4 +1,4 @@
-import type { EventPoolId, StoryNode } from '../../lib/rpg/types.ts';
+import type { EventPoolId, StoryNode, TaleId } from '../../lib/rpg/types.ts';
 
 export const SOURCE = {
   author: 'Lord Dunsany',
@@ -7,6 +7,12 @@ export const SOURCE = {
   url: 'https://www.gutenberg.org/cache/epub/10806/pg10806-images.html',
   edition: 'Project Gutenberg #10806 · updated 2024-11-03',
   notice: '依 Lord Dunsany 原作改編；繁中敘述、角色職業、分支與養成為本專案新寫。',
+};
+
+export const TALES: Record<TaleId, { title: string; text: string; unexplored: string }> = {
+  'hero-return': { title: '英雄歸來', text: '一名持有薩克諾斯的英雄走出散去的堡壘。', unexplored: '另一次遠征或許會留下熱病醒轉或人物不存在的記錄。' },
+  'fever-account': { title: '第三夜的熱病', text: '村人說旅程發生在病榻上，掌心壓痕卻無法解釋。', unexplored: '英雄歸來與無名版本仍等待另一趟見證。' },
+  'nameless-account': { title: '村冊上的空白', text: '村冊否認曾有這名旅人，只有異聞簿保存同一筆跡。', unexplored: '英雄與熱病兩種記錄仍可能在另一趟出現。' },
 };
 
 // Narrative order lives in choices, not array position. Each node records which
@@ -173,6 +179,7 @@ export const STORY: StoryNode[] = [
     choices: [
       { id: 'rescue', label: '先打開棚屋', detail: '援救事件：付出物資或體力，換取同伴的幫助。', next: 'rescue' },
       { id: 'observe', label: '追蹤巨獸，觀察牠的步態', detail: '掌握弱點；龍鱷戰傷害 +2。', next: 'crocodile', effects: [{ kind: 'flag', value: 'weakness' }] },
+      { id: 'covenant', label: '先赴森林邊界履行盟約', detail: '展開三日圍困線；只有讓龍鱷禁食三日才能取得異鋼。', next: 'forest-covenant' },
     ],
     provenance: { source: 'sacnoth', note: '金屬心跳、尾痕與受威脅村民依原作；棚屋救援原創。' },
   },
@@ -207,8 +214,8 @@ export const STORY: StoryNode[] = [
       '「它已經醒了。至於要讓它成為怎樣的劍，現在由你決定。」',
     ],
     choices: [
-      { id: 'ember', label: '刻入餘燼符文', detail: '取得魔劍與餘燼符文；技能傷害額外 +3。恢復全部生命與魔力。', next: 'outfitter', requires: [{ kind: 'flag', value: 'rune' }], effects: [{ kind: 'item', value: 'sacnoth' }, { kind: 'item', value: 'ember' }, { kind: 'resource', resource: 'hp', amount: 99 }, { kind: 'resource', resource: 'mana', amount: 99 }] },
-      { id: 'iron', label: '加裝鎮鐵護手', detail: '取得魔劍與鎮鐵符文；每次戰鬥受傷 -2。恢復全部生命與魔力。', next: 'outfitter', effects: [{ kind: 'item', value: 'sacnoth' }, { kind: 'item', value: 'iron' }, { kind: 'resource', resource: 'hp', amount: 99 }, { kind: 'resource', resource: 'mana', amount: 99 }] },
+      { id: 'direct', label: '採取直接型專精，刻入餘燼符文', detail: '依職業鎖定破甲／餘燼／穿隙；取得魔劍與餘燼符文，恢復生命與魔力。', next: 'outfitter', effects: [{ kind: 'specialization', value: 'direct' }, { kind: 'item', value: 'sacnoth' }, { kind: 'item', value: 'ember' }, { kind: 'resource', resource: 'hp', amount: 99 }, { kind: 'resource', resource: 'mana', amount: 99 }] },
+      { id: 'prepared', label: '採取準備型專精，加裝鎮鐵護手', detail: '依職業鎖定反擊／蓄咒／窺隙；格擋後準備下一次技能。取得魔劍與鎮鐵符文，恢復生命與魔力。', next: 'outfitter', effects: [{ kind: 'specialization', value: 'prepared' }, { kind: 'item', value: 'sacnoth' }, { kind: 'item', value: 'iron' }, { kind: 'resource', resource: 'hp', amount: 99 }, { kind: 'resource', resource: 'mana', amount: 99 }] },
     ],
     provenance: { source: 'sacnoth', note: '熔去外殼、磨刃與劍眼取自原作；符文配置原創。' },
   },
@@ -271,13 +278,16 @@ export const STORY: StoryNode[] = [
     provenance: { source: 'original', note: '空鎧騎士、效忠謎問與會說謊的石堤為新寫；以舊軍印連接墓室支線。' },
   },
   {
-    id: 'gate', act: '第三章・夢築的城', title: '會微笑的石像',
+    id: 'gate', act: '第三章・夢築的城', title: '會回聲的鋼門',
     paragraphs: [
       '沼澤的水在腳邊分開。劍柄輕輕牽動你的手，指向一塊看似會沉下去、實際卻很穩的石頭。你照著它走，直到鐵門高高立在面前。',
       '門楣上的怪獸石像逐一露齒。你拔出薩克諾斯，第一聲劍鳴穿過門後的長廊；更深的地方，有龍醒了。',
     ],
-    choices: [{ id: 'open', label: '以魔劍切開鐵門', detail: '進入堡壘。劍的力量使普通護衛退避。', next: 'webhall', requires: [{ kind: 'item', value: 'sacnoth' }] }],
-    provenance: { source: 'sacnoth', note: '劍眼領路、石像與鐵門依原作；守衛退避被合併為敘述。' },
+    choices: [
+      { id: 'declare', label: '舉起薩克諾斯，向門後宣名', detail: '警戒升高；龍吠會把你的名字傳遍堡壘。', next: 'porte-resonant', requires: [{ kind: 'item', value: 'sacnoth' }], effects: [{ kind: 'flag', value: 'alert' }, { kind: 'xp', amount: 2 }] },
+      { id: 'open', label: '讓劍眼尋找門縫，無聲切入', detail: '保持低調進入 Porte Resonant。', next: 'porte-resonant', requires: [{ kind: 'item', value: 'sacnoth' }] },
+    ],
+    provenance: { source: 'sacnoth', note: '劍眼領路、Porte Resonant 鋼門、宣告劍名與門後龍吠據原典 654–680；二值警戒及代價是原創機制。' },
   },
   {
     id: 'webhall', act: '第三章・夢築的城', title: '織了一整年的繩',
@@ -463,8 +473,240 @@ export const STORY: StoryNode[] = [
       '「你帶著哪一個人的勇氣來？」他問。你沒有回答。你把自己的腳，往前移了一步。',
     ],
     variants: [{ flag: 'counterspell', text: '你記得第四拍的空白。樂師咒音造成的傷害降低 3。' }],
-    choices: [{ id: 'fight', label: '迎戰夢魘巫師', detail: '觀察敵方意圖；抓住換位時護甲失效的回合。', next: 'dawn', encounter: 'gaznak' }],
+    choices: [{ id: 'fight', label: '迎戰夢魘巫師', detail: '觀察敵方意圖；移首換位時以技能打擊外露手腕可獲弱點加成。', next: 'homecoming-records', encounter: 'gaznak' }],
     provenance: { source: 'sacnoth', note: '夢化建築、樂師、護甲與手腕破綻依原作；對話與回合化規則新寫。' },
+  },
+  {
+    id: 'forest-covenant', act: '第一章・森林盟約', title: '綠衣人把繩結放在樹根上',
+    paragraphs: ['森林邊界的綠衣人守著一條被龍鱷犁開的路。他們請你三日內不讓巨獸吞食任何活物，才肯指出異鋼應落下的位置。', '樹根上的繩結代表護送與互助；旁邊的乾糧則足以讓你獨自撐過一夜。'],
+    choices: [
+      { id: 'keep', label: '繫上盟約繩結，護送林民撤離', detail: '取得可選遺物盟約繩結；後續圍困可獲一次支援。', next: 'siege-day-one', effects: [{ kind: 'flag', value: 'covenant-kept' }, { kind: 'item', value: 'covenant-knot' }, { kind: 'xp', amount: 2 }] },
+      { id: 'take', label: '取走乾糧，讓林民自行撤離', detail: '補給 +2；沒有森林支援，仍可嘗試圍困。', next: 'siege-day-one', effects: [{ kind: 'flag', value: 'covenant-broken' }, { kind: 'resource', resource: 'supplies', amount: 2 }] },
+      { id: 'fast', label: '拒絕盟約，沿舊獵路追擊', detail: '返回既有快速回合戰；這是壓縮改編路線。', next: 'crocodile' },
+    ],
+    provenance: { source: 'sacnoth', note: '綠衣人與三日阻止龍鱷進食據原典 613–622、639–653；盟約、護送、遺物與支援因果為原創。' },
+  },
+  {
+    id: 'siege-day-one', act: '龍鱷圍困・第一日', title: '第一個白晝：守住巨獸的吻端',
+    paragraphs: ['龍鱷以鐵背撞倒樹木，卻不肯把柔軟的吻端暴露太久。你不必殺牠，只需讓牠今天吃不到東西。'],
+    choices: [
+      { id: 'staff', label: '用榛木杖撐住吻端', detail: '生命 -2；阻止進食，進入第一夜。', next: 'siege-night-one', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }] },
+      { id: 'bait', label: '消耗補給把牠引離林民', detail: '補給 -1；阻止進食。', next: 'siege-night-one', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }] },
+      { id: 'feed', label: '放棄封鎖，讓牠吞食牲口', detail: '圍困失敗；不取得異鋼，立即撤離。', next: 'retreat' },
+    ], provenance: { source: 'sacnoth', note: '持杖守住龍鱷吻端、阻止其進食據原典 639–653；生命與補給取捨為原創。' },
+  },
+  {
+    id: 'siege-night-one', act: '龍鱷圍困・第一夜', title: '第一個夜晚：火不能熄',
+    paragraphs: ['巨獸伏在黑暗裡等守夜者犯錯。遠處傳來林民的短笛，只有履行盟約的人聽得懂其中路標。'],
+    variants: [{ flag: 'covenant-kept', text: '綠衣人依約送來封蠟乾糧，並在北側點起誘敵火。' }],
+    choices: [
+      { id: 'support', label: '接受盟約支援，輪替守夜', detail: '需要履行盟約；補給 +1、生命 +4，記錄支援。', next: 'siege-day-two', requires: [{ kind: 'flag', value: 'covenant-kept' }], effects: [{ kind: 'resource', resource: 'supplies', amount: 1 }, { kind: 'resource', resource: 'hp', amount: 4 }, { kind: 'flag', value: 'siege-supported' }] },
+      { id: 'watch', label: '獨自守到天明', detail: '生命 -4；不消耗補給。', next: 'siege-day-two', effects: [{ kind: 'resource', resource: 'hp', amount: -4 }] },
+      { id: 'camp', label: '吃一份補給維持火線', detail: '補給 -1；生命 +6。', next: 'siege-day-two', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'resource', resource: 'hp', amount: 6 }] },
+    ], provenance: { source: 'original', note: '原典三日過程未逐夜描寫；短笛支援與守夜資源選擇為原創，服務延遲盟約後果。' },
+  },
+  {
+    id: 'siege-day-two', act: '龍鱷圍困・第二日', title: '第二個白晝：路人走進犁溝',
+    paragraphs: ['一隊不知道圍困的旅人走進沼澤。龍鱷立刻轉向；你必須決定拿什麼換他們活著離開。'],
+    choices: [
+      { id: 'shield', label: '用身體擋住衝撞', detail: '生命 -6；旅人安全撤離，龍鱷仍未進食。', next: 'siege-night-two', effects: [{ kind: 'resource', resource: 'hp', amount: -6 }, { kind: 'xp', amount: 2 }] },
+      { id: 'rations', label: '燃燒兩份補給製造煙牆', detail: '補給 -2；遮住活人氣味。', next: 'siege-night-two', requires: [{ kind: 'resource', resource: 'supplies', amount: 2 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -2 }] },
+      { id: 'withdraw', label: '帶旅人一起撤離', detail: '主動結束圍困；保留已得見聞。', next: 'retreat' },
+    ], provenance: { source: 'original', note: '第二日路人危機與煙牆是原創時段，延展原典三日禁食條件。' },
+  },
+  {
+    id: 'siege-night-two', act: '龍鱷圍困・第二夜', title: '第二個夜晚：金屬心跳開始變慢',
+    paragraphs: ['龍鱷的腹部每隔很久才響一次。牠拖著尾巴繞營，試著用假退卻讓你睡著。'],
+    variants: [{ flag: 'siege-supported', text: '北側誘敵火仍亮著，你能把注意力放在真正的足跡上。' }],
+    choices: [
+      { id: 'track', label: '沿真正足跡守住牲口', detail: '生命 -3；識破假退卻。', next: 'siege-day-three', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }] },
+      { id: 'ward', label: '把守夜護符掛在柵門', detail: '消耗護符；銀光替你守住第二夜。', next: 'siege-day-three', requires: [{ kind: 'item', value: 'ward' }], effects: [{ kind: 'consume', value: 'ward' }] },
+      { id: 'leave', label: '承認體力不足，撤回村莊', detail: '不重設圍困，也不取得異鋼。', next: 'retreat' },
+    ], provenance: { source: 'original', note: '假退卻、柵門與夜間守候為原創；維持原典以禁食而非擊殺完成的界線。' },
+  },
+  {
+    id: 'siege-day-three', act: '龍鱷圍困・第三日', title: '第三個白晝：異鋼落在泥裡',
+    paragraphs: ['日正當中，龍鱷最後一次張口。牠的金屬心臟停下，外殼像空甲般倒進泥中；只有連續守住五個時段的人看見這一刻。'],
+    choices: [
+      { id: 'temper', label: '依綠衣人所示剖取異鋼', detail: '生命 -2；取得足以鍛造薩克諾斯的材料。', next: 'forge', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'xp', amount: 4 }] },
+      { id: 'cool', label: '用最後一份補給包住灼熱鋼塊', detail: '補給 -1；安全取得異鋼。', next: 'forge', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'xp', amount: 3 }] },
+      { id: 'collapse', label: '先救治自己再搬運鋼塊', detail: '消耗療傷藥，恢復 10 生命後進入鍛造。', next: 'forge', requires: [{ kind: 'item', value: 'potion' }], effects: [{ kind: 'consume', value: 'potion' }, { kind: 'resource', resource: 'hp', amount: 10 }] },
+    ], provenance: { source: 'sacnoth', note: '龍鱷禁食三日後死亡、取得異鋼據原典 639–653；三種搬運代價為原創。' },
+  },
+  {
+    id: 'wild-reed-oracle', act: '荒野異事・北方沼澤', title: '蘆葦只朝沒有路的方向倒伏',
+    paragraphs: ['一片蘆葦逆風倒下，露出刻著三日記號的石板。最後一筆仍是濕的。'],
+    choices: [
+      { id: 'read', label: '辨認三日記號', detail: '魔力 -1；取得蘆葦示警，後續圍困文字會回應。', next: 'marsh', requires: [{ kind: 'resource', resource: 'mana', amount: 1 }], effects: [{ kind: 'resource', resource: 'mana', amount: -1 }, { kind: 'flag', value: 'reed-sign' }] },
+      { id: 'cut', label: '割取乾蘆葦作火種', detail: '補給 +1。', next: 'marsh', effects: [{ kind: 'resource', resource: 'supplies', amount: 1 }] },
+      { id: 'pass', label: '繞過倒伏處', detail: '生命 +2；在背風處短暫休息。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: 2 }] },
+    ], provenance: { source: 'original', note: '逆風蘆葦與三日石板為原創荒野事件；跨節點旗標呼應圍困。' },
+  },
+  {
+    id: 'wild-herbalists-cache', act: '荒野異事・北方沼澤', title: '藥草籃藏在倒樹下',
+    paragraphs: ['倒樹下的藥草仍以濕布包好，籃柄刻著採藥人的家徽。腳印卻朝龍鱷方向延伸。'],
+    choices: [
+      { id: 'return', label: '把藥籃送回棚屋', detail: '記下藏藥處；救援時可辨認同一家人。', next: 'marsh', effects: [{ kind: 'flag', value: 'herb-cache' }, { kind: 'xp', amount: 2 }] },
+      { id: 'brew', label: '就地熬成療傷藥', detail: '補給 -1；取得療傷藥。', next: 'marsh', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'item', value: 'potion' }] },
+      { id: 'leave', label: '保持包裹原樣', detail: '不動用他人物資；經驗 +1。', next: 'marsh', effects: [{ kind: 'xp', amount: 1 }] },
+    ], provenance: { source: 'original', note: '藥草籃為原創事件，家徽旗標在後續救援形成延遲辨認。' },
+  },
+  {
+    id: 'wild-ash-birds', act: '荒野異事・北方沼澤', title: '灰鳥把明日叫成昨天',
+    paragraphs: ['灰鳥群反覆叫著你尚未做出的選擇。牠們停過的枝條留下溫熱灰燼。'],
+    choices: [
+      { id: 'listen', label: '聽完錯置的警告', detail: '取得灰燼示警；堡門前會辨認同一聲龍吠。', next: 'marsh', effects: [{ kind: 'flag', value: 'ash-warning' }] },
+      { id: 'gather', label: '收集溫灰', detail: '魔力 +3。', next: 'marsh', effects: [{ kind: 'resource', resource: 'mana', amount: 3 }] },
+      { id: 'scatter', label: '驅散鳥群', detail: '生命 -2、經驗 +2。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'xp', amount: 2 }] },
+    ], provenance: { source: 'original', note: '錯置時間的灰鳥為原創事件；警告旗標跨至 Porte Resonant。' },
+  },
+  {
+    id: 'wild-root-court', act: '荒野異事・北方沼澤', title: '樹根法庭審問一滴血',
+    paragraphs: ['盤結樹根圍成法庭，中央一滴未乾的血被控訴引來龍鱷。沒有法官，只有三條可走的根。'],
+    choices: [
+      { id: 'swear', label: '替陌生人承諾守住三日', detail: '生命 -2；立下沼澤誓言，圍困時留下印記。', next: 'marsh', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'flag', value: 'marsh-oath' }] },
+      { id: 'pay', label: '留下兩枚金幣作賠償', detail: '金幣 -2；補給 +2。', next: 'marsh', requires: [{ kind: 'resource', resource: 'gold', amount: 2 }], effects: [{ kind: 'resource', resource: 'gold', amount: -2 }, { kind: 'resource', resource: 'supplies', amount: 2 }] },
+      { id: 'refuse', label: '不接受沒有法官的裁決', detail: '經驗 +2。', next: 'marsh', effects: [{ kind: 'xp', amount: 2 }] },
+    ], provenance: { source: 'original', note: '樹根法庭與誓言為原創荒野事件；誓言作跨場景敘事後果。' },
+  },
+  {
+    id: 'porte-resonant', act: '第三章・Porte Resonant', title: '龍吠沿著鋼門奔跑',
+    paragraphs: ['門內的回聲不是你的腳步。龍吠從一根門閂傳到下一根，兩隊守衛在不同方向醒來。', '左廊通往駱駝衛隊與兩百侍者；右廊的燭火映出一名火眼夢女。兩條路最後都落向深淵。'],
+    variants: [{ flag: 'alert', text: '你宣告過劍名。整座堡壘已知道來者是誰，路線入口將索取額外代價。' }, { flag: 'ash-warning', text: '灰鳥的錯置警告讓你先一步辨認龍吠的傳遞方向。' }],
+    choices: [
+      { id: 'parley', label: '跟上潰逃的駱駝衛隊', detail: '鎖定交涉線；同趟不能再取得辨夢線利益。', next: 'parley-guard', effects: [{ kind: 'flag', value: 'parley-route' }] },
+      { id: 'dream', label: '走向火眼夢女的燭廊', detail: '鎖定辨夢線；同趟不能再取得交涉線利益。', next: 'dream-woman', effects: [{ kind: 'flag', value: 'dream-route' }] },
+      { id: 'retreat', label: '趁龍吠尚遠撤出鋼門', detail: '保留永久見聞，結束本趟。', next: 'retreat' },
+    ], provenance: { source: 'sacnoth', note: 'Porte Resonant、龍吠、駱駝衛隊與火眼女子據原典 654–680、697–722；互斥路線與警戒為原創。' },
+  },
+  {
+    id: 'parley-guard', act: '堡內支線・交涉', title: '駱駝衛隊丟下旗幟逃跑',
+    paragraphs: ['衛隊看見薩克諾斯便後退，卻把一名傳令者鎖在旗桿上。你需要一個能讓兩百名侍者相信的口信。'],
+    variants: [{ flag: 'alert', text: '高警戒的弩手從樓上射下警告，你在進入談判前受 3 點生命代價。' }],
+    choices: [
+      { id: 'name', label: '用真名保證傳令', detail: '取得傳令信任與 2 經驗。', next: 'parley-message', effects: [{ kind: 'xp', amount: 2 }] },
+      { id: 'sigil', label: '展示舊軍印', detail: '需要軍印；讓衛隊放下武器。', next: 'parley-message', requires: [{ kind: 'flag', value: 'sigil' }], effects: [{ kind: 'xp', amount: 3 }] },
+      { id: 'cut', label: '切斷旗桿鎖鏈', detail: '生命 -2；先救傳令者再談。', next: 'parley-message', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }] },
+    ], provenance: { source: 'sacnoth', note: '駱駝衛隊因劍名潰逃據原典；傳令者、弩手與交涉規則為原創。' },
+  },
+  {
+    id: 'parley-message', act: '堡內支線・交涉', title: '一句話經過二十張嘴',
+    paragraphs: ['兩百名侍者排成長列，只准口信逐人傳遞。每經過一張嘴，Gaznak 的名字就少一個音。'],
+    choices: [
+      { id: 'short', label: '傳遞最短的警告', detail: '保留「守龍尾擊」情報。', next: 'parley-servants', effects: [{ kind: 'flag', value: 'guard-intel' }] },
+      { id: 'rhythm', label: '把口信編成節拍', detail: '魔力 -2；避免傳話失真並取得經驗。', next: 'parley-servants', requires: [{ kind: 'resource', resource: 'mana', amount: 2 }], effects: [{ kind: 'resource', resource: 'mana', amount: -2 }, { kind: 'flag', value: 'guard-intel' }, { kind: 'xp', amount: 2 }] },
+      { id: 'listen', label: '讓錯誤一路傳到底', detail: '金幣 +2；記下侍者私藏的交易暗語。', next: 'parley-servants', effects: [{ kind: 'resource', resource: 'gold', amount: 2 }] },
+    ], provenance: { source: 'original', note: '兩百侍者取自原典人物群；逐口傳話失真、節拍解法與獎勵是原創玩法。' },
+  },
+  {
+    id: 'parley-servants', act: '堡內支線・交涉', title: '兩百名侍者同時低頭',
+    paragraphs: ['最後一人說出被扭曲的口信，整列侍者同時低頭。只有最年幼者悄悄把一把骨匙踢到你腳邊。'],
+    choices: [
+      { id: 'key', label: '收下骨匙並替他保密', detail: '取得侍者鑰匙；稍後可讀出側門。', next: 'parley-cistern', effects: [{ kind: 'flag', value: 'servant-key' }] },
+      { id: 'free', label: '命令眾人離開堡壘', detail: '生命 -3；承受監工反擊，經驗 +3。', next: 'parley-cistern', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }, { kind: 'xp', amount: 3 }] },
+      { id: 'supply', label: '交換一份廚房補給', detail: '金幣 -2；補給 +2。', next: 'parley-cistern', requires: [{ kind: 'resource', resource: 'gold', amount: 2 }], effects: [{ kind: 'resource', resource: 'gold', amount: -2 }, { kind: 'resource', resource: 'supplies', amount: 2 }] },
+    ], provenance: { source: 'original', note: '兩百侍者的具體組織、骨匙與監工因果為原創，延伸原典人物。' },
+  },
+  {
+    id: 'parley-cistern', act: '堡內支線・交涉', title: '蓄水池記得守龍的尾巴',
+    paragraphs: ['骨匙或口信引你到蓄水池。牆上刮痕顯示守龍每次重尾擊前都把尾端藏進同一道水溝。'],
+    choices: [
+      { id: 'study', label: '記下尾擊水紋', detail: '取得守龍情報；技能對守龍略有加成。', next: 'webhall', effects: [{ kind: 'flag', value: 'guard-intel' }, { kind: 'xp', amount: 2 }] },
+      { id: 'drink', label: '濾水後補充行囊', detail: '補給 +1、生命 +4。', next: 'webhall', effects: [{ kind: 'resource', resource: 'supplies', amount: 1 }, { kind: 'resource', resource: 'hp', amount: 4 }] },
+      { id: 'door', label: '用侍者骨匙開側門', detail: '需要骨匙；安全抵達主廊並獲 3 經驗。', next: 'webhall', requires: [{ kind: 'flag', value: 'servant-key' }], effects: [{ kind: 'flag', value: 'guard-intel' }, { kind: 'xp', amount: 3 }] },
+    ], provenance: { source: 'original', note: '蓄水池與尾擊水紋為原創，將交涉所得情報延遲帶到守龍。' },
+  },
+  {
+    id: 'dream-woman', act: '堡內支線・辨夢', title: '火眼夢女在牆前等你',
+    paragraphs: ['她的眼睛像兩盞不耗蠟的火，影子裡卻站著一匹狼。她問你究竟是持劍者，還是發熱病人的一個念頭。'],
+    variants: [{ flag: 'alert', text: '高警戒讓燭火抽走 2 點魔力；夢女早已聽見你的名字。' }],
+    choices: [
+      { id: 'answer', label: '回答自己記得的第一個清晨', detail: '取得 2 經驗。', next: 'dream-wall', effects: [{ kind: 'xp', amount: 2 }] },
+      { id: 'mirror', label: '讓劍眼替你回答', detail: '生命 -2；看見牆中狼的輪廓。', next: 'dream-wall', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'flag', value: 'wolf-name' }] },
+      { id: 'silence', label: '不接受她問題中的任何身分', detail: '魔力 +2。', next: 'dream-wall', effects: [{ kind: 'resource', resource: 'mana', amount: 2 }] },
+    ], provenance: { source: 'sacnoth', note: '火眼夢女與現實不確定感據原典 697–722；問答、警戒代價與牆中狼線索為原創。' },
+  },
+  {
+    id: 'dream-wall', act: '堡內支線・辨夢', title: '狼在牆的另一面呼吸',
+    paragraphs: ['白牆隨呼吸鼓起，狼爪從石灰下劃過。每道抓痕都像一條可能的歸鄉記錄。'],
+    choices: [
+      { id: 'name', label: '叫出牠藏在影子裡的名字', detail: '需要狼名；取得夢境情報。', next: 'dream-candles', requires: [{ kind: 'flag', value: 'wolf-name' }], effects: [{ kind: 'flag', value: 'dream-intel' }, { kind: 'xp', amount: 3 }] },
+      { id: 'cut', label: '用薩克諾斯切開一道醒路', detail: '生命 -3；穿牆而過。', next: 'dream-candles', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }] },
+      { id: 'wait', label: '等呼吸與自己同步', detail: '魔力 -2；取得夢境情報。', next: 'dream-candles', requires: [{ kind: 'resource', resource: 'mana', amount: 2 }], effects: [{ kind: 'resource', resource: 'mana', amount: -2 }, { kind: 'flag', value: 'dream-intel' }] },
+    ], provenance: { source: 'sacnoth', note: '牆中狼的意象取自原典；抓痕記錄與三種辨夢方法為原創。' },
+  },
+  {
+    id: 'dream-candles', act: '堡內支線・辨夢', title: '每支蠟燭照亮一種病名',
+    paragraphs: ['燭室裡的火焰分別叫作勇氣、熱病與虛構。燭淚在銀盤上凝成一面小鏡。'],
+    choices: [
+      { id: 'take', label: '收下燭淚鏡', detail: '取得可選遺物；對破綻技能增傷，但技能多耗 1 魔力。', next: 'dream-stair', effects: [{ kind: 'item', value: 'candle-mirror' }, { kind: 'flag', value: 'candle-sign' }] },
+      { id: 'quench', label: '熄滅「虛構」之火', detail: '生命 -2、經驗 +3。', next: 'dream-stair', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'xp', amount: 3 }] },
+      { id: 'warm', label: '在「熱病」之火旁調息', detail: '生命 +5、魔力 +3。', next: 'dream-stair', effects: [{ kind: 'resource', resource: 'hp', amount: 5 }, { kind: 'resource', resource: 'mana', amount: 3 }] },
+    ], provenance: { source: 'original', note: '三種病名燭火與燭淚鏡為原創，服務歧義尾聲與遺物取捨。' },
+  },
+  {
+    id: 'dream-stair', act: '堡內支線・辨夢', title: '樓梯只在閉眼時向下',
+    paragraphs: ['你閉眼後才聽見向下的階梯。夢女在身後提醒：巫師移首時，手腕比名字真實。'],
+    choices: [
+      { id: 'remember', label: '記住手腕與移首窗口', detail: '取得終戰夢境情報。', next: 'webhall', effects: [{ kind: 'flag', value: 'dream-intel' }] },
+      { id: 'map', label: '把閉眼步數刻進牆面', detail: '取得堡內路圖與 2 經驗。', next: 'webhall', effects: [{ kind: 'flag', value: 'fortress-map' }, { kind: 'xp', amount: 2 }] },
+      { id: 'rush', label: '在樓梯消失前奔下去', detail: '生命 -3；快速抵達主廊。', next: 'webhall', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }] },
+    ], provenance: { source: 'original', note: '閉眼樓梯與步數地圖為原創；手腕提示回扣原典巫師移首破綻。' },
+  },
+  {
+    id: 'fortress-clock-room', act: '夢城異事・白色堡壘', title: '鐘室把一分鐘借給每個囚徒',
+    paragraphs: ['數百枚沒有指針的鐘同時滴答。每一聲都讓遠處囚徒多醒一瞬。'],
+    choices: [
+      { id: 'wind', label: '替鐘室上緊發條', detail: '生命 -2；取得侍者鑰匙線索。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'flag', value: 'servant-key' }] },
+      { id: 'break', label: '斬斷主發條', detail: '經驗 +3。', next: 'abyss', effects: [{ kind: 'xp', amount: 3 }] },
+      { id: 'rest', label: '借用一分鐘調息', detail: '魔力 +3。', next: 'abyss', effects: [{ kind: 'resource', resource: 'mana', amount: 3 }] },
+    ], provenance: { source: 'original', note: '借時間的鐘室為原創夢城事件；鑰匙線索可跨節點回應交涉內容。' },
+  },
+  {
+    id: 'fortress-mouth-door', act: '夢城異事・白色堡壘', title: '門只吞下沒有說出口的話',
+    paragraphs: ['門中央張著石嘴。它拒絕名字，只索取一句你決定不說的話。'],
+    choices: [
+      { id: 'secret', label: '交出未說出口的恐懼', detail: '魔力 -2；取得夢境情報。', next: 'abyss', requires: [{ kind: 'resource', resource: 'mana', amount: 2 }], effects: [{ kind: 'resource', resource: 'mana', amount: -2 }, { kind: 'flag', value: 'dream-intel' }] },
+      { id: 'coin', label: '用三枚金幣塞住石嘴', detail: '金幣 -3；取得夢城遺物。', next: 'abyss', requires: [{ kind: 'resource', resource: 'gold', amount: 3 }], effects: [{ kind: 'resource', resource: 'gold', amount: -3 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'silence', label: '與門一起保持沉默', detail: '生命 +3。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: 3 }] },
+    ], provenance: { source: 'original', note: '吞話石門為原創事件；秘密效果延遲影響終戰提示。' },
+  },
+  {
+    id: 'fortress-candle-child', act: '夢城異事・白色堡壘', title: '持燭孩子沒有投下影子',
+    paragraphs: ['孩子捧著一支向下燃燒的蠟燭，請你替他決定哪個方向才是清晨。'],
+    choices: [
+      { id: 'guide', label: '依燭淚痕跡指出出口', detail: '取得燭火記號與 2 經驗。', next: 'abyss', effects: [{ kind: 'flag', value: 'candle-sign' }, { kind: 'xp', amount: 2 }] },
+      { id: 'trade', label: '給他一份補給', detail: '補給 -1；取得夢城遺物。', next: 'abyss', requires: [{ kind: 'resource', resource: 'supplies', amount: 1 }], effects: [{ kind: 'resource', resource: 'supplies', amount: -1 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'follow', label: '跟隨反向火焰', detail: '生命 -2、魔力 +4。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: -2 }, { kind: 'resource', resource: 'mana', amount: 4 }] },
+    ], provenance: { source: 'original', note: '反燃蠟燭與無影孩子為原創夢城事件；燭火記號連結歸鄉記錄。' },
+  },
+  {
+    id: 'fortress-folded-hall', act: '夢城異事・白色堡壘', title: '走廊被折成一張地圖',
+    paragraphs: ['整條走廊像紙一樣折起。門、窗與腳步聲疊在同一個角落，只有劍眼仍看向真正的前方。'],
+    choices: [
+      { id: 'unfold', label: '沿劍眼方向展開走廊', detail: '取得堡內路圖。', next: 'abyss', effects: [{ kind: 'flag', value: 'fortress-map' }] },
+      { id: 'cut', label: '切掉錯誤的折角', detail: '生命 -3；取得夢城遺物。', next: 'abyss', effects: [{ kind: 'resource', resource: 'hp', amount: -3 }, { kind: 'loot', table: 'fortress' }] },
+      { id: 'mark', label: '替每個重疊門做記號', detail: '經驗 +3。', next: 'abyss', effects: [{ kind: 'xp', amount: 3 }] },
+    ], provenance: { source: 'original', note: '紙折走廊為原創事件；路圖旗標提供跨場景可辨識後果。' },
+  },
+  {
+    id: 'homecoming-records', act: '終章・歸途', title: '三份記錄都使用你的筆跡',
+    paragraphs: ['Gaznak 倒下後，堡壘散成霧。回村時，桌上已有三份互相矛盾的記錄：英雄歸來、熱病醒轉，以及從未有過這個人。', '你無法證明哪一份先寫成，只能保存這趟實際抵達的版本，讓下一趟指向尚未看見的方向。'],
+    choices: [
+      { id: 'hero', label: '保存「英雄從堡壘歸來」', detail: '完成勝利結算並收錄英雄傳說；不另發見聞貨幣。', next: 'dawn' },
+      { id: 'fever', label: '保存「病人在第三夜醒來」', detail: '完成勝利結算並收錄熱病版本。', next: 'fever-dawn' },
+      { id: 'nameless', label: '保存「村裡從未有過此人」', detail: '完成勝利結算並收錄人物不存在版本。', next: 'nameless-dawn' },
+    ], provenance: { source: 'sacnoth', note: '原典 786–797 保留夢、熱病與冒險真實性的歧義；三份可保存記錄與跨趟見聞為原創介面。' },
+  },
+  {
+    id: 'fever-dawn', act: '終章・歸途', title: '第三夜的熱終於退了', ending: 'victory',
+    paragraphs: ['有人說你從未離開床榻，薩克諾斯只是窗縫月光。可你的掌心仍有盟約繩結留下的壓痕。', '異聞簿保存這個版本，也標出仍未探索的英雄與無名記錄。'],
+    choices: [], provenance: { source: 'sacnoth', note: '熱病醒轉的不確定性據原典 786–797；具體病房與見聞導引為原創。' },
+  },
+  {
+    id: 'nameless-dawn', act: '終章・歸途', title: '村冊上沒有你的名字', ending: 'victory',
+    paragraphs: ['井邊的人看著你，堅稱村裡從未派出英雄。法師塔甚至沒有多餘的椅子，只有異聞簿留著你的筆跡。', '這份記錄不裁定真相，只提醒下一趟仍有另外兩個版本。'],
+    choices: [], provenance: { source: 'sacnoth', note: '人物可能不存在的歧義延伸原典 786–797；村冊與異聞簿為原創。' },
   },
   {
     id: 'dawn', act: '終章・歸途', title: '村裡終於有人睡著', ending: 'victory',
@@ -499,6 +741,6 @@ export const STORY: StoryNode[] = [
 export const NODES: Record<string, StoryNode> = Object.fromEntries(STORY.map(node => [node.id, node]));
 
 export const EVENT_POOLS: Record<EventPoolId, string[]> = {
-  wilds: ['wild-witchfire', 'wild-grave-cart', 'wild-moonwell', 'wild-white-stag'],
-  fortress: ['fortress-armory', 'fortress-mirror', 'fortress-scriptorium', 'fortress-sleepwalker'],
+  wilds: ['wild-witchfire', 'wild-grave-cart', 'wild-moonwell', 'wild-white-stag', 'wild-reed-oracle', 'wild-herbalists-cache', 'wild-ash-birds', 'wild-root-court'],
+  fortress: ['fortress-armory', 'fortress-mirror', 'fortress-scriptorium', 'fortress-sleepwalker', 'fortress-clock-room', 'fortress-mouth-door', 'fortress-candle-child', 'fortress-folded-hall'],
 };

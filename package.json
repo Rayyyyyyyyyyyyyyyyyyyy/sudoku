@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.rpg.json",
     "test:rpg": "vitest run --config vitest.rpg.config.js",
     "rpg:text": "node --experimental-strip-types scripts/exportRpgStory.mjs",
+    "rpg:verify-v2": "node --experimental-strip-types scripts/verifyRpgV2.mjs",
     "test:engine": "node --test test/*.test.js",
     "test:ui": "vitest run --config vitest.config.js"
   },

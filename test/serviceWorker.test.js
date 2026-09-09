@@ -128,7 +128,7 @@ test('precache assets are cache-first', async () => {
   assert.equal(worker.fetchCalls, 0);
 });
 
-test('offline navigation falls back to the cached application shell', async () => {
+test('navigation is app-shell cache-first and does not wait for a failed network request', async () => {
   const worker = installWorker(source, {
     fetchImpl: async () => { throw new Error('offline'); }
   });
@@ -140,6 +140,7 @@ test('offline navigation falls back to the cached application shell', async () =
 
   assert.equal(response.source, 'cache');
   assert.equal(worker.matches.at(-1), '/games/index.html');
+  assert.equal(worker.fetchCalls, 0);
 });
 
 test('registration uses the configured production base as its scope', async () => {

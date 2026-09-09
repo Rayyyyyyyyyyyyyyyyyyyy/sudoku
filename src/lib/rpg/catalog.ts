@@ -1,9 +1,12 @@
-import type { ClassId, Effect, Enemy, EnemyId, Flag, Hero, ItemId, LootTableId, OmenId, UpgradeId } from './types.ts';
+import type { ClassId, Effect, Enemy, EnemyId, Flag, Hero, ItemId, LootTableId, OmenId, RelicId, SpecializationId, TaleId, UpgradeId } from './types.ts';
 
-export const CONTENT_VERSION = 'nightmare-fortress-1';
+export const CONTENT_VERSION = 'nightmare-fortress-2';
 export const CLASS_IDS: ClassId[] = ['warrior', 'mage', 'ranger'];
-export const FLAG_IDS: Flag[] = ['rescued', 'weakness', 'staff', 'merchant', 'rune', 'truth', 'counterspell', 'pilgrim', 'ferryman', 'sigil', 'prisoner', 'choir'];
+export const FLAG_IDS: Flag[] = ['rescued', 'weakness', 'staff', 'merchant', 'rune', 'truth', 'counterspell', 'pilgrim', 'ferryman', 'sigil', 'prisoner', 'choir',
+  'covenant-kept', 'covenant-broken', 'siege-supported', 'alert', 'parley-route', 'dream-route', 'guard-intel', 'dream-intel',
+  'reed-sign', 'herb-cache', 'ash-warning', 'marsh-oath', 'servant-key', 'wolf-name', 'candle-sign', 'fortress-map'];
 export const DISCOVERY_IDS: string[] = ['forge', 'gate', 'bells', 'crypt', 'archive'];
+export const TALE_IDS: TaleId[] = ['hero-return', 'fever-account', 'nameless-account'];
 export const CLASSES: Record<ClassId, { name: string; description: string; skill: string; skillDescription: string; manaCost: number; stats: Pick<Hero, 'maxHp' | 'maxMana' | 'attack' | 'armor'> }> = {
   warrior: { name: '戰士', description: '以護甲與耐力迎戰，重擊能突破堅硬外殼。', skill: '破甲重擊', skillDescription: '造成高傷害並無視護甲。', manaCost: 2, stats: { maxHp: 38, maxMana: 8, attack: 7, armor: 3 } },
   mage: { name: '法師', description: '以魔力焚除障礙，奧術護盾抵擋反擊。', skill: '餘燼之矛', skillDescription: '造成高傷害、無視護甲，並減輕本回合反擊。', manaCost: 3, stats: { maxHp: 29, maxMana: 16, attack: 4, armor: 1 } },
@@ -17,6 +20,27 @@ export const ITEMS: Record<ItemId, { name: string; description: string }> = {
   iron: { name: '鎮鐵符文', description: '每次受到的戰鬥傷害額外減少 2。' },
   moonstone: { name: '月長石', description: '職業技能的魔力消耗 -1，最低仍為 1。' },
   bell: { name: '送魂鈴', description: '面對怨魂與加茲納克時，每次受到的傷害額外減少 2。' },
+  'covenant-knot': { name: '盟約繩結', description: '裝備時格擋額外減傷 +3，但普通攻擊傷害 -2。' },
+  'candle-mirror': { name: '燭淚鏡', description: '裝備時對破綻使用技能傷害 +4，但技能魔力消耗 +1。' },
+};
+export const RELIC_IDS: RelicId[] = ['covenant-knot', 'candle-mirror'];
+export const RELICS: Record<RelicId, { name: string; benefit: string; cost: string }> = {
+  'covenant-knot': { name: '盟約繩結', benefit: '格擋額外減傷 3', cost: '普通攻擊傷害 -2' },
+  'candle-mirror': { name: '燭淚鏡', benefit: '對破綻使用技能傷害 +4', cost: '技能魔力消耗 +1' },
+};
+
+export const SPECIALIZATIONS: Record<SpecializationId, { classId: ClassId; name: string; description: string; prepared: boolean }> = {
+  'warrior-sunder': { classId: 'warrior', name: '破甲', description: '技能維持高傷害並忽略護甲。', prepared: false },
+  'warrior-riposte': { classId: 'warrior', name: '反擊', description: '格擋後取得準備；下次技能加傷。未準備的技能不忽略護甲。', prepared: true },
+  'mage-ember': { classId: 'mage', name: '餘燼', description: '技能維持高傷害、忽略護甲並減輕當回合反擊。', prepared: false },
+  'mage-spellcharge': { classId: 'mage', name: '蓄咒', description: '格擋後取得準備；下次技能少耗 1 魔力並提高傷害，但不減輕反擊。', prepared: true },
+  'ranger-pierce': { classId: 'ranger', name: '穿隙', description: '技能維持忽略護甲並減輕當回合反擊。', prepared: false },
+  'ranger-opening': { classId: 'ranger', name: '窺隙', description: '格擋後取得準備；下次技能遇破綻大幅增傷，但不減輕反擊。', prepared: true },
+};
+export const SPECIALIZATION_BY_CLASS: Record<ClassId, { direct: SpecializationId; prepared: SpecializationId }> = {
+  warrior: { direct: 'warrior-sunder', prepared: 'warrior-riposte' },
+  mage: { direct: 'mage-ember', prepared: 'mage-spellcharge' },
+  ranger: { direct: 'ranger-pierce', prepared: 'ranger-opening' },
 };
 export const UPGRADES: Record<UpgradeId, { name: string; cost: number; description: string }> = {
   vigor: { name: '守夜人的訓練', cost: 2, description: '以後出發時，生命上限 +6。' },
@@ -75,7 +99,7 @@ export const ENEMIES: Record<EnemyId, Enemy> = {
     intents: [{ label: '收緊蛛絲：下一擊 5 傷害', damage: 5 }, { label: '撲咬：下一擊 9 傷害', damage: 9 }, { label: '重新結網：下一擊 2 傷害，護甲失效', damage: 2, exposed: true }] },
   guardian: { id: 'guardian', name: '深淵守龍', hp: 32, armor: 3, xp: 5, gold: 3,
     description: '牠的嘴朝向你，尾巴卻已繞到石柱後方。劍眼正盯著那裡。',
-    intents: [{ label: '佯攻：下一擊 4 傷害', damage: 4 }, { label: '鉤尾穿刺：下一擊 12 傷害', damage: 12 }, { label: '收回尾甲：下一擊 3 傷害，護甲失效', damage: 3, exposed: true }] },
+    intents: [{ label: '佯攻：下一擊 4 傷害', damage: 4 }, { label: '鉤尾穿刺：下一擊 12 傷害，未格擋時額外穿透 4', damage: 12, piercing: 4 }, { label: '收回尾甲：下一擊 3 傷害，護甲失效', damage: 3, exposed: true }] },
   gaznak: { id: 'gaznak', name: '夢魘巫師・加茲納克', hp: 43, armor: 4, xp: 6, gold: 5,
     description: '他把左手停在頸旁，彷彿知道你下一劍會落在哪裡。',
     intents: [{ label: '樂師咒音：下一擊 6 傷害，失去 1 魔力', damage: 6, drainsMana: 1 }, { label: '裂甲斬：下一擊 13 傷害', damage: 13 }, { label: '移首換位：下一擊 3 傷害，手腕露出破綻', damage: 3, exposed: true }] },

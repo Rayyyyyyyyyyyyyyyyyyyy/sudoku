@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { createGame, getAvailableActions, transition, unmetRequirement } from '../../src/lib/rpg/engine.ts';
-import { CLASSES, ENEMIES, getOmen, OMENS, UPGRADES } from '../../src/lib/rpg/catalog.ts';
+import { CLASSES, ENEMIES, getOmen, OMENS, RELIC_IDS, SPECIALIZATION_BY_CLASS, UPGRADES } from '../../src/lib/rpg/catalog.ts';
 import { EVENT_POOLS, NODES, STORY } from '../../src/data/rpg/story.ts';
 import { validateStory } from '../../src/lib/rpg/contentValidation.ts';
-import { deserializeGame, loadGame, saveGame, STORAGE_KEY, validGame } from '../../src/lib/rpg/persistence.ts';
+import { deserializeGame, loadGame, migrateLegacyRaw, saveGame, STORAGE_KEY, validGame, validLegacyGame } from '../../src/lib/rpg/persistence.ts';
 import type { Action, ClassId, GameState } from '../../src/lib/rpg/types.ts';
+import { INVALID_V1_RAWS, V1_FIXTURES } from './fixtures/v1.ts';
+import { ROUTE_MATRIX, routeOverrides } from './routeMatrix.ts';
 
 function act(game: GameState, action: Omit<Action, 'revision'> | Record<string, unknown>) {
   const result = transition(game, { ...action, revision: game.revision } as Action);
@@ -31,15 +33,17 @@ function battleAction(game: GameState): string {
   const enemy = ENEMIES[run.battle!.enemyId];
   const intent = enemy.intents[run.battle!.intent];
   if (hero.hp <= hero.maxHp - 16 && hero.inventory.includes('potion') && intent.damage < 10) return 'potion';
-  if (hero.mana >= CLASSES[hero.classId].manaCost) return 'skill';
+  if (getAvailableActions(game).find(option => option.id === 'skill' && !option.disabled)) return 'skill';
   if (intent.damage >= 9) return 'guard';
   return 'attack';
 }
 
 const mainChoices: Record<string, string> = {
   village: 'listen', briefing: 'supplies', crossroads: 'ruins', ruins: 'rune', bridge: 'help',
-  camp: 'staff', marsh: 'rescue', rescue: 'lift', crocodile: 'fight', forge: 'ember',
-  outfitter: 'buy', gate: 'open', webhall: 'fight', banquet: 'truth', refuge: 'rest',
+  camp: 'staff', marsh: 'rescue', rescue: 'lift', crocodile: 'fight', forge: 'direct',
+  outfitter: 'buy', gate: 'open', 'porte-resonant': 'parley', 'parley-guard': 'name', 'parley-message': 'short',
+  'parley-servants': 'key', 'parley-cistern': 'study', 'dream-woman': 'answer', 'dream-wall': 'cut', 'dream-candles': 'take', 'dream-stair': 'remember',
+  webhall: 'fight', banquet: 'truth', refuge: 'rest',
   abyss: 'fight', bells: 'listen', threshold: 'rest', throne: 'fight',
 };
 
@@ -64,7 +68,9 @@ describe('authored text and story graph', () => {
   it('has complete prose, provenance, reachable endings and guarded costs', () => {
     expect(validateStory()).toEqual([]);
     expect(STORY.length).toBeGreaterThanOrEqual(20);
-    expect(STORY.filter(n => n.ending).map(n => n.ending).sort()).toEqual(['defeat', 'retreat', 'victory']);
+    expect(new Set(STORY.filter(n => n.ending).map(n => n.ending))).toEqual(new Set(['defeat', 'retreat', 'victory']));
+    expect(STORY).toHaveLength(64);
+    expect(STORY.reduce((total, node) => total + node.choices.length, 0)).toBe(165);
   });
 
   it('detects an authoring typo, unguarded cost and reward loop', () => {
@@ -115,7 +121,7 @@ describe('deterministic adventure and progression', () => {
 
   it('selects every wilds event deterministically and resumes the selected scene exactly', () => {
     const selected = new Set<string>();
-    for (const seed of [0, 1, 8192, 12288]) {
+    for (let seed = 0; seed <= 255; seed++) {
       const first = reachWildsEvent(seed);
       const replay = reachWildsEvent(seed);
       expect(replay).toEqual(first);
@@ -157,7 +163,7 @@ describe('deterministic adventure and progression', () => {
   it('has a different viable route with merchant, defensive rune and class bypass', () => {
     for (const classId of ['mage', 'ranger'] as const) {
       const end = play(start(classId), { crossroads: 'bridge', briefing: 'ward', camp: 'rest',
-        marsh: 'observe', forge: 'iron', webhall: classId === 'mage' ? 'burn' : 'sneak', abyss: 'ward' }).at(-1)!;
+        marsh: 'observe', forge: 'prepared', webhall: classId === 'mage' ? 'burn' : 'sneak', abyss: 'ward' }).at(-1)!;
       expect(end.run!.nodeId).toBe('dawn');
       expect(end.run!.flags).toContain('merchant');
       expect(end.run!.hero.inventory).toContain('iron');
@@ -340,15 +346,8 @@ describe('omens and expanded systems', () => {
     expect(warded.run!.hero.hp - struck.run!.hero.hp).toBe(2);
   });
 
-  it('loads legacy-shaped snapshots while accepting expanded discoveries and six upgrades', () => {
-    const legacy = start();
-    const raw = JSON.stringify(legacy);
-    const loaded = deserializeGame(raw);
-    expect(loaded.status).toBe('ok');
-    if (loaded.status !== 'ok') throw new Error('legacy snapshot rejected');
-    expect(loaded.state.run).not.toHaveProperty('omen');
-
-    const expanded = structuredClone(legacy);
+  it('accepts expanded v2 discoveries and six upgrades', () => {
+    const expanded = structuredClone(start());
     expanded.profile.upgrades = ['vigor', 'focus', 'supplies', 'steel', 'alchemy', 'map'];
     expanded.profile.discoveries = ['forge', 'gate', 'bells', 'crypt', 'archive'];
     expect(validGame(expanded)).toBe(true);
@@ -401,5 +400,201 @@ describe('local storage boundary', () => {
     expect(loadGame(unavailable).status).toBe('unavailable');
     expect(saveGame(start(), unavailable)).toBe(false);
     expect(saveGame(start(), null)).toBe(false);
+  });
+});
+
+describe('v1 review and explicit v2 migration', () => {
+  it('recognizes frozen legal v1 phases and rejects corrupt, unknown and impossible fixtures', () => {
+    for (const fixture of Object.values(V1_FIXTURES)) {
+      expect(validLegacyGame(fixture)).toBe(true);
+      const loaded = deserializeGame(JSON.stringify(fixture));
+      expect(loaded.status).toBe('legacy');
+    }
+    for (const raw of Object.values(INVALID_V1_RAWS)) expect(deserializeGame(raw).status).toBe('incompatible');
+    const v2 = start();
+    expect(validLegacyGame(v2)).toBe(false);
+    expect(deserializeGame(JSON.stringify(v2))).toEqual({ status: 'ok', state: v2 });
+    const oversized = `${JSON.stringify(V1_FIXTURES.story)}${' '.repeat(100_001)}`;
+    expect(deserializeGame(oversized)).toEqual({ status: 'incompatible', raw: oversized });
+    expect(migrateLegacyRaw(oversized)).toBeNull();
+  });
+
+  it('transfers only permanent profile data, retires every v1 run and increments revision once', () => {
+    for (const fixture of Object.values(V1_FIXTURES)) {
+      const migrated = migrateLegacyRaw(JSON.stringify(fixture));
+      expect(migrated).not.toBeNull();
+      expect(migrated).toMatchObject({ schemaVersion: 2, contentVersion: 'nightmare-fortress-2', revision: fixture.revision + 1, run: null });
+      expect(migrated!.profile).toEqual({ ...fixture.profile, tales: [] });
+      expect(validGame(migrated)).toBe(true);
+    }
+  });
+
+  it('accepts a non-empty v2 profile outside an expedition and rejects impossible new state', () => {
+    const outside = createGame();
+    outside.profile = { insight: 7, victories: 2, expeditions: 3, upgrades: ['vigor'], discoveries: ['forge'], tales: ['hero-return'] };
+    expect(validGame(outside)).toBe(true);
+    expect(deserializeGame(JSON.stringify(outside))).toEqual({ status: 'ok', state: outside });
+
+    const wrongClass = start('warrior');
+    wrongClass.run!.specialization = 'mage-ember';
+    expect(validGame(wrongClass)).toBe(false);
+    const unowned = start();
+    unowned.run!.equippedRelic = 'covenant-knot';
+    expect(validGame(unowned)).toBe(false);
+    const combat = play(start()).find(state => state.run!.phase === 'combat')!;
+    delete (combat.run!.battle as unknown as Record<string, unknown>).prepared;
+    expect(validGame(combat)).toBe(false);
+  });
+});
+
+describe('three-day siege, specializations and relics', () => {
+  function reachSiege(seed = 9) {
+    let game = start('warrior', seed);
+    for (const id of ['listen', 'supplies', 'bridge', 'leave', 'staff']) game = choose(game, id);
+    game = choose(game, getAvailableActions(game).find(option => !option.disabled)!.id);
+    game = choose(game, 'covenant');
+    return game;
+  }
+
+  it('completes five one-way siege periods, applies covenant support and restores a checkpoint exactly', () => {
+    let game = choose(reachSiege(), 'keep');
+    game = choose(game, 'staff');
+    const checkpoint = structuredClone(game);
+    game = choose(game, 'support');
+    expect(game.run!.flags).toContain('siege-supported');
+    for (const id of ['shield', 'track', 'temper']) game = choose(game, id);
+    expect(game.run!.nodeId).toBe('forge');
+    expect(game.run!.visited).toEqual(expect.arrayContaining(['siege-day-one', 'siege-night-one', 'siege-day-two', 'siege-night-two', 'siege-day-three']));
+    const restored = deserializeGame(JSON.stringify(checkpoint));
+    expect(restored).toEqual({ status: 'ok', state: checkpoint });
+    if (restored.status !== 'ok') throw Error('siege checkpoint failed');
+    expect(choose(restored.state, 'support')).toEqual(choose(checkpoint, 'support'));
+  });
+
+  it('keeps explicit low-resource exits and never awards steel after feeding or lethal cost', () => {
+    let game = choose(reachSiege(12), 'take');
+    const fed = choose(game, 'feed');
+    expect(fed.run!.nodeId).toBe('retreat');
+    expect(fed.run!.hero.inventory).not.toContain('sacnoth');
+
+    game.run!.hero.hp = 2;
+    const defeated = choose(game, 'staff');
+    expect(defeated.run!.nodeId).toBe('defeat');
+
+    let low = choose(reachSiege(13), 'take');
+    low = choose(low, 'staff');
+    low = choose(low, 'watch');
+    low.run!.hero.supplies = 0;
+    const legal = getAvailableActions(low).filter(option => !option.disabled).map(option => option.id);
+    expect(legal).toEqual(expect.arrayContaining(['shield', 'withdraw']));
+  });
+
+  it('locks one class-correct specialization and uses bounded guard preparation across reload', () => {
+    for (const classId of ['warrior', 'mage', 'ranger'] as const) {
+      for (const mode of ['direct', 'prepared'] as const) {
+        const states = play(start(classId, 21), { forge: mode });
+        const combat = states.find(state => state.run!.phase === 'combat' && state.run!.specialization !== null)!;
+        expect(combat.run!.specialization).toBe(SPECIALIZATION_BY_CLASS[classId][mode]);
+        if (mode === 'prepared') {
+          const guarded = act(combat, { type: 'combat', id: 'guard' });
+          expect(guarded.run!.battle!.prepared).toBe(true);
+          const restored = deserializeGame(JSON.stringify(guarded));
+          expect(restored).toEqual({ status: 'ok', state: guarded });
+          const spent = act(guarded, { type: 'combat', id: 'skill' });
+          if (spent.run!.phase === 'combat') expect(spent.run!.battle!.prepared).toBe(false);
+        }
+      }
+    }
+  });
+
+  it('gives each class two distinct tactical outcomes in armored and exposed intent fixtures', () => {
+    for (const classId of ['warrior', 'mage', 'ranger'] as const) {
+      const base = play(start(classId, 44), { forge: 'direct' }).find(state => state.run!.phase === 'combat' && state.run!.specialization !== null)!;
+      for (const intent of [0, 2]) {
+        const direct = structuredClone(base);
+        direct.run!.specialization = SPECIALIZATION_BY_CLASS[classId].direct;
+        direct.run!.battle!.round = intent + 1; direct.run!.battle!.intent = intent; direct.run!.battle!.prepared = false;
+        const prepared = structuredClone(direct);
+        prepared.run!.specialization = SPECIALIZATION_BY_CLASS[classId].prepared;
+        prepared.run!.battle!.prepared = true;
+        const directAfter = act(direct, { type: 'combat', id: 'skill' });
+        const preparedAfter = act(prepared, { type: 'combat', id: 'skill' });
+        const outcome = (state: GameState) => [state.run!.battle?.hp ?? 0, state.run!.hero.hp, state.run!.hero.mana];
+        expect(outcome(preparedAfter)).not.toEqual(outcome(directAfter));
+      }
+    }
+  });
+
+  it('equips at most one owned relic outside combat without spending resources or random calls', () => {
+    let game = choose(reachSiege(31), 'keep');
+    const before = structuredClone(game);
+    game = act(game, { type: 'equip', id: 'covenant-knot' });
+    expect(game.run!.equippedRelic).toBe('covenant-knot');
+    expect(game.run!.random).toEqual(before.run!.random);
+    expect(game.run!.hero.hp).toBe(before.run!.hero.hp);
+    const duplicate = transition(game, { type: 'equip', id: 'covenant-knot', revision: game.revision });
+    expect(duplicate).toMatchObject({ accepted: false, state: game });
+    for (const id of RELIC_IDS) expect(RELIC_IDS).toContain(id);
+    expect(transition(start(), { type: 'equip', id: 'candle-mirror', revision: 1 }).accepted).toBe(false);
+
+    const dreamStates = play(start('ranger', 32), routeOverrides('prepared', 'dream'));
+    const mirrorCheckpoint = dreamStates.find(state => state.run!.phase === 'story' && state.run!.hero.inventory.includes('candle-mirror'))!;
+    const mirrorEquipped = act(mirrorCheckpoint, { type: 'equip', id: 'candle-mirror' });
+    expect(mirrorEquipped.run!.equippedRelic).toBe('candle-mirror');
+    expect(deserializeGame(JSON.stringify(mirrorEquipped))).toEqual({ status: 'ok', state: mirrorEquipped });
+  });
+});
+
+describe('fortress routes, intent responses and reproducible coverage', () => {
+  it('completes the 3 × 2 × 2 matrix for seeds 0–5 without permanent upgrades', () => {
+    expect(ROUTE_MATRIX).toHaveLength(12);
+    for (const route of ROUTE_MATRIX) {
+      expect(route.decisions.length).toBeGreaterThanOrEqual(12);
+      expect(route.delayedConsequences.length).toBeGreaterThanOrEqual(4);
+      for (const seed of route.seeds) {
+        const end = play(start(route.classId, seed), routeOverrides(route.mode, route.route)).at(-1)!;
+        expect(end.run!.nodeId).toBe('dawn');
+        expect(end.run!.specialization).toBe(SPECIALIZATION_BY_CLASS[route.classId][route.mode]);
+        expect(end.run!.flags).toContain(route.route === 'parley' ? 'parley-route' : 'dream-route');
+        expect(end.profile.upgrades).toEqual([]);
+      }
+    }
+  });
+
+  it('finds normal engine witnesses for all sixteen events in seeds 0–255', () => {
+    const wild = new Map<string, number>(); const fortress = new Map<string, number>();
+    for (let seed = 0; seed <= 255; seed++) {
+      const wildState = reachWildsEvent(seed); wild.set(wildState.run!.nodeId, seed);
+      const states = play(start('ranger', seed), { ...routeOverrides('direct', 'dream'), camp: 'staff', marsh: 'covenant', 'forest-covenant': 'keep',
+        'siege-day-one': 'staff', 'siege-night-one': 'support', 'siege-day-two': 'shield', 'siege-night-two': 'track', 'siege-day-three': 'temper', webhall: 'sneak', refuge: 'focus' });
+      const event = states.find(state => EVENT_POOLS.fortress.includes(state.run!.nodeId));
+      if (event) fortress.set(event.run!.nodeId, seed);
+    }
+    expect([...wild.keys()].sort()).toEqual([...EVENT_POOLS.wilds].sort());
+    expect([...fortress.keys()].sort()).toEqual([...EVENT_POOLS.fortress].sort());
+  });
+
+  it('makes guardian tail guard and Gaznak exposed skill visibly different', () => {
+    const states = play(start('warrior', 8), routeOverrides('prepared', 'parley'));
+    const guardian = structuredClone(states.find(state => state.run?.battle?.enemyId === 'guardian')!);
+    guardian.run!.battle!.round = 2; guardian.run!.battle!.intent = 1;
+    const tailAttack = act(structuredClone(guardian), { type: 'combat', id: 'attack' });
+    const tailGuard = act(structuredClone(guardian), { type: 'combat', id: 'guard' });
+    expect(tailGuard.run!.hero.hp).toBeGreaterThan(tailAttack.run!.hero.hp);
+
+    const gaznak = structuredClone(states.find(state => state.run?.battle?.enemyId === 'gaznak')!);
+    gaznak.run!.battle!.round = 3; gaznak.run!.battle!.intent = 2; gaznak.run!.battle!.prepared = true;
+    const skill = act(structuredClone(gaznak), { type: 'combat', id: 'skill' });
+    const attack = act(structuredClone(gaznak), { type: 'combat', id: 'attack' });
+    expect(skill.run!.battle ? skill.run!.battle.hp : 0).toBeLessThan(attack.run!.battle ? attack.run!.battle.hp : 0);
+  });
+
+  it('keeps tales unique and does not settle victory twice after reload', () => {
+    const end = play(start(), { ...routeOverrides('direct', 'parley'), 'homecoming-records': 'fever' }).at(-1)!;
+    expect(end.run!.nodeId).toBe('fever-dawn');
+    expect(end.profile.tales).toEqual(['fever-account']);
+    const restored = deserializeGame(JSON.stringify(end));
+    expect(restored).toEqual({ status: 'ok', state: end });
+    expect(transition(end, { type: 'choose', id: 'fever', revision: end.revision })).toMatchObject({ accepted: false, state: end });
   });
 });

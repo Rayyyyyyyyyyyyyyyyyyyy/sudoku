@@ -1,7 +1,7 @@
 import { writeFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
-import { STORY, SOURCE } from '../src/data/rpg/story.ts';
-import { CLASSES, ENEMIES, ITEMS, LOOT_TABLES, UPGRADES } from '../src/lib/rpg/catalog.ts';
+import { STORY, SOURCE, TALES } from '../src/data/rpg/story.ts';
+import { CLASSES, ENEMIES, ITEMS, LOOT_TABLES, SPECIALIZATION_BY_CLASS, UPGRADES } from '../src/lib/rpg/catalog.ts';
 
 const target = fileURLToPath(new URL('../docs/rpg-story.md', import.meta.url));
 const resources = { hp: '生命', mana: '魔力', gold: '金幣', supplies: '補給' };
@@ -20,6 +20,8 @@ function effect(value) {
   if (value.kind === 'item') return `取得物品：${ITEMS[value.value].name}`;
   if (value.kind === 'consume') return `消耗物品：${ITEMS[value.value].name}`;
   if (value.kind === 'loot') return `隨機戰利品：${LOOT_TABLES[value.table].name}`;
+  if (value.kind === 'specialization') return `依職業選擇${value.value === 'direct' ? '直接型' : '準備型'}專精（${Object.values(SPECIALIZATION_BY_CLASS).map(pair => pair[value.value]).join('／')}）`;
+  if (value.kind === 'tale') return `收錄歸鄉記錄：${TALES[value.value].title}`;
   return `經驗 +${value.amount}`;
 }
 
@@ -33,6 +35,9 @@ const lines = [
   '',
   `[英文原典](${SOURCE.url})；${SOURCE.edition}。${SOURCE.notice}`,
   '',
+  '## 跨趟歸鄉記錄',
+  '',
+  ...Object.entries(TALES).flatMap(([id, tale]) => [`- \`${id}\` **${tale.title}**：${tale.text} ${tale.unexplored}`, '']),
 ];
 
 for (const node of STORY) {

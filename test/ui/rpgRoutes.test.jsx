@@ -3,7 +3,8 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { describe, expect, it, vi } from 'vitest';
 import App from '../../src/App.jsx';
-import { getOmen, loadGame, STORAGE_KEY } from '../../src/lib/rpg/index.ts';
+import { createGame, getOmen, loadGame, STORAGE_KEY, transition } from '../../src/lib/rpg/index.ts';
+import { V1_FIXTURES } from '../rpg/fixtures/v1.ts';
 
 function renderRpg(path = '/rpg') { return render(<MemoryRouter initialEntries={[path]}><App /></MemoryRouter>); }
 
@@ -45,6 +46,36 @@ describe('RPG story reader', () => {
     expect(screen.getByText(/已解鎖養成 0 \/ 6/)).toBeInTheDocument();
   });
 
+  it('renders specialization, relic tradeoffs, an ending and the recovery panels from valid saved states', async () => {
+    const user = userEvent.setup();
+    const started = transition(createGame(), { type: 'start', classId: 'warrior', seed: 17, revision: 0 }).state;
+    const build = structuredClone(started);
+    build.run.nodeId = 'outfitter';
+    build.run.visited.push('forge', 'outfitter');
+    build.run.specialization = 'warrior-riposte';
+    build.run.hero.inventory.push('covenant-knot');
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(build));
+    const page = renderRpg();
+    expect(screen.getByText(/專精：反擊/)).toBeInTheDocument();
+    expect(screen.getByRole('group', { name: '裝備遺物（戰鬥外）' })).toHaveTextContent(/格擋額外減傷 3.*普通攻擊傷害 -2/);
+    await user.click(screen.getByRole('radio', { name: /盟約繩結/ }));
+    expect(loadGame(localStorage).state.run.equippedRelic).toBe('covenant-knot');
+
+    page.unmount();
+    const ended = structuredClone(build);
+    ended.run.nodeId = 'fever-dawn';
+    ended.run.phase = 'ended';
+    ended.run.visited.push('fever-dawn');
+    ended.profile.victories = 1;
+    ended.profile.tales = ['fever-account'];
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(ended));
+    renderRpg();
+    expect(screen.getByRole('heading', { name: '第三夜的熱終於退了' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '準備出發' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: '第三夜的熱病' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: '再次遠征' })).toBeInTheDocument();
+  });
+
   it('enforces class-specific choices and shows combat intent with actionable controls', async () => {
     const user = userEvent.setup();
     renderRpg();
@@ -74,6 +105,39 @@ describe('RPG story reader', () => {
     await user.click(screen.getByRole('button', { name: /重建這款/ }));
     expect(screen.getByRole('button', { name: '開始遠征' })).toBeInTheDocument();
     expect(loadGame(localStorage).status).toBe('ok');
+  });
+
+  it('previews a legal v1 save and migrates only after explicit confirmation', async () => {
+    const user = userEvent.setup();
+    const raw = JSON.stringify(V1_FIXTURES.upgraded);
+    localStorage.setItem(STORAGE_KEY, raw);
+    renderRpg();
+    expect(screen.getByRole('heading', { name: '舊版遠征需要確認轉換' })).toBeInTheDocument();
+    expect(screen.getByText(/養成 6 項/)).toBeInTheDocument();
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    await user.click(screen.getByRole('button', { name: /確認保留成果並轉換/ }));
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
+    confirm.mockReturnValue(true);
+    await user.click(screen.getByRole('button', { name: /確認保留成果並轉換/ }));
+    expect(screen.getByRole('heading', { name: '準備出發' })).toBeInTheDocument();
+    const loaded = loadGame(localStorage);
+    expect(loaded.status).toBe('ok');
+    expect(loaded.state).toMatchObject({ schemaVersion: 2, revision: V1_FIXTURES.upgraded.revision + 1, run: null,
+      profile: { upgrades: V1_FIXTURES.upgraded.profile.upgrades, discoveries: V1_FIXTURES.upgraded.profile.discoveries, tales: [] } });
+  });
+
+  it('keeps a v1 migration pending and does not claim success when its single write fails', async () => {
+    const user = userEvent.setup();
+    const raw = JSON.stringify(V1_FIXTURES.combat);
+    localStorage.setItem(STORAGE_KEY, raw);
+    vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => { throw Error('quota'); });
+    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    renderRpg();
+    await user.click(screen.getByRole('button', { name: /確認保留成果並轉換/ }));
+    expect(screen.getByRole('heading', { name: '舊版遠征需要確認轉換' })).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveTextContent(/轉換尚未保存/);
+    expect(localStorage.getItem(STORAGE_KEY)).toBe(raw);
   });
 
   it('never overwrites an existing save after a transient read failure', async () => {

@@ -85,9 +85,9 @@ self.addEventListener('fetch', (event) => {
 
   if (request.mode === 'navigate') {
     event.respondWith(
-      fetch(request).catch(() => (
-        caches.open(CACHE_NAME).then((cache) => cache.match(APP_SHELL_URL))
-      ))
+      caches.open(CACHE_NAME)
+        .then((cache) => cache.match(APP_SHELL_URL))
+        .then((cached) => cached || fetch(request))
     );
     return;
   }
