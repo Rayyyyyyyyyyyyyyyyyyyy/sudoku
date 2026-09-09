@@ -5,6 +5,8 @@
 目前實作見 [`src/data/rpg/story.ts`](../src/data/rpg/story.ts) 與
 [`RPG 架構說明`](./rpg-architecture.md)。已有三職業、分支選擇、龍鱷至巫師終戰、等級、
 符文與遺物選擇、三種 seed 異象、兩組固定事件池與掉落表、六項永久養成與本機續玩；尚無完整技能樹、大型程序地圖或三小時內容驗證。
+Dunsany 原文的情節行段、固定設定、現行改編差異與未使用素材另整理於
+[`rpg-source-reference.md`](./rpg-source-reference.md)。
 
 ## 使用者方向
 

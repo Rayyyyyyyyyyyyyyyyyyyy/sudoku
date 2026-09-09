@@ -170,7 +170,8 @@ src/
 可讀文本見 [`docs/rpg-story.md`](./docs/rpg-story.md)，唯一維護來源是
 [`src/data/rpg/story.ts`](./src/data/rpg/story.ts)。設計約束見
 [`docs/rpg-architecture.md`](./docs/rpg-architecture.md)，原典研究及尚未實作的長篇方向見
-[`docs/text-rpg-adaptation-research.md`](./docs/text-rpg-adaptation-research.md)。
+[`docs/text-rpg-adaptation-research.md`](./docs/text-rpg-adaptation-research.md)；Dunsany 原文的逐段定位、
+固定設定與現行改編對照見 [`docs/rpg-source-reference.md`](./docs/rpg-source-reference.md)。
 
 ## 資產與相容性聲明
 
