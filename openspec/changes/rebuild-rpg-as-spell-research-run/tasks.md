@@ -32,7 +32,9 @@
 - [ ] 5.2 實作行數上限的逐步解鎖，並讓 canonical validation 拒絕超出已解鎖上限的組成（rpg-permanent-progression、rpg-spell-research）。
 - [ ] 5.3 實作見聞的一次性給予與 `profile` 層級跨趟去重；加入「全部重來後重玩同段落」與「章節重來後再達同一給予點」皆不重複給予的測試（rpg-permanent-progression）。
 - [ ] 5.4 驗證 `profile` 在死亡、章節重來、全部重來、撤離與勝利後皆完整保留，且無任何路徑會扣除已解鎖養成或見聞餘額（rpg-permanent-progression）。
-- [ ] 5.5 決定見聞給予點與各項解鎖定價，實測「第一趟不至於寸步難行、第五趟不至於已解滿」（rpg-permanent-progression）。
+- [ ] 5.5 在 catalog 中列舉全部見聞給予點與解鎖定價，實作預算核對測試：總價格 ≤ 總供給 × 85%、無未列舉的給予來源、最低價項目低於第一趟期望給予量（rpg-permanent-progression）。
+- [ ] 5.6 以決策 5b 的起始配置（總供給 25、總價 21）實測節奏，校準個別數字；維持有界模型與三條預算規則不變（rpg-permanent-progression）。
+- [ ] 5.7 定義並列舉「全解鎖 profile」狀態供驗收重現，確認解滿後不再給予見聞（rpg-permanent-progression、rpg-design-verification）。
 
 ## 6. 敵人改造與意圖
 
