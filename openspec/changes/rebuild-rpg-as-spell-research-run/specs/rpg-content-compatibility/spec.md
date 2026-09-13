@@ -13,13 +13,20 @@
 - **THEN** 該存檔被視為不相容並保留原始資料
 - **AND** 不進行任何覆寫
 
-### Requirement: Retire v1 and v2 runs without destroying history
-系統 SHALL 以唯讀方式辨識已知合法的 v1／v2 存檔並提供轉換預覽。玩家明示確認後 SHALL 保留歷史紀錄（遠征次數、勝利數、已見記錄），退休既有 `run`，SHALL NOT 以新規則續接舊戰鬥。v2 的永久升級在本輪無對應能力，系統 SHALL 於預覽中明示其不再生效，SHALL NOT 靜默丟棄。
+### Requirement: Retire v1 and v2 runs and refund spent insight
+系統 SHALL 以唯讀方式辨識已知合法的 v1／v2 存檔並提供轉換預覽。玩家明示確認後 SHALL 保留歷史紀錄（遠征次數、勝利數、已見記錄），退休既有 `run`，SHALL NOT 以新規則續接舊戰鬥。
+
+v2 的六項永久升級在 v3 沒有對應能力，系統 SHALL 退休該六項並**全額退還其已花費的見聞**，使玩家可在新的解鎖式養成中重新分配。SHALL NOT 靜默丟棄，SHALL NOT 讓舊升級以無效狀態殘留於 `profile`。
 
 #### Scenario: Preview before converting
 - **WHEN** 玩家載入 v2 存檔
-- **THEN** 介面顯示將保留與將失效的項目，並明示永久升級不再生效
+- **THEN** 介面顯示將保留的歷史紀錄、將退休的六項升級，以及退還後的見聞餘額
 - **AND** 未確認前不寫入任何資料
+
+#### Scenario: Refund is exact and spendable
+- **WHEN** 玩家確認轉換
+- **THEN** 退還後的見聞餘額等於原餘額加上六項升級已花費的總額
+- **AND** 該餘額可立即用於新的解鎖式養成
 
 #### Scenario: Cancel leaves the original intact
 - **WHEN** 玩家在轉換預覽中取消

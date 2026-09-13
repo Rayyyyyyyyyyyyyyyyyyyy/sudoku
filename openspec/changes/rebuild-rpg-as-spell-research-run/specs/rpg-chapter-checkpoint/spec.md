@@ -21,13 +21,20 @@
 - **THEN** 結果與前一次可辨識地不同
 - **AND** 若玩家完全重複前一次的行動與組成，結果與前一次相同
 
-### Requirement: Full restart is always available
-系統 SHALL 在遠征進行中的任何時點提供「全部重來」，開始新的一趟。因章節重來為確定性，全部重來 SHALL 被視為必要出口而非便利功能，SHALL NOT 因任何狀態而停用。全部重來 SHALL 保留歷史紀錄（遠征次數、勝利數、已見記錄），SHALL NOT 保留能力、殘頁或法術。
+### Requirement: Full restart returns to the story start and keeps the profile
+系統 SHALL 在遠征進行中的任何時點提供玩家主動觸發的「全部重來」，從**故事起點**重新出發。因章節重來為確定性，全部重來 SHALL 被視為必要出口而非便利功能，SHALL NOT 因任何狀態而停用。
 
-#### Scenario: Escape an unwinnable chapter
+全部重來 SHALL 重置 `run` 的全部內容（殘頁、法術組成、章節進度、英雄狀態、PRNG），並 SHALL 完整保留 `profile`（見聞、已解鎖的養成、歷史紀錄）。SHALL NOT 因全部重來而扣除或重置任何永久養成。
+
+#### Scenario: Escape an unwinnable chapter constructively
 - **WHEN** 玩家的配裝無法通過某章且已多次重來
-- **THEN** 「全部重來」可用並開始一趟從零開始的新遠征
-- **AND** 歷史紀錄被保留，能力與殘頁不被保留
+- **THEN** 「全部重來」可用並從故事起點開始新的一趟
+- **AND** 已解鎖的養成與見聞餘額完整保留，使玩家能以更寬的組合空間再次挑戰
+
+#### Scenario: Restart does not refund run-scoped progress
+- **WHEN** 玩家在取得多張殘頁後選擇全部重來
+- **THEN** 該趟取得的殘頁與法術組成不被保留
+- **AND** 已於該趟首次達成而給予的見聞仍保留在 `profile`，且不會因重玩同一段落再次給予
 
 ### Requirement: Chapter rewind replaces the cycle-based anti-farming rule
 既有 `contentValidation` 以禁止故事圖出現環來防止重複領取場景獎勵。引入章節重來後，該責任 SHALL 由快照回溯承擔：重來為位元級相同，故重複領取在結構上不可能。移除環檢查 SHALL 與快照回溯同時完成，SHALL NOT 單獨移除。

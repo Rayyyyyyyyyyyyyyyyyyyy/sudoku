@@ -17,7 +17,8 @@ v2 的產製門檻量的是節點數與選項數，`contentValidation` 另強制
 - **成長改為法術研究**。引入咒語殘頁、成分與韻：殘頁具成分（活語、死語、獵鯨呼喊、駱駝詛咒、象鳴）與韻；法術由同韻殘頁串接組成，行數即等級。等級提升 SHALL 增加效果層數而非傷害倍率。
 - **施法取得真實代價**。長法術需要詠唱回合並可被特定敵方意圖打斷；格擋不再是免費魔力來源。不採用失敗率（見 design 決策 4）。
 - **敵人改為各有解法**。以現有七隻敵人改造，每隻要求特定成分或節奏；難度來自新機制與章節深度，**不採用隨玩家等級縮放的敵方數值**。
-- **章節檢查點取代整趟失敗**。遠征分章節，進入章節時快照整個 `run`（含序列化 PRNG）；死亡回到該章節起點且結果位元級相同，另提供「全部重來」開新趟。
+- **章節檢查點取代整趟失敗**。遠征分章節，進入章節時快照整個 `run`（含序列化 PRNG）；死亡回到該章節起點且結果位元級相同。另提供玩家主動的「全部重來」，從故事起點重新出發並保留永久養成。
+- **永久養成保留並改為解鎖組合空間**。跨趟養成沿用見聞貨幣，但獎勵 SHALL 由 v2 的平面數值（生命 +6、魔力 +4、攻擊 +1）改為解鎖新成分、新韻與更高的法術行數上限。見聞 SHALL 僅於首次達成時給予、跨趟去重，重來不得重複賺取。
 - **砍除場景敘述，保留並擴充規則文字**。刪除 `paragraphs` 與 `variants` 共 6,909 字；選項與規則說明保留且擴充，成為主要介面。
 - **只保留法師**。移除戰士與遊俠；三職業僅有六個數值差異、無獨佔機制，且 v2 spec 要求的「非僅數值差異」未達成。變化軸改由法術書提供。
 - **BREAKING**：`schemaVersion: 3`、`contentVersion: spell-research-1`。v1／v2 存檔經玩家明示確認後退休遠征並保留歷史紀錄，不默默清除原始存檔。
@@ -26,7 +27,7 @@ v2 的產製門檻量的是節點數與選項數，`contentValidation` 另強制
 
 ### Non-goals
 
-不做程序生成地圖、不做跨趟永久養成（本輪一趟自足）、不加入新職業、不新增敵人定義、不做雲端存檔、不引入執行時網路或 LLM、不改其他三款遊戲、不更換題材。不新增 production dependency。不在本輪產出殘頁像素圖集。此提案 task 僅建立文件，不實作程式。
+不做程序生成地圖、不加入新職業、不新增敵人定義、不做雲端存檔、不引入執行時網路或 LLM、不改其他三款遊戲、不更換題材。永久養成保留但不擴張為技能樹，且不提供任何可重複賺取的貨幣來源。不新增 production dependency。不在本輪產出殘頁像素圖集。此提案 task 僅建立文件，不實作程式。
 
 ## Capabilities
 
@@ -34,8 +35,9 @@ v2 的產製門檻量的是節點數與選項數，`contentValidation` 另強制
 
 - `rpg-spell-research`: 殘頁、成分、韻、法術組成、行數即等級的質變規則、詠唱回合與打斷、魔力經濟。
 - `rpg-encounter-counterplay`: 七隻敵人的解法需求、意圖不可預測化、以章節深度而非等級縮放提供難度。
-- `rpg-chapter-checkpoint`: 章節快照、死亡回溯、PRNG 一併回溯的防刷保證、全部重來出口。
-- `rpg-content-compatibility`: schema 3 狀態與驗證、v1／v2 退休與歷史保留、失敗恢復。
+- `rpg-chapter-checkpoint`: 章節快照、死亡回溯、PRNG 一併回溯的防刷保證、從故事起點的全部重來出口。
+- `rpg-permanent-progression`: 見聞的一次性給予與跨趟去重、解鎖式養成獎勵、全部重來時的保留範圍。
+- `rpg-content-compatibility`: schema 3 狀態與驗證、v1／v2 退休與見聞退還、失敗恢復。
 - `rpg-design-verification`: 取代真人小組的可計算決策指標，含「不存在單一固定策略能通關」的常設測試。
 
 ### Modified Capabilities
@@ -51,7 +53,7 @@ v2 的產製門檻量的是節點數與選項數，`contentValidation` 另強制
 ## Impact
 
 - 預期落點：`src/lib/rpg/{types,catalog,engine,contentValidation,persistence,index}.ts`、`src/data/rpg/story.ts`（大幅縮減）、`src/pages/RpgGame.jsx`、`src/pages/rpg.css`，以及 RPG 與 mounted UI 測試。
-- v2 產物約七成不再適用：64 節故事圖、6,909 字敘述、三職業六專精、`test/rpg/routeMatrix.ts` 的 12 條路線、`contentValidation` 的數量與匯流規則。存活的是純 TypeScript 引擎、序列化 PRNG、`StoragePort` 持久化、service worker 離線與既有像素圖集。
+- v2 產物約七成不再適用：64 節故事圖、6,909 字敘述、三職業六專精、`test/rpg/routeMatrix.ts` 的 12 條路線、`contentValidation` 的數量與匯流規則、六項平面數值升級。存活的是純 TypeScript 引擎、序列化 PRNG、`StoragePort` 持久化、service worker 離線、既有像素圖集，以及見聞貨幣與村莊養成的結構（獎勵內容改寫為解鎖式）。
 - 保留 `sudoku-drill-rpg-v1` 儲存 key 與純引擎責任。章節快照使存檔約增為兩倍（實測進行中存檔 783 字元 → 約 1,488），`deserializeGame` 的 100,000 字元上限有充足餘裕。
 - `npm run rpg:text` 與 `docs/rpg-story.md` 在敘述砍除後失去對象，須一併處理而非留下失效指令。
 - 序列化 PRNG 同時是離線續玩與章節防刷的基礎；`contentValidation` 現有的「環會造成重複領獎」規則在引入章節重來後改由快照回溯承擔，不得只是移除。

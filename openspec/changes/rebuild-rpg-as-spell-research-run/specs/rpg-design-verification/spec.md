@@ -3,10 +3,17 @@
 ### Requirement: No dominant fixed strategy may clear the run
 驗收 SHALL 包含一組固定策略（純普攻、純施法、格擋與施法交替、有魔力即施放最高行數，以及每個單一成分的獨用組成），以引擎逐一模擬全部章節。每個固定策略 SHALL 至少在一個章節失敗。此測試 SHALL 為常設測試，不得只在一次驗收中執行。
 
+因永久養成會擴張組合空間，此測試 SHALL 至少在兩種 `profile` 狀態下各執行一次：空 profile 與全解鎖 profile。任一狀態下出現能通關全部章節的固定策略即為驗收失敗。
+
 #### Scenario: The v2 failure mode cannot pass again
 - **WHEN** 對本輪內容執行固定策略模擬
 - **THEN** 沒有任何固定策略通過全部章節
 - **AND** 若任一策略全數通過，驗收失敗且必須調整規則而非調整門檻
+
+#### Scenario: Full unlocks do not collapse into one strategy
+- **WHEN** 以全解鎖 profile 重跑固定策略模擬
+- **THEN** 仍沒有任何固定策略通過全部章節
+- **AND** 報告分別記錄空 profile 與全解鎖 profile 的結果，不以其中一種代表另一種
 
 ### Requirement: Decisions are computed, not asserted
 有效決策 SHALL 由引擎狀態計算：一個戰鬥回合僅在存在兩個以上**結果不同**的合法行動時計為決策回合；一個故事節點僅在其選項通往不同節點、或造成不同旗標／殘頁／資源結果時計為決策節點。純進入戰鬥、純繼續與僅有數值差異的選項 SHALL NOT 計入。系統 SHALL NOT 以人工維護的字串陣列長度代表決策數。
