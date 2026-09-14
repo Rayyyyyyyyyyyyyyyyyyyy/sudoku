@@ -8,6 +8,37 @@
 - **THEN** `run` 與章節快照皆被還原且通過驗證
 - **AND** 兩者的 PRNG 狀態各自保持其記錄值
 
+### Requirement: Content is derived from position, not from a sequential draw
+章節內每個節點的內容（遭遇身分、詞綴、事件、掉落）SHALL 由座標推導：`hash(runSeed, chapterIndex, nodeId, purpose)`。戰鬥中的亂數 SHALL 同樣由 `hash(runSeed, chapterIndex, nodeId, turnIndex, purpose)` 推導。系統 SHALL NOT 以「玩家走到哪就從單一序列流抽下一個」的方式決定節點內容。
+
+此規則是章節重來能夠成立的前提，不是實作偏好。若內容來自循序消耗的 PRNG 流，玩家在重來時改走另一條路徑就會改變消耗位置，使其後所有節點的內容一併改變——而改變路徑正是重來時預期玩家會做的事。座標推導使「B 節點的內容」與抵達它的路徑無關，位元級一致性因此在重新選路後仍然成立。
+
+章節快照仍 SHALL 保存 `run.random` 的狀態，供任何未被座標索引的結算使用；兩種機制並存時，座標推導 SHALL 優先用於一切玩家可藉由改變路徑而重新抵達的內容。
+
+#### Scenario: Reroute after death without changing node contents
+- **WHEN** 玩家在章節中死亡並重來，這次走一條不同的路徑
+- **THEN** 沿途每個節點的遭遇身分、詞綴與掉落與首次生成時相同
+- **AND** 先前未造訪過的節點其內容亦與生成時一致，不因抵達順序而改變
+
+#### Scenario: Same route reproduces the same combat rolls
+- **WHEN** 玩家重來後重複完全相同的路徑與行動序列
+- **THEN** 每一回合的結算與首次完全相同
+- **AND** 不存在任何藉由改變路徑而重骰某節點內容的序列
+
+### Requirement: Chapter entry guarantees a survivable state
+進入章節時的生命值 SHALL 不低於生命上限的 50%：`chapterStartHp = max(carriedHp, floor(maxHp / 2))`。該保底 SHALL 在快照之前套用，使章節快照本身即為可存活狀態。
+
+此規則防止因確定性重來而產生的軟鎖：生命跨章節帶入，若玩家以極低生命進入某章，重來將永遠回到同樣的極低生命，形成無論如何配裝都不可能通過的死局。保底取 50% 而非全補，使章節內的消耗仍具意義。
+
+#### Scenario: Enter a chapter at critical health
+- **WHEN** 玩家以低於生命上限 50% 的生命完成前一章
+- **THEN** 進入新章節時生命被提升至上限的 50%，且章節快照記錄該值
+- **AND** 該章的每一次重來都從此值開始
+
+#### Scenario: High health is not reduced
+- **WHEN** 玩家以高於生命上限 50% 的生命完成前一章
+- **THEN** 生命值不被更動，章節內的消耗照常延續
+
 ### Requirement: Death rewinds to the chapter start bit-for-bit
 生命歸零時系統 SHALL 以章節快照取代 `run`。重來的章節 SHALL 在敵人、意圖序列、事件與掉落上與首次進入完全相同。系統 SHALL NOT 在重來時讓 PRNG 繼續前進。
 
