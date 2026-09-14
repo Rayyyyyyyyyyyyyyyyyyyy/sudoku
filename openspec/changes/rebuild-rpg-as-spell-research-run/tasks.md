@@ -6,8 +6,8 @@
 
 ## 2. schema 3 契約與持久化邊界
 
-- [ ] 2.1 定義 schema 3／`spell-research-1`：殘頁、成分、韻、法術組成、詠唱狀態、章節索引、章節快照與解鎖式 `profile`；保留 `sudoku-drill-rpg-v1` key 與純引擎責任（rpg-content-compatibility）。
-- [ ] 2.2 實作 canonical validation，涵蓋同韻限制、行數上限與已解鎖上限的一致性、詠唱與 phase 一致性、快照合法性，以及 `run` 與快照各自的 PRNG 狀態；改寫「非空 profile + `run: null`」的拒絕條件（rpg-content-compatibility）。
+- [ ] 2.1 定義 schema 3／`spell-research-1`：殘頁、成分、殘頁占用、法術組成、詠唱狀態、章節索引、章節快照（含詞綴）與解鎖式 `profile`；保留 `sudoku-drill-rpg-v1` key 與純引擎責任（rpg-content-compatibility）。
+- [ ] 2.2 實作 canonical validation，涵蓋殘頁獨佔（一張至多屬於一個法術）、行數不超過已解鎖上限、詠唱與 phase 一致性、快照合法性，以及 `run` 與快照各自的 PRNG 狀態；改寫「非空 profile + `run: null`」的拒絕條件（rpg-content-compatibility）。
 - [ ] 2.3 實作 v1／v2 唯讀辨識與轉換預覽：保留歷史紀錄、退休舊 `run`、退休六項升級並全額退還其已花費的見聞；驗證退還金額精確且可立即使用（rpg-content-compatibility、rpg-permanent-progression）。
 - [ ] 2.4 加入取消、重複確認、寫入失敗、讀取受阻、損毀、過大與未知版本的測試，確保不覆寫、不假報成功、不跨遊戲 key（rpg-content-compatibility）。
 
@@ -20,40 +20,44 @@
 
 ## 4. 法術研究系統
 
-- [ ] 4.1 建立殘頁 catalog：五種成分、三種韻與各自的效果取向；定義取得來源，確保不可由重複造訪取得（rpg-spell-research）。
-- [ ] 4.2 實作組成規則：1–5 行、同韻限制、行數即等級、第 N 行貢獻第 N 個效果層；異韻組合被拒絕且不動 revision／資源／PRNG（rpg-spell-research）。
+- [ ] 4.1 建立殘頁 catalog：五種成分與各自的效果取向、成分色票與符號；定義取得來源，確保不可由重複造訪取得（rpg-spell-research）。
+- [ ] 4.2 實作組成規則：1–5 行、殘頁獨佔與拆解、行數即等級、第 N 行貢獻第 N 個效果層；重複占用或超出已解鎖上限的組合被拒絕且不動 revision／資源／PRNG（rpg-spell-research）。
 - [ ] 4.3 實作詠唱回合與打斷：1–2 行即時、3–4 行詠唱 1 回合、5 行詠唱 2 回合，被 `interrupt` 命中時失效並退還一半魔力（向下取整），戰鬥結束清除（rpg-spell-research）。
 - [ ] 4.4 調整魔力經濟：格擋至多回 1 魔，移除任何無代價且可無限重複的魔力來源；以固定序列測試證明無法無限維持高行數法術（rpg-spell-research）。
 - [ ] 4.5 移除戰士與遊俠及六專精，改以首批殘頁選擇作為開局決策；清理相關型別、catalog 與 UI（rpg-spell-research）。
+- [ ] 4.6 實作揭示深度規則：介面揭示的意圖數等於承諾回合數（1 回合詠唱揭示 1 個、2 回合揭示 2 個），採漸進揭露；加入「不存在需要賭未揭示意圖的行動」的列舉測試（rpg-spell-research）。
 
 ## 5. 永久養成與解鎖
 
-- [ ] 5.1 設計解鎖式養成清單（成分、韻、行數上限、開局殘頁範圍），並逐項說明其為何是解鎖而非數值；移除 v2 六項平面數值升級（rpg-permanent-progression）。
+- [ ] 5.1 設計解鎖式養成清單（成分、行數上限、殘頁持有上限、開局殘頁範圍），並逐項說明其為何是解鎖而非數值；移除 v2 六項平面數值升級（rpg-permanent-progression）。
 - [ ] 5.2 實作行數上限的逐步解鎖，並讓 canonical validation 拒絕超出已解鎖上限的組成（rpg-permanent-progression、rpg-spell-research）。
 - [ ] 5.3 實作見聞的一次性給予與 `profile` 層級跨趟去重；加入「全部重來後重玩同段落」與「章節重來後再達同一給予點」皆不重複給予的測試（rpg-permanent-progression）。
 - [ ] 5.4 驗證 `profile` 在死亡、章節重來、全部重來、撤離與勝利後皆完整保留，且無任何路徑會扣除已解鎖養成或見聞餘額（rpg-permanent-progression）。
 - [ ] 5.5 在 catalog 中列舉全部見聞給予點與解鎖定價，實作預算核對測試：總價格 ≤ 總供給 × 85%、無未列舉的給予來源、最低價項目低於第一趟期望給予量（rpg-permanent-progression）。
-- [ ] 5.6 以決策 5b 的起始配置（總供給 25、總價 21）實測節奏，校準個別數字；維持有界模型與三條預算規則不變（rpg-permanent-progression）。
+- [ ] 5.6 以決策 5b 的起始配置（總供給 22、總價 18）實測節奏，校準個別數字；維持有界模型與三條預算規則不變（rpg-permanent-progression）。
 - [ ] 5.7 定義並列舉「全解鎖 profile」狀態供驗收重現，確認解滿後不再給予見聞（rpg-permanent-progression、rpg-design-verification）。
 
 ## 6. 敵人改造與意圖
 
 - [ ] 6.1 以既有七隻敵人實作各自的解法需求（怨魂非實體、巨蛛束縛、騎士高護甲、龍鱷反傷、魔狼打斷、守龍穿透、加茲納克綜合），不新增敵人定義（rpg-encounter-counterplay）。
-- [ ] 6.2 改為由 `run.random` 抽取意圖序列，各敵人意圖數不再一律為 3；介面仍於行動前顯示下一個意圖及其打斷性／穿透性（rpg-encounter-counterplay）。
+- [ ] 6.2 改為由 `run.random` 抽取意圖序列，各敵人意圖數不再一律為 3；介面於行動前顯示意圖及其打斷性／穿透性，揭示數量依 4.6 的規則（rpg-encounter-counterplay）。
 - [ ] 6.3 移除任何依玩家狀態調整敵方數值的路徑；加入「後期法術書對前期敵人明顯較易」的回歸測試（rpg-encounter-counterplay）。
 - [ ] 6.4 驗證相同 seed 與行動序列可完整重播意圖與結算，PRNG value／calls 與不中斷對照一致（rpg-encounter-counterplay）。
+- [ ] 6.5 實作六種詞綴（緘默、孿生、覺醒、淬毒、遲滯、迴響）作用於既有七隻敵人；視覺僅以外框與角標區分，不新增像素圖（rpg-encounter-counterplay）。
+- [ ] 6.6 詞綴由 `run.random` 於章節生成時決定並記入章節快照；測試章節重來後詞綴組合完全相同、無法藉死亡重骰（rpg-encounter-counterplay、rpg-chapter-checkpoint）。
+- [ ] 6.7 確認詞綴不產生見聞給予點；以模擬掃描 42 種遭遇身分 × 配裝，證明不存在已解鎖範圍內無論如何配裝皆不可勝的組合（rpg-encounter-counterplay、rpg-permanent-progression）。
 
 ## 7. 砍除敘述與擴充規則文字
 
 - [ ] 7.1 刪除 `paragraphs` 與 `variants`（6,909 字）及其驗證規則；移除節點數 ≥62、選項數 ≥151 的數量門檻與事件匯流規則（rpg-design-verification）。
-- [ ] 7.2 擴充選項與規則文字，使成分、韻、行數、詠唱、打斷、敵人解法與已解鎖上限在介面上足以支撐配裝判斷；為條件不足的選項提供明確原因（rpg-spell-research）。
+- [ ] 7.2 擴充選項與規則文字，使成分、殘頁占用狀態、行數、詠唱、打斷、詞綴與敵人解法在介面上足以支撐配裝判斷；為條件不足的選項提供明確原因（rpg-spell-research）。
 - [ ] 7.3 移除或改寫 `npm run rpg:text` 與 `docs/rpg-story.md`，不留下會產生空稿的指令；`provenance` 改為記錄規則素材的原典出處（rpg-content-compatibility）。
 
 ## 8. UI 與第一階段美術
 
 - [ ] 8.1 修正圖集 6 處錯配：無名怨魂、空鎧騎士、墓地魔狼、療傷藥、盟約繩結、燭淚鏡；砍除職業後釋出的 2 格一併重新指派（rpg-encounter-counterplay）。
 - [ ] 8.2 將戰鬥主視覺由 48px 放大至可辨識尺寸（原圖每格 313×313），第 12 與第 14 格改作章節背景；保留 `image-rendering: pixelated`（rpg-encounter-counterplay）。
-- [ ] 8.3 實作研究畫面：殘頁清單、成分與韻的識別記號、組成與拆解、已解鎖上限、下一場遭遇的預期代價；組成行動在戰鬥中被拒絕（rpg-spell-research）。
+- [ ] 8.3 實作研究畫面：殘頁清單、成分色票與符號、占用狀態、組成與拆解、已解鎖上限、下一場遭遇的預期代價；組成行動在戰鬥中被拒絕（rpg-spell-research）。
 - [ ] 8.4 實作村莊養成畫面：見聞餘額、解鎖清單與各項說明、已解鎖與未解鎖的區別；全部重來的入口與後果說明（rpg-permanent-progression）。
 - [ ] 8.5 在 360px 與桌面檢查研究畫面、養成畫面、戰鬥主視覺、章節重來與全部重來的觸控、鍵盤焦點與無水平溢出，保留可重現證據（rpg-spell-research）。
 
@@ -74,11 +78,11 @@
 
 ## 11. 第二階段美術（不阻擋本輪驗收）
 
-- [ ] 11.1 列出殘頁圖示需求清單（成分 × 韻的識別、章節背景、狀態圖示、解鎖項目圖示），估算格數與產製方式；在管道確定前不承諾視覺規格（rpg-spell-research）。
+- [ ] 11.1 確認法術書的色票與符號系統在 360px 與深淺色下皆可辨識，不依賴新增像素圖；僅在敵人與章節背景需要時才評估新圖，並在管道確定前不承諾視覺規格（rpg-spell-research）。
 - [ ] 11.2 確認離線快取預算：現有圖集 1.4MB，評估新增圖示對 precache 體積的影響並設定上限（rpg-content-compatibility）。
 
 ## 12. 文件與交付界線
 
-- [ ] 12.1 更新 `docs/rpg-architecture.md`、`docs/rpg-source-reference.md`（記錄四十行咒語的成分與韻採用方式）與 README 的事實狀態（rpg-content-compatibility）。
+- [ ] 12.1 更新 `docs/rpg-architecture.md`、`docs/rpg-source-reference.md`（記錄四十行咒語的成分結構採用方式，以及「韻」評估後未採用的理由）與 README 的事實狀態（rpg-content-compatibility）。
 - [ ] 12.2 撰寫結案說明：只陳述已驗證的決策指標與離線行為，不含任何時長主張；若日後補上時長，明記樣本數與條件（rpg-design-verification）。
 - [ ] 12.3 對最終內容再次執行適用的 OpenSpec strict 驗證與 diff check；不自動部署、不歸檔其他 changes。

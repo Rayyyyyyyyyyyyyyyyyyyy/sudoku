@@ -21,8 +21,33 @@
 - **THEN** 前期敵人明顯較易擊敗，玩家的成長在結果上可被觀察
 - **AND** 任何依玩家狀態調整敵方數值的實作不被接受
 
+### Requirement: Modifiers expand encounters without new enemy definitions
+系統 SHALL 提供可組合的敵人詞綴，作用於既有七隻敵人之上。詞綴 SHALL 只改變規則，SHALL NOT 要求新的像素圖；視覺區分 SHALL 以外框、角標或色彩達成。詞綴 SHALL 由 `run.random` 於章節生成時決定並記入章節快照，使章節重來時詞綴組合完全相同。
+
+詞綴 SHALL NOT 產生新的見聞給予點：它提供難度與變化，不是收集目標；若計入給予點，總供給將隨詞綴數量爆增並破壞有界預算。
+
+#### Scenario: The same enemy plays differently with a modifier
+- **WHEN** 同一隻敵人分別以無詞綴與「緘默」詞綴出現
+- **THEN** 兩場遭遇要求不同的法術配置，且結果可辨識地不同
+- **AND** 兩者使用同一張敵人圖，僅以外框或角標區分
+
+#### Scenario: Modifiers survive a chapter rewind unchanged
+- **WHEN** 玩家在含詞綴的章節死亡並重來
+- **THEN** 詞綴組合與首次進入完全相同
+- **AND** 不存在藉由死亡重骰詞綴的序列
+
+#### Scenario: Modifiers grant no insight
+- **WHEN** 玩家首次擊敗帶有任一詞綴的敵人
+- **THEN** 不因該詞綴給予額外見聞
+- **AND** 該敵人本身的首殺給予點若尚未達成則正常給予一次
+
+#### Scenario: No unwinnable modifier combination
+- **WHEN** 以模擬掃描詞綴與配裝的組合
+- **THEN** 不存在任何在已解鎖範圍內無論如何配裝皆不可能獲勝的組合
+- **AND** 掃描結果可重現並記錄
+
 ### Requirement: Intents are telegraphed but not memorisable
-敵方意圖序列 SHALL 由序列化的 `run.random` 抽取，SHALL NOT 使用固定輪播。各敵人的意圖數量 SHALL NOT 一律相同。介面 SHALL 在玩家行動前顯示敵方的下一個意圖及其是否具打斷性或穿透性。
+敵方意圖序列 SHALL 由序列化的 `run.random` 抽取，SHALL NOT 使用固定輪播。各敵人的意圖數量 SHALL NOT 一律相同。介面 SHALL 在玩家行動前顯示敵方意圖及其是否具打斷性或穿透性，揭示數量依 `rpg-spell-research` 的承諾回合數規則決定。
 
 #### Scenario: The same enemy varies between encounters
 - **WHEN** 以不同 seed 對同一隻敵人進行兩場遭遇

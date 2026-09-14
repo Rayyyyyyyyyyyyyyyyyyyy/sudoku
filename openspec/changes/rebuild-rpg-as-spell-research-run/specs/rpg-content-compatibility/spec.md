@@ -1,7 +1,7 @@
 ## ADDED Requirements
 
 ### Requirement: Schema 3 is the only accepted live format
-系統 SHALL 使用 `schemaVersion: 3` 與 `contentVersion: spell-research-1`。canonical validation SHALL 涵蓋殘頁所有權、法術組成的同韻限制與行數上限、詠唱狀態與 phase 的一致性、章節索引與快照的合法性，以及 `run` 與快照兩者的 PRNG 狀態。既有「非空 profile 搭配 `run: null`」的拒絕條件 SHALL 被明確改寫以容許退休遠征後的狀態，SHALL NOT 只更動版本字串。
+系統 SHALL 使用 `schemaVersion: 3` 與 `contentVersion: spell-research-1`。canonical validation SHALL 涵蓋殘頁所有權與獨佔（一張殘頁至多屬於一個法術）、行數不超過已解鎖上限、詠唱狀態與 phase 的一致性、章節索引與快照（含詞綴）的合法性，以及 `run` 與快照兩者的 PRNG 狀態。既有「非空 profile 搭配 `run: null`」的拒絕條件 SHALL 被明確改寫以容許退休遠征後的狀態，SHALL NOT 只更動版本字串。
 
 #### Scenario: Round-trip a live game
 - **WHEN** 合法的 schema 3 狀態經序列化與反序列化

@@ -14,7 +14,7 @@
 - **AND** `profile` 的見聞餘額與首次達成後相同
 
 ### Requirement: Permanent rewards unlock composition space, not flat statistics
-永久養成的獎勵 SHALL 作用於法術組成空間：解鎖成分、解鎖韻、提高法術行數上限、擴充開局可選的首批殘頁。系統 SHALL NOT 提供僅提高生命、魔力、攻擊或護甲數值的永久養成項目。行數上限 SHALL 由初始值逐步解鎖至決策所定的最大行數。
+永久養成的獎勵 SHALL 作用於法術組成空間：解鎖成分、提高法術行數上限、擴充殘頁持有上限、擴充開局可選的首批殘頁。系統 SHALL NOT 提供僅提高生命、魔力、攻擊或護甲數值的永久養成項目。行數上限 SHALL 由初始值逐步解鎖至決策所定的最大行數。
 
 #### Scenario: Unlock a component and gain new answers
 - **WHEN** 玩家以見聞解鎖一項先前未開放的成分
