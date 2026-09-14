@@ -17,10 +17,21 @@
 - [ ] 3.2 實作死亡回溯：以快照取代 `run`，確保重來的敵人、意圖序列、事件與掉落位元級相同；加入「取得獎勵後死亡重來」不得重複計入的列舉測試（rpg-chapter-checkpoint）。
 - [ ] 3.3 實作永遠可用的「全部重來」：從故事起點重新出發，重置 `run` 全部內容並完整保留 `profile`；測試任何狀態下皆不停用、且不扣除任何永久養成（rpg-chapter-checkpoint、rpg-permanent-progression）。
 - [ ] 3.4 移除 `contentValidation` 的環檢查，並在同一次變更中以快照回溯承接防刷責任；證明兩者不同時缺席（rpg-chapter-checkpoint）。
+- [ ] 3.5 實作座標推導的內容生成 `hash(runSeed, chapterIndex, nodeId, purpose)` 取代循序抽取；測試死亡後改走不同路徑時各節點內容不變（rpg-chapter-checkpoint）。
+- [ ] 3.6 實作章節起始生命保底 `max(carriedHp, floor(maxHp/2))`，於快照之前套用；測試低生命進章不會形成永久死局（rpg-chapter-checkpoint）。
+- [ ] 3.7 實作五章 27 節點骨架：章 1–4 各 6 節點含章節首領，終章 3 節點（聖所→精英→最終首領）（rpg-run-structure）。
+- [ ] 3.8 實作 3 欄 × 6 列地圖與全圖揭示、戰鬥節點的遭遇身分預覽；360px 下不得橫向捲動（rpg-run-structure）。
+- [ ] 3.9 實作節點權重（戰鬥 50／精英 18／事件 16／聖所 11／補給 5）與強制骨架（首節點簡單池戰鬥、第 4–5 節點間保證聖所、章末首領）（rpg-run-structure）。
+- [ ] 3.10 實作放置限制：精英與聖所不得在前兩節點、特殊節點不得連續、路徑不得交叉、前兩條路徑起點相異、同章不得重複遭遇身分、連續三個戰鬥後排除戰鬥（rpg-run-structure）。
+- [ ] 3.11 改為逐回合持久化而非逐節點；測試詠唱中途關閉後可還原至同一回合與詠唱進度（rpg-run-structure）。
 
 ## 4. 法術研究系統
 
-- [ ] 4.1 建立殘頁 catalog：五種成分與各自的效果取向、成分色票與符號；定義取得來源，確保不可由重複造訪取得（rpg-spell-research）。
+- [ ] 4.1 建立殘頁 catalog：五種成分與各自的效果取向、成分色票與符號；出貨 60 張（每成分 12），稀有度約 常見 50／罕見 33／稀有 17，稀有度調節情境性而非絕對強度；定義取得來源，確保不可由重複造訪取得（rpg-spell-research）。
+- [ ] 4.1a 實作同成分等強度稽核：不存在任何一張在所有敵人與行數配置下皆不劣於同成分其他張；稽核失敗須調整數值而非以稀有度標記迴避（rpg-spell-research）。
+- [ ] 4.1b 為死語加入永遠有作用的基礎效果，避免反制型成分在多數遭遇中成為死內容與「垃圾殘頁」（rpg-spell-research）。
+- [ ] 4.1c 實作單趟取得 10–14 張、約 12 次三選一、同時呈現不超過 3 個選項；取得與組成僅於遭遇之間開啟（rpg-spell-research）。
+- [ ] 4.1d 實作持有上限為可放置格數的 60–75%，並列出各解鎖階段的有效池大小；達上限時開啟並列替換介面而非以「已滿」拒絕（rpg-spell-research、rpg-permanent-progression）。
 - [ ] 4.2 實作組成規則：1–5 行、殘頁獨佔與拆解、行數即等級、第 N 行貢獻第 N 個效果層；重複占用或超出已解鎖上限的組合被拒絕且不動 revision／資源／PRNG（rpg-spell-research）。
 - [ ] 4.3 實作詠唱回合與打斷：1–2 行即時、3–4 行詠唱 1 回合、5 行詠唱 2 回合，被 `interrupt` 命中時失效並退還一半魔力（向下取整），戰鬥結束清除（rpg-spell-research）。
 - [ ] 4.4 調整魔力經濟：格擋至多回 1 魔，移除任何無代價且可無限重複的魔力來源；以固定序列測試證明無法無限維持高行數法術（rpg-spell-research）。
@@ -46,6 +57,9 @@
 - [ ] 6.5 實作六種詞綴（緘默、孿生、覺醒、淬毒、遲滯、迴響）作用於既有七隻敵人；視覺僅以外框與角標區分，不新增像素圖（rpg-encounter-counterplay）。
 - [ ] 6.6 詞綴由 `run.random` 於章節生成時決定並記入章節快照；測試章節重來後詞綴組合完全相同、無法藉死亡重骰（rpg-encounter-counterplay、rpg-chapter-checkpoint）。
 - [ ] 6.7 確認詞綴不產生見聞給予點；以模擬掃描 42 種遭遇身分 × 配裝，證明不存在已解鎖範圍內無論如何配裝皆不可勝的組合（rpg-encounter-counterplay、rpg-permanent-progression）。
+- [ ] 6.8 重寫反傷為固定值、可減免、設單次上限、每次玩家行動觸發一次、數值於意圖揭示中預先顯示；保留「長法術較不利」但不得一擊致死（rpg-encounter-counterplay）。
+- [ ] 6.9 實作四通道詞綴呈現：常駐文字標籤、六種徽章外形、六種外框線條樣式、Okabe-Ito 顏色為輔；外框不小於 3 邏輯像素，不以紅綠承載語意（rpg-encounter-counterplay）。
+- [ ] 6.10 以紅色盲、綠色盲、藍黃色盲模擬器及純灰階各渲染詞綴標記集合，斷言六者兩兩於四種渲染下皆可區分；提供「高對比詞綴標籤」選項（rpg-encounter-counterplay）。
 
 ## 7. 砍除敘述與擴充規則文字
 
@@ -59,7 +73,8 @@
 - [ ] 8.2 將戰鬥主視覺由 48px 放大至可辨識尺寸（原圖每格 313×313），第 12 與第 14 格改作章節背景；保留 `image-rendering: pixelated`（rpg-encounter-counterplay）。
 - [ ] 8.3 實作研究畫面：殘頁清單、成分色票與符號、占用狀態、組成與拆解、已解鎖上限、下一場遭遇的預期代價；組成行動在戰鬥中被拒絕（rpg-spell-research）。
 - [ ] 8.4 實作村莊養成畫面：見聞餘額、解鎖清單與各項說明、已解鎖與未解鎖的區別；全部重來的入口與後果說明（rpg-permanent-progression）。
-- [ ] 8.5 在 360px 與桌面檢查研究畫面、養成畫面、戰鬥主視覺、章節重來與全部重來的觸控、鍵盤焦點與無水平溢出，保留可重現證據（rpg-spell-research）。
+- [ ] 8.5 實作拆裝零成本互動：拖入已配置的殘頁直接移動並在原位留下空缺、單一畫面呈現全部法術與常駐「未配置」區、無作用的配置明示原因（rpg-spell-research）。
+- [ ] 8.6 在 360px 與桌面檢查章節地圖、研究畫面、養成畫面、戰鬥主視覺、章節重來與全部重來的觸控、鍵盤焦點與無水平溢出，保留可重現證據（rpg-spell-research、rpg-run-structure）。
 
 ## 9. 可計算指標驗收
 
@@ -67,7 +82,12 @@
 - [ ] 9.2 實作由引擎狀態計算的決策統計，證明決策回合佔比 ≥60%；移除以人工字串陣列長度代表決策數的做法（rpg-design-verification）。
 - [ ] 9.3 對每隻敵人提供兩組對照配裝，證明獲勝回合數差異 ≥30% 或其一無法獲勝，且差異來自機制需求（rpg-design-verification）。
 - [ ] 9.4 對每個章節提供一組失敗配裝與一組成功配裝，於相同章節快照下分別重現，並確認與位元級重來不衝突（rpg-design-verification、rpg-chapter-checkpoint）。
-- [ ] 9.5 執行 `npm test`、`npm run typecheck`、`npm run build`、`git diff --check` 及本 change 的 strict OpenSpec validation，記錄真實結果（rpg-design-verification）。
+- [ ] 9.5 定義各章 Power Floor（沿任一合法路徑進入該章時保證擁有的最低生命、法術組成與資源），並使其可列舉、可重現（rpg-design-verification）。
+- [ ] 9.6 實作靜態篩檢 S1（擊殺回合數 vs 存活回合數）、S2（壓制詠唱下 DPS ≤ 0 的零傷害鎖）、S3（反彈值 ≥ Power Floor 生命）；此三項為最先交付的認證層（rpg-design-verification）。
+- [ ] 9.7 實作窮舉可達性搜尋：狀態編碼為可雜湊元組、記憶化 DFS、回合上限界定深度；因敵方確定且預告，實作為單方搜尋而非對抗式搜尋（rpg-design-verification）。
+- [ ] 9.8 實作餘裕門檻 M1（生命餘裕 ≥25%）、M2（≥3 個不同的獲勝開局）、M3（寬容度一般 ≥0.30／首領 ≥0.15），判定分 `IMPOSSIBLE`／`KNIFE_EDGE`／`OK` 三級並於 CI 阻擋前兩者（rpg-design-verification）。
+- [ ] 9.9 於 CI 全枚舉遭遇身分 × Power Floor 包絡並快取認證結果；加入執行時斷言：進入未認證遭遇視為程式錯誤（rpg-design-verification）。
+- [ ] 9.10 執行 `npm test`、`npm run typecheck`、`npm run build`、`git diff --check` 及本 change 的 strict OpenSpec validation，記錄真實結果（rpg-design-verification）。
 
 ## 10. 實機離線驗收
 

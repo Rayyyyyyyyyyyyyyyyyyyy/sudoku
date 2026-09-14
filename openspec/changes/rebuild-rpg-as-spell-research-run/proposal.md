@@ -35,7 +35,8 @@ v2 的產製門檻量的是節點數與選項數，`contentValidation` 另強制
 
 - `rpg-spell-research`: 殘頁、成分、殘頁獨佔、法術組成、行數即等級的質變規則、詠唱回合與打斷、意圖揭示深度、魔力經濟。
 - `rpg-encounter-counterplay`: 七隻敵人的解法需求、可組合詞綴、意圖不可預測化、以章節深度而非等級縮放提供難度。
-- `rpg-chapter-checkpoint`: 章節快照、死亡回溯、PRNG 一併回溯的防刷保證、從故事起點的全部重來出口。
+- `rpg-run-structure`: 五章 27 節點的骨架、3 欄地圖與全圖揭示、遭遇身分預覽、節點權重與放置限制、逐回合存檔。
+- `rpg-chapter-checkpoint`: 章節快照、死亡回溯、座標推導的內容、章節起始生命保底、從故事起點的全部重來出口。
 - `rpg-permanent-progression`: 見聞的一次性給予與跨趟去重、解鎖式養成獎勵、全部重來時的保留範圍。
 - `rpg-content-compatibility`: schema 3 狀態與驗證、v1／v2 退休與見聞退還、失敗恢復。
 - `rpg-design-verification`: 取代真人小組的可計算決策指標，含「不存在單一固定策略能通關」的常設測試。

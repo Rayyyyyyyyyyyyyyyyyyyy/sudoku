@@ -28,7 +28,47 @@
 - **THEN** 新組成生效於下一場遭遇
 - **AND** 戰鬥中送入的組成或拆解行動被拒絕
 
-### Requirement: Line count is the spell level and each line adds behaviour
+### Requirement: Fragments within a component are near-equal in power
+同一成分內的殘頁 SHALL 以附帶條件與適用情境彼此區分，SHALL NOT 以單純的數值大小形成嚴格優劣排序。每個成分 SHALL 通過「最佳殘頁稽核」：不存在一張在所有情境下皆優於同成分其他張的殘頁。
+
+此規則是殘頁獨佔能夠成立的前提。獨佔只有在同成分殘頁強度接近時才構成配置決策；一旦某張嚴格最強，獨佔就從「這張火焰要給哪個法術」退化為「一號法術拿好的、二號法術拿廢的」。Path of Exile 2 曾以完全相同的理由實施「一顆輔助寶石只能裝一個技能」，並於 0.3.0 版移除，玩家回報的癥結正是被迫「為了讓每個技能都有東西裝而塞垃圾寶石」。
+
+#### Scenario: Audit a component for a strictly dominant fragment
+- **WHEN** 對任一成分的全部殘頁執行稽核
+- **THEN** 不存在任何一張在所有敵人與所有行數配置下皆不劣於同成分其他張
+- **AND** 稽核失敗時該成分的數值須調整，不得以稀有度標記迴避
+
+### Requirement: Reallocation is free, instant and unlimited outside combat
+拆解與重新配置殘頁 SHALL 不消耗任何資源、不需要確認對話、不設冷卻、不限次數，且 SHALL NOT 消耗亂數。把一張已配置於其他法術的殘頁拖入新法術 SHALL 直接**移動**它並在原位置留下空缺提示，SHALL NOT 以「該殘頁已被占用」的錯誤中止操作。
+
+介面 SHALL 在單一畫面同時呈現全部法術與其行，以及一個常駐的「未配置」區；任一持有中的殘頁 SHALL 始終可見於法術或未配置區之一，不得隱藏於需要導覽才能抵達之處。系統 SHALL NOT 讓任何持有中的殘頁處於靜默失效狀態：若其配置位置使其不產生效果，介面 SHALL 明示該情形。
+
+#### Scenario: Move an allocated fragment in one gesture
+- **WHEN** 玩家把已配置於法術 A 的殘頁拖入法術 B
+- **THEN** 該殘頁移動至法術 B，法術 A 顯示空缺
+- **AND** 過程不需先行拆解、不需確認、不消耗資源或亂數
+
+#### Scenario: Inert placement is disclosed
+- **WHEN** 某張殘頁因其所在位置而不產生任何效果
+- **THEN** 介面於該殘頁上明示其目前無作用及原因
+- **AND** 系統不靜默保留無作用的配置
+
+### Requirement: Pool size and acquisition rate are bounded and staged
+出貨的殘頁總數 SHALL 不少於 40 張，目標 60 張（每成分 12 張），v1 上限 75 張。稀有度分布 SHALL 約為常見 50%、罕見 33%、稀有 17%，且稀有度 SHALL 調節情境性與波動幅度，SHALL NOT 調節絕對強度。
+
+單趟取得量 SHALL 為 10–14 張，來自約 12 次「三選一」的取得事件。同時呈現的選項 SHALL NOT 超過 3 個。取得與組成介面 SHALL 僅於遭遇之間開啟，SHALL NOT 於戰鬥中開啟。
+
+持有上限 SHALL 明顯低於可放置格數總和（法術數 × 行數上限），維持在其 60–75%，使玩家無法填滿全部格位。成分解鎖 SHALL 作為有效池的分段閘門並於規格中明列各階段的有效池大小，避免全池於早期即被看盡。
+
+#### Scenario: Hold cap creates allocation pressure
+- **WHEN** 玩家在某階段持有達上限的殘頁
+- **THEN** 可放置格數總和大於持有上限，玩家無法同時填滿所有法術
+- **AND** 新取得時系統開啟與現有持有並列的替換介面，而非以「已滿」拒絕
+
+#### Scenario: Effective pool is staged by unlocks
+- **WHEN** 玩家僅解鎖部分成分
+- **THEN** 該階段的有效池依規格所列縮減
+- **AND** 各階段的有效池與單趟取得量的比值落在規格所定區間
 法術的行數 SHALL 即為其等級；系統 SHALL NOT 另設獨立的等級數值或傷害倍率欄位。第 N 行 SHALL 貢獻第 N 個效果層並依序結算。提升等級 SHALL 表現為新增一種行為，不得僅表現為既有數值的放大。行數 SHALL NOT 超過 `profile` 目前已解鎖的行數上限。
 
 #### Scenario: Add a line and gain a new behaviour
