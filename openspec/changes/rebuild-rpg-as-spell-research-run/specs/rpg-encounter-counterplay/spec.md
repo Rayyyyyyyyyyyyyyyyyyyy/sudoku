@@ -10,8 +10,8 @@
 
 #### Scenario: Multi-line spell against a reflecting enemy
 - **WHEN** 玩家以多行法術攻擊鐵脊龍鱷
-- **THEN** 該玩家行動只觸發一次固定、可減免且有上限的反傷，使高行數法術在此遭遇中較不利但不遭瞬殺
-- **AND** 對照的低行數組成在相同 seed 下產生不同的生命結算
+- **THEN** 同一行動內各傷害效果層的固定反傷先加總，再套用上限與減免，最後只結算一次
+- **AND** 不以法術總行數直接判定反傷較高；非傷害層不增加此反傷加總
 
 ### Requirement: Enemy statistics do not scale with player power
 敵方生命、護甲與傷害 SHALL NOT 依玩家等級、法術行數、已取得殘頁數或章節進度等比例放大。難度 SHALL 來自章節對應的固定敵人名單與各自的機制需求。
@@ -28,12 +28,27 @@
 
 反傷的實際數值 SHALL 於玩家承諾該行動之前顯示於意圖揭示中。未標示數值的反傷違反本設計的完全資訊承諾，屬缺陷而非難度。
 
-鐵脊龍鱷的行數關係 SHALL 保留「短法術在此遭遇中優於長法術」的意圖，但 SHALL 以受上限約束的方式表達：其聚合反傷隨造成傷害的效果層數增加卻不超過上限，使長法術較不利而非一擊致死。本需求由「最強工具不得反過來造成未揭示的瞬殺」與完全資訊原則成立，不依賴外部作品的版本敘述。
+鐵脊龍鱷 SHALL 以傷害效果層的固定反傷加總表達多傷害層法術的代價，不以法術總行數比較優劣。固定每層反傷、單次上限與減免條件後，增加傷害層 SHALL 使實際反傷不減；達到上限或被減免完全吸收時 SHALL 允許相等，加入非傷害層亦 SHALL NOT 直接增加反傷。上限限制單次傷害，不保證低生命角色不會死亡；確切反傷 SHALL 在承諾前揭示。本需求不依賴外部作品的版本敘述。
 
-#### Scenario: A five-line spell is penalised but not lethal
-- **WHEN** 玩家對具反傷的敵人施放 5 行法術
-- **THEN** 反傷總量高於短法術但不超過單次上限
-- **AND** 該數值在玩家承諾前已顯示
+#### Scenario: More damaging layers increase crocodile reflection below the cap
+- **WHEN** 以相同玩家與敵人狀態比較對鐵脊龍鱷的兩個傷害行動，該敵人不帶迴響或其他反傷來源，每個傷害層的固定反傷相同且大於零，兩個行動都未達上限且沒有反傷減免，其中一個含更多傷害層
+- **THEN** 更多傷害層的行動承受較高的反傷，兩者皆只結算一次
+- **AND** 兩個數值在玩家承諾前皆已顯示
+
+#### Scenario: Capped crocodile reflection can be equal
+- **WHEN** 在相同上限與減免條件下，兩個對鐵脊龍鱷的傷害行動其固定反傷加總皆已達單次上限，且沒有其他反傷來源
+- **THEN** 兩者套用上限與減免後的反傷相等，即使傷害層數不同
+- **AND** 驗收不要求較多傷害層必須受到更高反傷
+
+#### Scenario: Non-damaging lines do not add crocodile reflection
+- **WHEN** 對鐵脊龍鱷的法術增加一個非傷害層，且原傷害層、反傷上限、減免與其他反傷觸發條件皆不變
+- **THEN** 龍鱷反傷保持相同
+- **AND** 驗收不把法術總行數增加視為反傷必須增加
+
+#### Scenario: Echo reflects the same amount regardless of hit count
+- **WHEN** 從同一遭遇進場快照分別施放不同傷害層數或段數的首個傷害行動，敵人僅有迴響反傷，且兩個行動的反傷上限與減免條件相同
+- **THEN** 兩個對照中的迴響反傷相等，各觸發一次後標記為已消耗
+- **AND** 各自後續的傷害行動均不再觸發迴響
 
 #### Scenario: Reflect is visible before commitment
 - **WHEN** 玩家檢視具反傷敵人的意圖
