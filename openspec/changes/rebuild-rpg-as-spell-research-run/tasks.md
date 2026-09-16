@@ -1,14 +1,16 @@
 ## 0. 實作閘門（本檔章節依能力分組，不代表交付順序）
 
 - [ ] 0.1 先完成並嚴格驗證本 change 的全部 OpenSpec 文件；規格仍有孤兒 scenario、跨檔矛盾或未決核心行為時不得進入 production 實作。
-- [ ] 0.2 第一個可玩垂直切片只使用五成分各 2 張殘頁、2 隻敵人與 2 個詞綴，先驗證 evaluator、配裝差異、章節基線與付代價撤離；未通過決策指標前不得擴寫 60 張殘頁。
+- [x] 0.2 第一個可玩垂直切片只使用五成分各 2 張殘頁、2 隻敵人與 2 個詞綴，先驗證 evaluator、配裝差異、章節基線與付代價撤離；未通過決策指標前不得擴寫 60 張殘頁。
 - [ ] 0.3 垂直切片通過後才依序擴成 7 隻敵人、6 詞綴與 60 張殘頁，再進行完整地圖、migration、離線與 UI 驗收。
+
+> 0.2 完成範圍為獨立實驗，見 `slice-contract.md` 與 `slice-evidence.json`；0.1 尚未關閉，不代表正式 schema 3 或其餘 production 任務完成。
 
 ## 1. 凍結基線與撤回既有主張
 
-- [ ] 1.1 以 `baseline.md` 中固定 SHA `e9e738c` 與重現指令核對 v2 現況（64 節、165 選項、7 敵人、3 職業、11,252 文字字元，其中場景與變體為 6,909）；實作前重跑並保存結果，將獨立戰鬥 fixture 與全遠征驗收分開，作為改善前對照（rpg-design-verification）。
-- [ ] 1.2 在 `docs/rpg-verification.md` 明寫撤回「約三小時」主張與六人真人門檻，說明資源不足的判定，保留 v2 既有結果不刪改（rpg-design-verification）。
-- [ ] 1.3 盤點 v2 將作廢的產出（故事圖、敘述、三職業六專精、`routeMatrix`、數量門檻、事件匯流規則、六項平面數值升級），確認 `expand-nightmare-fortress-expeditions` 於本 change 通過後才歸檔或撤回（rpg-content-compatibility）。
+- [x] 1.1 以 `baseline.md` 中固定 SHA `e9e738c` 與重現指令核對 v2 現況（64 節、165 選項、7 敵人、3 職業、11,252 文字字元，其中場景與變體為 6,909）；實作前重跑並保存結果，將獨立戰鬥 fixture 與全遠征驗收分開，作為改善前對照（rpg-design-verification）。
+- [x] 1.2 在 `docs/rpg-verification.md` 明寫撤回「約三小時」主張與六人真人門檻，說明資源不足的判定，保留 v2 既有結果不刪改（rpg-design-verification）。
+- [x] 1.3 盤點 v2 將作廢的產出（故事圖、敘述、三職業六專精、`routeMatrix`、數量門檻、事件匯流規則、六項平面數值升級），確認 `expand-nightmare-fortress-expeditions` 於本 change 通過後才歸檔或撤回（rpg-content-compatibility）。
 - [ ] 1.4 逐項以一手來源覆核 design 第 9 節的外部作品版本號、數量與機制描述，記錄連結、存取日期與可支持的精確主張；找不到一手來源者改標為假設或刪除，不得以搜尋摘要作為結案證據（rpg-design-verification）。
 
 ## 2. schema 3 契約與持久化邊界
@@ -66,7 +68,7 @@
 - [ ] 6.4 驗證相同 seed 與行動序列可完整重播意圖與結算，PRNG value／calls 與不中斷對照一致（rpg-encounter-counterplay）。
 - [ ] 6.5 實作六種可疊加詞綴及章節上限（0–1／1／1–2／2／2–3，精英 +1、總上限 3）；詞綴集合去重、依 enum 排序，以「敵人 + canonical 集合」建立身分（rpg-encounter-counterplay）。
 - [ ] 6.6 由節點座標 seed 從已認證集合選取詞綴；先禁止 `遲滯 + 淬毒`、`緘默 + 遲滯`，新增互斥組合必須附認證失敗證據，不以無界重抽生成（rpg-encounter-counterplay、rpg-chapter-checkpoint）。
-- [ ] 6.7 確認詞綴不產生見聞給予點；枚舉每個可達 canonical 遭遇身分與其節點入口 Reachable Power Frontier 配對，證明不存在只能靠撤離前進的組合（rpg-encounter-counterplay、rpg-permanent-progression）。
+- [ ] 6.7 確認詞綴不產生見聞給予點；枚舉每個章節認證通關策略的 canonical 遭遇身分與其入口 Reachable Power Frontier 配對，證明不存在只能靠撤離前進的組合（rpg-encounter-counterplay、rpg-permanent-progression）。
 - [ ] 6.8 重寫反傷：龍鱷將每個傷害層的固定值聚合成每次玩家行動一次結算；迴響只在首個傷害行動觸發一次且不隨段數增加；兩者皆可減免、有單次上限並預先顯示。分別驗證龍鱷未達上限且無減免時更多傷害層反傷較高、皆達上限時相等、加入非傷害層且減免不變時相等，以及僅有迴響的敵人在相同上限／減免下不同段數的首次反傷相等且後續不再觸發；不以法術總行數要求嚴格增傷（rpg-encounter-counterplay）。
 - [ ] 6.9 為每個疊加詞綴實作獨立四通道 badge：常駐文字、六種外形、六種線條樣式、Okabe-Ito 顏色為輔；線寬不小於 3 邏輯像素，不以紅綠承載語意（rpg-encounter-counterplay）。
 - [ ] 6.10 以紅色盲、綠色盲、藍黃色盲模擬器及純灰階各渲染詞綴標記集合，斷言六者兩兩於四種渲染下皆可區分；提供「高對比詞綴標籤」選項（rpg-encounter-counterplay）。
@@ -92,11 +94,11 @@
 - [ ] 9.2 實作由引擎狀態計算的決策統計，證明決策回合佔比 ≥60%；移除以人工字串陣列長度代表決策數的做法（rpg-design-verification）。
 - [ ] 9.3 對每隻敵人提供兩組對照配裝，證明獲勝回合數差異 ≥30% 或其一無法獲勝，且差異來自機制需求（rpg-design-verification）。
 - [ ] 9.4 對每個章節提供一組失敗配裝與一組成功配裝，於相同章節基線下分別重現，並確認與一般重來及付代價撤離不衝突（rpg-design-verification、rpg-chapter-checkpoint）。
-- [ ] 9.5 為每個戰鬥節點列舉入口 Reachable Power Frontier；只有在較強狀態能無代價模擬較弱狀態時才做支配消去，否則保留兩者，並使可達性與消去證據可重現（rpg-design-verification）。
+- [ ] 9.5 為每個章節基線（含撤離後新基線）的通關策略列舉節點入口 Reachable Power Frontier；只有在較強狀態能無代價模擬較弱狀態時才做支配消去，否則保留兩者，並使可達性與消去證據可重現（rpg-design-verification）。
 - [ ] 9.6 實作保守靜態篩檢 S1（以完整規則的樂觀傷害上界／承傷下界證明回合死局）、S2（壓制詠唱下 DPS ≤ 0）、S3（最小可減免反彈仍致死）；不得以平均 DPS 簡式誤拒（rpg-design-verification）。
 - [ ] 9.7 實作資訊一致的記憶化 AND–OR 搜尋：狀態只含 UI 已揭示意圖，玩家行動為 OR、承諾範圍後所有合法未揭示意圖為 AND；禁止以固定 seed 偷看未來，回合上限界定深度（rpg-design-verification）。
 - [ ] 9.8 實作餘裕門檻 M1（生命餘裕 ≥25%）、M2（≥3 個結果不同的獲勝開局）、M3（寬容度一般 ≥0.30／首領 ≥0.15），判定分 `IMPOSSIBLE`／`KNIFE_EDGE`／`OK` 三級並於 CI 阻擋前兩者（rpg-design-verification）。
-- [ ] 9.9 於 CI 全枚舉可達的「節點 canonical 遭遇身分 × 該節點入口 Reachable Power Frontier」配對並快取結果；不得與無法抵達該節點的狀態做笛卡兒積，撤離不得算作勝利，進入未認證遭遇視為程式錯誤（rpg-design-verification）。
+- [ ] 9.9 於 CI 驗證每份章節基線的完整通關策略，枚舉該策略全部意圖分支的「節點 canonical 遭遇身分 × 入口 Reachable Power Frontier」配對並快取結果；不得與無法抵達該節點的狀態做笛卡兒積，撤離不得算作勝利，進入未認證遭遇視為程式錯誤（rpg-design-verification）。
 - [ ] 9.10 執行 `npm test`、`npm run typecheck`、`npm run build`、`git diff --check` 及本 change 的 strict OpenSpec validation，記錄真實結果（rpg-design-verification）。
 
 ## 10. 實機離線驗收

@@ -1,5 +1,15 @@
 # v2 基線與重現證據
 
+## 實作前重跑：2026-09-16
+
+新 worktree HEAD 為 `48d3178`，父提交 `a8bc804`，開始時工作目錄乾淨。
+`git diff e9e738c HEAD -- src test package.json package-lock.json` 為空。
+以 Node `v22.16.0` 執行下方原始指令成功；保存未刪節 stdout 於
+[`baseline-2026-09-16.jsonl`](baseline-2026-09-16.jsonl)，包含純普攻的 33 個失敗 fixture。
+本次重跑核對 64 節、165 選項、7 敵人、3 職業、11,252 字元、84/84 與 51/84，
+亦核對非空 profile 搭配 `run: null` 被接受。仍然只證明所列獨立戰鬥與靜態盤點。
+此 worktree 尚無 `node_modules`；下方「工程驗證」是先前暫存副本的結果，不是本次新跑。
+
 2026-09-16 核對。程式固定基線為 `e9e738c6d46643d9816cb1f7265be3c802758775`；規格分支 `13fe2ec` 與該基線的 `src/`、`test/`、建置及套件檔案相同。本次只修訂 OpenSpec 文件，不實作 v3。
 
 ## 量測結果與邊界

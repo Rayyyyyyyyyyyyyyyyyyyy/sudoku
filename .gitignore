@@ -1,4 +1,5 @@
 node_modules
 dist
+.rpg-research-cache
 .DS_Store
 *.local

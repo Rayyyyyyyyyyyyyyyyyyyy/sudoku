@@ -23,7 +23,7 @@
 
 #### Scenario: Locked components never gate the only winning line
 - **WHEN** 以某個尚未解鎖成分的合法 profile 產生章節
-- **THEN** 任何可達遭遇皆不以該成分作為唯一可勝解
+- **THEN** 該章存在不依賴該成分且不靠撤離的通關策略
 - **AND** Reachable Power Frontier 認證涵蓋該 profile 狀態
 
 #### Scenario: Reject a flat-statistic upgrade

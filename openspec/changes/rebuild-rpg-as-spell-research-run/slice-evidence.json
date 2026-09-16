@@ -1,0 +1,633 @@
+{
+  "version": "spell-research-lab-1",
+  "scope": "Two-node laboratory only; no full-run, empty-profile or production certification",
+  "limits": {
+    "maxEdges": 32,
+    "maxNodes": 50000,
+    "collectStrategy": true
+  },
+  "heuristicVersion": "resource-aware-greedy-v1",
+  "decisionEvidence": {
+    "seed": 0,
+    "decisionTurns": 11,
+    "totalTurns": 11,
+    "ratio": 1
+  },
+  "baseline": {
+    "enemy": "knight",
+    "modifiers": [
+      "silent"
+    ],
+    "entry": {
+      "hp": 40,
+      "maxHp": 40,
+      "mana": 10,
+      "maxMana": 10,
+      "shield": 0
+    },
+    "book": [
+      [
+        "camel-rend",
+        "whale-steady"
+      ],
+      [
+        "living-heal",
+        "dead-drain"
+      ],
+      [
+        "elephant-stop",
+        "living-shield"
+      ]
+    ],
+    "verdict": "WIN",
+    "minFinalHp": 26,
+    "expanded": 21,
+    "cacheHits": 4,
+    "minWinningOpenings": 5,
+    "openings": [
+      {
+        "known": [
+          0
+        ],
+        "legalOutcomes": 5,
+        "wins": 5,
+        "unknown": 0
+      },
+      {
+        "known": [
+          1
+        ],
+        "legalOutcomes": 5,
+        "wins": 5,
+        "unknown": 0
+      }
+    ],
+    "tolerance": 0.7229593888218737,
+    "toleranceThreshold": 0.3,
+    "policies": [
+      {
+        "weights": {
+          "damage": 4,
+          "healing": 1,
+          "shield": 1,
+          "mana": 1
+        },
+        "wins": 8,
+        "paths": 8,
+        "expanded": 18,
+        "ratio": 1
+      },
+      {
+        "weights": {
+          "damage": 8,
+          "healing": 1,
+          "shield": 0,
+          "mana": 0
+        },
+        "wins": 8,
+        "paths": 8,
+        "expanded": 18,
+        "ratio": 1
+      },
+      {
+        "weights": {
+          "damage": 2,
+          "healing": 4,
+          "shield": 1,
+          "mana": 1
+        },
+        "wins": 140,
+        "paths": 829,
+        "expanded": 375,
+        "ratio": 0.16887816646562123
+      }
+    ]
+  },
+  "carried": [
+    {
+      "enemy": "crocodile",
+      "modifiers": [
+        "echo"
+      ],
+      "entry": {
+        "hp": 32,
+        "maxHp": 40,
+        "mana": 4,
+        "maxMana": 10,
+        "shield": 0
+      },
+      "book": [
+        [
+          "living-shield",
+          "whale-steady"
+        ],
+        [
+          "living-heal",
+          "whale-opening"
+        ],
+        [
+          "camel-rend",
+          "elephant-stop"
+        ]
+      ],
+      "verdict": "WIN",
+      "minFinalHp": 16,
+      "expanded": 167,
+      "cacheHits": 74,
+      "minWinningOpenings": 5,
+      "openings": [
+        {
+          "known": [
+            0
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        },
+        {
+          "known": [
+            1
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        },
+        {
+          "known": [
+            2
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        }
+      ],
+      "tolerance": 0.3333333333333333,
+      "toleranceThreshold": 0.15,
+      "policies": [
+        {
+          "weights": {
+            "damage": 4,
+            "healing": 1,
+            "shield": 1,
+            "mana": 1
+          },
+          "wins": 6561,
+          "paths": 6561,
+          "expanded": 160,
+          "ratio": 1
+        },
+        {
+          "weights": {
+            "damage": 8,
+            "healing": 1,
+            "shield": 0,
+            "mana": 0
+          },
+          "wins": 0,
+          "paths": 241,
+          "expanded": 96,
+          "ratio": 0
+        },
+        {
+          "weights": {
+            "damage": 2,
+            "healing": 4,
+            "shield": 1,
+            "mana": 1
+          },
+          "wins": 0,
+          "paths": 531441,
+          "expanded": 48,
+          "ratio": 0
+        }
+      ]
+    },
+    {
+      "enemy": "crocodile",
+      "modifiers": [
+        "echo"
+      ],
+      "entry": {
+        "hp": 29,
+        "maxHp": 40,
+        "mana": 4,
+        "maxMana": 10,
+        "shield": 0
+      },
+      "book": [
+        [
+          "living-shield",
+          "whale-steady"
+        ],
+        [
+          "living-heal",
+          "whale-opening"
+        ],
+        [
+          "camel-rend",
+          "elephant-stop"
+        ]
+      ],
+      "verdict": "WIN",
+      "minFinalHp": 13,
+      "expanded": 167,
+      "cacheHits": 74,
+      "minWinningOpenings": 5,
+      "openings": [
+        {
+          "known": [
+            0
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        },
+        {
+          "known": [
+            1
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        },
+        {
+          "known": [
+            2
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        }
+      ],
+      "tolerance": 0.3333333333333333,
+      "toleranceThreshold": 0.15,
+      "policies": [
+        {
+          "weights": {
+            "damage": 4,
+            "healing": 1,
+            "shield": 1,
+            "mana": 1
+          },
+          "wins": 6561,
+          "paths": 6561,
+          "expanded": 160,
+          "ratio": 1
+        },
+        {
+          "weights": {
+            "damage": 8,
+            "healing": 1,
+            "shield": 0,
+            "mana": 0
+          },
+          "wins": 0,
+          "paths": 181,
+          "expanded": 84,
+          "ratio": 0
+        },
+        {
+          "weights": {
+            "damage": 2,
+            "healing": 4,
+            "shield": 1,
+            "mana": 1
+          },
+          "wins": 0,
+          "paths": 531441,
+          "expanded": 48,
+          "ratio": 0
+        }
+      ]
+    },
+    {
+      "enemy": "crocodile",
+      "modifiers": [
+        "echo"
+      ],
+      "entry": {
+        "hp": 26,
+        "maxHp": 40,
+        "mana": 4,
+        "maxMana": 10,
+        "shield": 0
+      },
+      "book": [
+        [
+          "living-shield",
+          "whale-steady"
+        ],
+        [
+          "living-heal",
+          "whale-opening"
+        ],
+        [
+          "camel-rend",
+          "elephant-stop"
+        ]
+      ],
+      "verdict": "WIN",
+      "minFinalHp": 10,
+      "expanded": 167,
+      "cacheHits": 74,
+      "minWinningOpenings": 4,
+      "openings": [
+        {
+          "known": [
+            0
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        },
+        {
+          "known": [
+            1
+          ],
+          "legalOutcomes": 5,
+          "wins": 5,
+          "unknown": 0
+        },
+        {
+          "known": [
+            2
+          ],
+          "legalOutcomes": 5,
+          "wins": 4,
+          "unknown": 1
+        }
+      ],
+      "tolerance": 0.3333333333333333,
+      "toleranceThreshold": 0.15,
+      "policies": [
+        {
+          "weights": {
+            "damage": 4,
+            "healing": 1,
+            "shield": 1,
+            "mana": 1
+          },
+          "wins": 6561,
+          "paths": 6561,
+          "expanded": 160,
+          "ratio": 1
+        },
+        {
+          "weights": {
+            "damage": 8,
+            "healing": 1,
+            "shield": 0,
+            "mana": 0
+          },
+          "wins": 0,
+          "paths": 91,
+          "expanded": 72,
+          "ratio": 0
+        },
+        {
+          "weights": {
+            "damage": 2,
+            "healing": 4,
+            "shield": 1,
+            "mana": 1
+          },
+          "wins": 0,
+          "paths": 531441,
+          "expanded": 48,
+          "ratio": 0
+        }
+      ]
+    }
+  ],
+  "escapedBaseline": {
+    "enemy": "crocodile",
+    "modifiers": [
+      "echo"
+    ],
+    "entry": {
+      "hp": 40,
+      "maxHp": 40,
+      "mana": 10,
+      "maxMana": 10,
+      "shield": 0
+    },
+    "book": [
+      [
+        "living-shield",
+        "whale-steady"
+      ],
+      [
+        "living-heal",
+        "whale-opening"
+      ],
+      [
+        "camel-rend",
+        "elephant-stop"
+      ]
+    ],
+    "verdict": "WIN",
+    "minFinalHp": 24,
+    "expanded": 71,
+    "cacheHits": 26,
+    "minWinningOpenings": 5,
+    "openings": [
+      {
+        "known": [
+          0
+        ],
+        "legalOutcomes": 5,
+        "wins": 5,
+        "unknown": 0
+      },
+      {
+        "known": [
+          1
+        ],
+        "legalOutcomes": 5,
+        "wins": 5,
+        "unknown": 0
+      },
+      {
+        "known": [
+          2
+        ],
+        "legalOutcomes": 5,
+        "wins": 5,
+        "unknown": 0
+      }
+    ],
+    "tolerance": 0.6666666666666666,
+    "toleranceThreshold": 0.15,
+    "policies": [
+      {
+        "weights": {
+          "damage": 4,
+          "healing": 1,
+          "shield": 1,
+          "mana": 1
+        },
+        "wins": 81,
+        "paths": 81,
+        "expanded": 64,
+        "ratio": 1
+      },
+      {
+        "weights": {
+          "damage": 8,
+          "healing": 1,
+          "shield": 0,
+          "mana": 0
+        },
+        "wins": 81,
+        "paths": 81,
+        "expanded": 64,
+        "ratio": 1
+      },
+      {
+        "weights": {
+          "damage": 2,
+          "healing": 4,
+          "shield": 1,
+          "mana": 1
+        },
+        "wins": 0,
+        "paths": 531441,
+        "expanded": 48,
+        "ratio": 0
+      }
+    ]
+  },
+  "zeroManaWitness": {
+    "seed": 0,
+    "book": [
+      [
+        "camel-rend",
+        "whale-steady"
+      ],
+      [
+        "living-heal",
+        "living-shield"
+      ],
+      [
+        "dead-pierce",
+        "dead-drain"
+      ]
+    ],
+    "spellSequence": [
+      0,
+      0,
+      1,
+      1,
+      0
+    ],
+    "nextEntry": {
+      "hp": 37,
+      "maxHp": 40,
+      "mana": 0,
+      "maxMana": 10,
+      "shield": 0
+    },
+    "nextLegalActions": [
+      {
+        "type": "attack"
+      },
+      {
+        "type": "guard"
+      }
+    ],
+    "scope": "Reachable deviation; not a certified strategy entrance"
+  },
+  "contrasts": {
+    "knight": {
+      "good": {
+        "phase": "research",
+        "turns": 3,
+        "hp": 26
+      },
+      "bad": {
+        "phase": "research",
+        "turns": 7,
+        "hp": 1
+      }
+    },
+    "crocodile": {
+      "seed": 0,
+      "good": {
+        "phase": "complete",
+        "hp": 14,
+        "turns": 8
+      },
+      "bad": {
+        "phase": "failed",
+        "hp": 0,
+        "turns": 2
+      }
+    }
+  },
+  "fixedPolicies": [
+    {
+      "name": "attack",
+      "phase": "failed",
+      "node": 0,
+      "turns": 7,
+      "won": false
+    },
+    {
+      "name": "cast-only",
+      "phase": "battle",
+      "node": 1,
+      "turns": 5,
+      "won": false
+    },
+    {
+      "name": "alternate",
+      "phase": "failed",
+      "node": 1,
+      "turns": 14,
+      "won": false
+    },
+    {
+      "name": "highest-lines",
+      "phase": "failed",
+      "node": 1,
+      "turns": 8,
+      "won": false
+    },
+    {
+      "name": "living",
+      "phase": "battle",
+      "node": 0,
+      "turns": 60,
+      "won": false
+    },
+    {
+      "name": "dead",
+      "phase": "failed",
+      "node": 1,
+      "turns": 14,
+      "won": false
+    },
+    {
+      "name": "whale",
+      "phase": "failed",
+      "node": 1,
+      "turns": 8,
+      "won": false
+    },
+    {
+      "name": "camel",
+      "phase": "failed",
+      "node": 0,
+      "turns": 14,
+      "won": false
+    },
+    {
+      "name": "elephant",
+      "phase": "failed",
+      "node": 1,
+      "turns": 32,
+      "won": false
+    }
+  ],
+  "elapsedMs": 1515.02
+}

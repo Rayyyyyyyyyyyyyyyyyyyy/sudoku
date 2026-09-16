@@ -1,5 +1,19 @@
 # 夢魘堡壘：內容與執行邊界
 
+## 法術研究實驗（2026-09-16）
+
+正式 runtime 仍為下述 v2。`scripts/rpg-research/` 是 task 0 的獨立實驗：
+`rules.ts` 擁有 evaluator 與回合，`run.ts` 擁有 revision、基線、撤離、獎勵與節點 PRNG；
+`combatSearch.ts`／`certify.ts` 只取得已揭示資訊，不得讀 runtime 隱藏佇列或 seed。
+React 預測與搜尋共用純規則，不能各自重寫結算。
+
+`rpg-research.html` 只作開發入口，未加入正式 build；不接 StoragePort、不讀寫任何遊戲 key。
+`spell-research-lab-1` 不是 schema 3，實驗狀態不能交給正式反序列化器。
+先關閉 OpenSpec 的完整語意閘門再搬入 production；不得直接替換 v2 catalog 破壞相容性辨識。
+規則、量測與限制見 [切片契約](../openspec/changes/rebuild-rpg-as-spell-research-run/slice-contract.md)。
+
+## 目前正式版本
+
 此版本是 v2 擴寫候選，提供森林三日圍困、兩條互斥堡內路線、專精與歧義尾聲。三小時內容仍須真人實測；
 沒有程序生成故事、開放世界、完整職業技能樹或雲端同步。
 

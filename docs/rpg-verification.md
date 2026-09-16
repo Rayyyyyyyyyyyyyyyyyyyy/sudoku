@@ -1,5 +1,24 @@
 # 夢魘堡壘 v2 驗證紀錄
 
+## 2026-09-16：v3 驗收方向更新
+
+`rebuild-rpg-as-spell-research-run` 撤回「約三小時」主張與六位真人參與者門檻。
+目前沒有可用的六人招募及交叉遊玩資源；v3 改以可重現的引擎決策、配裝差異與可勝性指標驗收，
+不把自動測試當作真人體驗或遊玩時長證據。下方保留 v2 當時的原始結果與未驗收門檻，屬歷史紀錄，
+不再作為 v3 結案條件。目標裝置離線驗收仍須另行完成。
+
+本輪在 HEAD `48d3178` 重跑 v2 基線，程式與固定基線 `e9e738c` 無差異：
+64 節、165 選項；技能優先 84/84、純普攻 51/84 **獨立戰鬥**獲勝。
+完整原始輸出及 fixture 限制見 [v2 基線](../openspec/changes/rebuild-rpg-as-spell-research-run/baseline.md)。
+這不是 v3 或全遠征驗收結果。
+
+獨立法術研究切片新增 32 項測試通過；既有應用 205 項、typecheck、build 通過。
+十張殘頁／兩敵人／兩詞綴的基線策略與帶入資源通過切片指標；
+完整算法、UNKNOWN 與範圍限制見 [切片契約](../openspec/changes/rebuild-rpg-as-spell-research-run/slice-contract.md)。
+瀏覽器已走完兩場戰鬥並檢查 360px 版面；這不是正式 v3 存檔、migration、五章或離線驗收。
+
+---
+
 日期：2026-09-09。baseline：`4a91e26b502b67361f28bec89fa0d92525a4d00e`（v1 38 節／91 選項）。候選尚未 commit，contentVersion 為 `nightmare-fortress-2`。
 
 ## 工程與產物：通過

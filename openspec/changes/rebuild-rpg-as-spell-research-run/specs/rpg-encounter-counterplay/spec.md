@@ -114,8 +114,8 @@ badge 線寬 SHALL 不小於 3 邏輯像素。系統 SHALL NOT 以紅對綠承�
 - **AND** 該敵人本身的首殺給予點若尚未達成則正常給予一次
 
 #### Scenario: No unwinnable modifier combination
-- **WHEN** 以認證搜尋掃描每個可達遭遇與其節點入口 Reachable Power Frontier
-- **THEN** 不存在任何對某個可達弱勢狀態只能撤離而無法獲勝的詞綴集合
+- **WHEN** 以認證搜尋掃描每個章節通關策略中的遭遇與其入口 Reachable Power Frontier
+- **THEN** 不存在任何對認證策略的某個必要入口只能撤離而無法獲勝的詞綴集合
 - **AND** 掃描結果可重現並記錄
 
 ### Requirement: Intents are telegraphed but not memorisable

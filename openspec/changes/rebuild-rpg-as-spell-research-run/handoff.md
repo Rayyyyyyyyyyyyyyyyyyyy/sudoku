@@ -1,3 +1,17 @@
+# 2026-09-16：可玩實驗進度
+
+- 本輪授權實作，HEAD `48d3178`，父提交 `a8bc804`；未提交、推送、合併或部署。
+- 使用者已確認免費戰前重配、預覽資訊保留、長咒最後詠唱回合立即完成，以及章節基線通關保證；已寫入相應 specs。
+- tasks 0.2、1.1–1.3 完成（4/80）；0.1 保持未完成。原因與餘下整合工作見 [gate-review.md](gate-review.md)。
+- `scripts/rpg-research/` 已有十張殘頁、兩敵人、兩詞綴、純 evaluator、revision 狀態機、公開資訊搜尋、CLI 與記憶體 React 頁。正式 v2 引擎／存檔未切換。
+- [slice-contract.md](slice-contract.md) 凍結實驗數值、期限、M1–M3／決策算法、調參歷史及重現指令；[slice-evidence.json](slice-evidence.json) 保存輸出。三個帶入資源入口與撤離新基線通過；一個非必要開局 UNKNOWN 仍保留。
+- 新增 32 項測試與原有 205 項通過；strict TS、app typecheck／build 通過。使用原工作目錄 node_modules 的 symlink，非 clean install。
+- 瀏覽器已完成 seed 0 兩戰、殘頁滑鼠／鍵盤搬移與 360px 版面檢查；沒有正式離線新證據。
+- 本機預覽：`npm run dev -- --config scripts/rpg-research/vite.config.mjs`，`http://127.0.0.1:5174/rpg-research.html`。重新整理丟棄實驗狀態。
+- 下一步先完成 0.1 的全文契約同步、各解鎖階段容量表／供給金額與正式認證定義，再按 0.3 擴展；不可用本切片代替未知輸入存檔驗證、migration、完整地圖或空／全解鎖 profile 驗收。
+
+---
+
 # 2026-09-16 規格比對修正
 
 本節更新當前狀態；下方 2026-09-15 記錄保留為歷史，不代表本機目前工具狀態或新的操作授權。
