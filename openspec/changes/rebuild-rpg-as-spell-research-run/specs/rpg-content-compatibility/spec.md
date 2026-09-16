@@ -1,12 +1,22 @@
 ## ADDED Requirements
 
 ### Requirement: Schema 3 is the only accepted live format
-系統 SHALL 使用 `schemaVersion: 3` 與 `contentVersion: spell-research-1`。canonical validation SHALL 涵蓋殘頁所有權與獨佔（一張殘頁至多屬於一個法術）、行數不超過已解鎖上限、詠唱狀態與 phase 的一致性、章節索引與快照（含詞綴）的合法性，以及 `run` 與快照兩者的 PRNG 狀態。既有「非空 profile 搭配 `run: null`」的拒絕條件 SHALL 被明確改寫以容許退休遠征後的狀態，SHALL NOT 只更動版本字串。
+系統 SHALL 使用 `schemaVersion: 3` 與 `contentVersion: spell-research-1`。canonical validation SHALL 涵蓋殘頁所有權與獨佔（一張殘頁至多屬於一個法術）、行數不超過已解鎖上限、詠唱狀態與 phase 的一致性、章節索引與目前基線、地圖 `generationAttempt`、排序且不重複的 canonical 詞綴集合、版本化互斥表、戰鬥獨立 PRNG、遭遇進場狀態、撤離額度與 `escaped` 節點。`battle` 與 `failed` phase SHALL 具備遭遇進場狀態，其他 phase SHALL NOT 留存失效副本；只有 `battle` phase SHALL 具備可繼續消耗的戰鬥 PRNG。v2 的 `validGame` 已接受合法非空 profile 搭配 `run: null`；schema 3 SHALL 保留此能力，並以 v3 的 profile 契約驗證退休遠征後的狀態，SHALL NOT 只更動版本字串或放寬凍結的 v1 辨識條件。
 
 #### Scenario: Round-trip a live game
 - **WHEN** 合法的 schema 3 狀態經序列化與反序列化
 - **THEN** 還原結果與原狀態一致並通過驗證
-- **AND** 不合法的組成、詠唱或快照狀態被拒絕
+- **AND** 不合法的組成、詠唱、亂數 domain、詞綴集合、撤離或章節基線狀態被拒絕
+
+#### Scenario: Preserve a valid profile after retiring a run
+- **WHEN** 已確認遷移的合法 schema 3 狀態具有歷史紀錄或可用見聞，且 `run: null`
+- **THEN** 該狀態可儲存、重新載入並開始新遠征，不要求清空 profile
+- **AND** 版本或 profile 欄位不合法時，即使 `run: null` 仍拒絕載入並保留原始資料
+
+#### Scenario: Reject non-canonical modifier and escape state
+- **WHEN** 存檔含未排序或重複的詞綴、包含互斥子集的集合、範圍外撤離額度、phase 與遭遇進場狀態不一致，或已撤離節點仍可給予收益
+- **THEN** canonical validation 拒絕該狀態並保留原始資料
+- **AND** 不以排序、刪除或猜測欄位的方式靜默修復 live state
 
 #### Scenario: Reject a v3 save in an older bundle
 - **WHEN** schema 3 存檔被僅接受舊版本的 bundle 讀取

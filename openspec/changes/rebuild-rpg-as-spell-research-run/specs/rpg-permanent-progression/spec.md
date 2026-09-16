@@ -18,8 +18,13 @@
 
 #### Scenario: Unlock a component and gain new answers
 - **WHEN** 玩家以見聞解鎖一項先前未開放的成分
-- **THEN** 該成分可用於組成，並使先前無法應對的敵人機制出現可行解
+- **THEN** 該成分可用於組成，並使既有低效率解法取得新的高效率反制方式
 - **AND** 解鎖本身不改變任何既有法術的傷害數值
+
+#### Scenario: Locked components never gate the only winning line
+- **WHEN** 以某個尚未解鎖成分的合法 profile 產生章節
+- **THEN** 任何可達遭遇皆不以該成分作為唯一可勝解
+- **AND** Reachable Power Frontier 認證涵蓋該 profile 狀態
 
 #### Scenario: Reject a flat-statistic upgrade
 - **WHEN** 審視養成清單
