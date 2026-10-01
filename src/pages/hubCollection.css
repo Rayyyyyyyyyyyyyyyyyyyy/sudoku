@@ -1,0 +1,3 @@
+.hub-collection { margin: 3px 0 12px; padding: 12px 14px; border-radius: 10px; background: #f0eee4; display: flex; flex-direction: column; gap: 5px; }
+.hub-collection strong { color: #294b3d; font-size: 14px; font-variant-numeric: tabular-nums; }
+.hub-collection span { color: #656a60; font-size: 12px; line-height: 1.6; }

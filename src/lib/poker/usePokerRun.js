@@ -1,13 +1,16 @@
-import { useEffect, useReducer, useRef } from 'react';
-import { recordPokerCompletion, savePokerSnapshot } from './persistence.js';
+import { useEffect, useReducer, useRef, useState } from 'react';
+import { recordPokerCollection, recordPokerCompletion, savePokerSnapshot } from './persistence.js';
 import { pokerRunReducer } from './run.js';
 
 export function usePokerRun(initialState) {
   const [state, dispatch] = useReducer(pokerRunReducer, initialState);
+  const [newModifierIds, setNewModifierIds] = useState([]);
   const terminalRecorded = useRef(false);
 
   useEffect(() => {
     savePokerSnapshot(state);
+    const collection = recordPokerCollection(state);
+    setNewModifierIds((previous) => collection.newModifierIds.length ? collection.newModifierIds : previous.length ? [] : previous);
   }, [state]);
 
   useEffect(() => {
@@ -17,5 +20,5 @@ export function usePokerRun(initialState) {
     dispatch({ type: 'MARK_RECORDS_APPLIED', now: Date.now() });
   }, [state]);
 
-  return [state, dispatch];
+  return [state, dispatch, newModifierIds];
 }

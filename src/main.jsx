@@ -3,7 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { HashRouter } from 'react-router-dom';
 import App from './App';
 import { registerServiceWorker } from './offline/registerServiceWorker';
+import { clearRemovedGameData } from './lib/removedGameData';
 import './styles.css';
+
+clearRemovedGameData();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

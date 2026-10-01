@@ -104,16 +104,17 @@ test('production worker precaches every emitted application file', async () => {
   ]);
 });
 
-test('activation deletes only obsolete caches owned by this application', async () => {
+test('activation retains one previous build and deletes only older application caches', async () => {
   const worker = installWorker(source);
   worker.setCacheNames([
+    `${CACHE_PREFIX}obsolete-build`,
     `${CACHE_PREFIX}old-build`,
     `${CACHE_PREFIX}build-123`,
     'another-application-cache'
   ]);
 
   await dispatchWaitable(worker.listeners.get('activate'));
-  assert.deepEqual(worker.deleted, [`${CACHE_PREFIX}old-build`]);
+  assert.deepEqual(worker.deleted, [`${CACHE_PREFIX}obsolete-build`]);
 });
 
 test('precache assets are cache-first', async () => {
@@ -161,4 +162,24 @@ test('registration uses the configured production base as its scope', async () =
     '/games/service-worker.js',
     { scope: '/games/' }
   ]]);
+});
+
+// A page can have received the previous HTML while a new worker takes control.
+// Its hashed script must stay available even with no network.
+test('an already-open old shell can load its previous hashed asset offline after update', async () => {
+  const listeners = new Map();
+  const current = new Map([['https://example.test/games/index.html', 'new shell']]);
+  const previous = new Map([['https://example.test/games/assets/previous.js', 'old executable']]);
+  const names = [`${CACHE_PREFIX}old`, `${CACHE_PREFIX}new`];
+  let fetches = 0;
+  vm.runInNewContext(createServiceWorkerSource({base:'/games/',buildId:'new',files:['index.html']}), {
+    URL, Promise, Set,
+    self: {registration:{scope:'https://example.test/games/'},location:{origin:'https://example.test'},clients:{claim:async()=>{}},skipWaiting:async()=>{},addEventListener:(name,fn)=>listeners.set(name,fn)},
+    caches: {keys:async()=>names,open:async name=>({match:async request=>(name.endsWith('new')?current:previous).get(typeof request==='string'?new URL(request,'https://example.test').href:request.url)})},
+    fetch: async()=>{fetches++;throw Error('offline');},
+  });
+  const response = await dispatchFetch(listeners.get('fetch'), {method:'GET',mode:'same-origin',url:'https://example.test/games/assets/previous.js'});
+  assert.equal(response,'old executable');
+  assert.equal(fetches,0);
+  assert.equal(dispatchFetch(listeners.get('fetch'), {method:'GET',mode:'same-origin',url:'https://other.test/games/assets/previous.js'}),undefined);
 });

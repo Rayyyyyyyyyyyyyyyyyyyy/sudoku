@@ -1,6 +1,5 @@
-// Compatibility boundary for existing poker imports. The implementation is
-// shared infrastructure because idiom generation relies on the same versioned
-// deterministic stream.
+// Compatibility boundary for existing poker imports. The shared seeded stream
+// preserves existing saved poker runs and regression vectors.
 export {
   choose,
   nextRandom,

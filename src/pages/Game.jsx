@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import Board from '../components/Board';
 import NumberPad from '../components/NumberPad';
+import { SudokuCompletion } from '../components/SudokuRewards';
 import { DAILY_LEVEL, LEVELS, dailySeed, randomSeed } from '../lib/sudoku';
 import { dayKey, fmt } from '../lib/stats';
 import { useGame } from '../lib/useGame';
@@ -41,7 +42,7 @@ export default function Game({ daily = false, settings }) {
   }, [daily, level, navigate]);
 
   return (
-    <div className="sd-game">
+    <div className={`sd-game${solved ? ' sd-game--solved' : ''}`}>
       <div className="sd-game__bar sd-width">
         <button type="button" className="sd-btn sd-back" onClick={() => navigate('/sudoku')}>
           ← 數獨首頁
@@ -67,28 +68,22 @@ export default function Game({ daily = false, settings }) {
           <div className="sd-loading sd-width">產生題目中…</div>
         )}
 
-        {solved && (
-          <div className="sd-win">
-            <span className="sd-diamond" style={{ width: 15, height: 15 }} />
-            <span className="sd-win__title">完成</span>
-            <span className="sd-win__time">
-              {LEVELS[level].name} · {fmt(game.finalMs ?? elapsed)}
-            </span>
-            <div className="sd-win__actions">
-              <button type="button" className="sd-btn sd-btn--win" onClick={again}>
-                再來一題
-              </button>
-              <button type="button" className="sd-btn sd-btn--ghost" onClick={() => navigate('/sudoku')}>
-                回數獨首頁
-              </button>
-            </div>
-          </div>
-        )}
       </div>
 
-      {values && <NumberPad values={values} pencil={pencil} onPlace={game.place} />}
+      {solved && game.completion && (
+        <SudokuCompletion
+          reward={game.completion}
+          rating={board.rating}
+          daily={daily}
+          onAgain={again}
+          onHarder={level + 1 < LEVELS.length ? () => navigate(`/play/${level + 1}?seed=${randomSeed()}`) : null}
+          onHome={() => navigate('/sudoku')}
+        />
+      )}
 
-      <div className="sd-tools sd-width">
+      {values && !solved && <NumberPad values={values} pencil={pencil} onPlace={game.place} />}
+
+      {!solved && <div className="sd-tools sd-width">
         <button
           type="button"
           className={'sd-btn sd-tool' + (pencil ? ' sd-tool--on' : '')}
@@ -102,9 +97,9 @@ export default function Game({ daily = false, settings }) {
         <button type="button" className="sd-btn sd-tool" onClick={again}>
           新題目
         </button>
-      </div>
+      </div>}
 
-      <div className="sd-hint">鍵盤：1–9 填入 · 0/Backspace 清除 · 方向鍵移動 · N 切換註記</div>
+      {!solved && <div className="sd-hint">鍵盤：1–9 填入 · 0/Backspace 清除 · 方向鍵移動 · N 切換註記</div>}
     </div>
   );
 }

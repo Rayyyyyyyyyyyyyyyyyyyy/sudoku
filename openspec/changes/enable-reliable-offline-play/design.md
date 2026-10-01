@@ -2,7 +2,7 @@
 
 ### Saved state remains authoritative
 
-An accepted idiom snapshot owns its serialized puzzle. Restoration must initialize gameplay from that puzzle and derive `solved` from its fills; current corpus or generator output must not replace it. Sudoku continuation reconstructs its route from the saved `level`, `seed`, and `isDaily` identity because Sudoku intentionally stores only player input while the versioned offline puzzle bank remains authoritative.
+Sudoku continuation reconstructs its route from the saved `level`, `seed`, and `isDaily` identity because Sudoku intentionally stores only player input while the versioned offline puzzle bank remains authoritative.
 
 ### Deterministic random primitives are shared infrastructure
 
@@ -16,12 +16,11 @@ Remote Google Font requests are removed; system/local font fallbacks keep render
 
 ### Compatibility and recovery
 
-No localStorage key or snapshot schema changes. Existing poker random sequences, idiom seeds, Sudoku URLs, and records must remain compatible. A service-worker update must activate without deleting non-application caches or any localStorage data.
+Sudoku and poker localStorage keys and snapshot schemas remain stable. Existing poker random sequences, Sudoku URLs, and records must remain compatible. A service-worker update must activate without deleting non-application caches or active-game localStorage data.
 
 ## Acceptance Evidence
 
-- A restored idiom save continues on the stored puzzle even when generation for the same route is made to differ.
 - A saved Sudoku session can be resumed from visible UI and routes to its exact daily or seeded identity.
-- Seeded random regression vectors for poker and idiom remain unchanged after extraction.
+- Seeded random regression vectors for poker remain unchanged after extraction.
 - A production build emits a service worker whose precache contains the built shell/assets, has navigation fallback, and makes no third-party font request.
 - Focused tests, complete engine/UI suites, production build, and diff checks pass.

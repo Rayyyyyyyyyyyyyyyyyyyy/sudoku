@@ -14,12 +14,17 @@ export function loadStats() {
   return emptyStats();
 }
 
-export function persistStats(st) {
+function writeStats(st) {
   try {
     localStorage.setItem(KEY, JSON.stringify(st));
+    return true;
   } catch (e) {
-    /* 同上,寫不進去就算了 */
+    return false;
   }
+}
+
+export function persistStats(st) {
+  writeStats(st);
   return st;
 }
 
@@ -42,6 +47,10 @@ export function fmt(ms) {
 
 /** 記一次完成:更新總數、最佳時間、每日一題與連續天數。 */
 export function recordSolve({ level, ms, isDaily }) {
+  return recordSolveWithStatus({ level, ms, isDaily }).stats;
+}
+
+export function recordSolveWithStatus({ level, ms, isDaily }) {
   const prev = loadStats();
   const st = Object.assign({}, prev);
   st.best = Object.assign({}, st.best);
@@ -51,7 +60,7 @@ export function recordSolve({ level, ms, isDaily }) {
   st.solved += 1;
   st.totalMs += ms;
   st.count[level] = (st.count[level] || 0) + 1;
-  if (!st.best[level] || ms < st.best[level]) st.best[level] = ms;
+  if (st.best[level] == null || ms < st.best[level]) st.best[level] = ms;
 
   const today = dayKey();
   if (isDaily) st.daily[today] = ms;
@@ -63,5 +72,5 @@ export function recordSolve({ level, ms, isDaily }) {
   } else if (!st.streak) {
     st.streak = 1;
   }
-  return persistStats(st);
+  return { stats: st, persisted: writeStats(st) };
 }

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import PokerCollection from '../components/PokerCollection';
 import { POKER_RULES, PRIMARY_OPPONENT_ID, opponentById } from '../data/poker/compatibility';
 import { handLabel } from '../lib/poker/evaluate';
 import { clearPokerSnapshot, loadPokerRecords, loadPokerSnapshot, recordPokerRunStarted, savePokerSnapshot } from '../lib/poker/persistence';
@@ -45,6 +46,7 @@ export default function PokerHome() {
           <div className="pkr-warning" role="alert"><strong>舊牌局無法安全續玩</strong><p>{save.reason} 個人紀錄仍保留。</p><button type="button" onClick={discardIncompatible}>清除舊牌局，再開始</button></div>
         )}
       </header>
+      <PokerCollection records={records} />
       <section className="pkr-records" aria-label="牌局紀錄">
         <div><strong>{records.runsStarted}</strong><span>開始局數</span></div>
         <div><strong>{records.runsWon}</strong><span>獲勝局數</span></div>

@@ -4,12 +4,6 @@
 
 The application SHALL provide a visible continuation path for every compatible active game and SHALL restore the authoritative state represented by that save.
 
-#### Scenario: Resume a stored idiom board after generator drift
-
-- **GIVEN** a compatible idiom snapshot containing a board and player progress
-- **WHEN** current generation for the route would produce different puzzle data
-- **THEN** gameplay uses the stored board, pool, progress, reveal state, and elapsed time
-
 #### Scenario: Resume a stored Sudoku route
 
 - **GIVEN** a compatible active Sudoku session
@@ -33,10 +27,10 @@ After one successful production load and service-worker installation, the applic
 
 ### Requirement: Seed compatibility survives ownership cleanup
 
-Moving deterministic random helpers SHALL NOT change poker PRNG streams or idiom puzzle output for an existing seed and difficulty.
+Moving deterministic random helpers SHALL NOT change poker PRNG streams for an existing seed.
 
 #### Scenario: Generate with an existing seed after extraction
 
-- **GIVEN** an existing poker PRNG seed or idiom puzzle seed and difficulty
+- **GIVEN** an existing poker PRNG seed
 - **WHEN** the same input is evaluated through the neutral random boundary
-- **THEN** it produces the same serialized random stream and deterministic puzzle output as before extraction
+- **THEN** it produces the same serialized random stream as before extraction

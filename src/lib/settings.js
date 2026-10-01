@@ -6,21 +6,24 @@ const KEY = 'sudoku-drill-settings-v1';
 export const DEFAULT_SETTINGS = {
   showErrors: true,
   highlightPeers: true,
-  autoCleanNotes: true,
-  idiomShowErrors: true
+  autoCleanNotes: true
 };
 
 export const SETTING_LABELS = {
   showErrors: '標示填錯的格子',
   highlightPeers: 'highlight 同列同行同宮',
-  autoCleanNotes: '填數字時自動清註記',
-  idiomShowErrors: '成語填字：標示填錯的格子'
+  autoCleanNotes: '填數字時自動清註記'
 };
 
 function read() {
   try {
     const raw = localStorage.getItem(KEY);
-    if (raw) return Object.assign({}, DEFAULT_SETTINGS, JSON.parse(raw));
+    if (raw) {
+      const saved = JSON.parse(raw);
+      return Object.fromEntries(Object.entries(DEFAULT_SETTINGS).map(([key, fallback]) =>
+        [key, typeof saved?.[key] === 'boolean' ? saved[key] : fallback]
+      ));
+    }
   } catch (e) {
     /* 讀不到就用預設值 */
   }

@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
 import { clearGameSession, loadGameSession, persistGameSession } from './gameSession';
 import { generate, peersOf } from './sudoku';
-import { recordSolve } from './stats';
+import { loadStats, recordSolveWithStatus } from './stats';
+import { completionReward } from './sudokuRewards';
 
 const emptyNotes = () => Array.from({ length: 81 }, () => []);
 
@@ -117,6 +118,7 @@ function reducer(state, action) {
 export function useGame({ level, seed, isDaily, settings }) {
   const [state, dispatch] = useReducer(reducer, INITIAL);
   const [elapsed, setElapsed] = useState(0);
+  const [completion, setCompletion] = useState(null);
   const startedAt = useRef(0);
   const finalMs = useRef(null);
   const recorded = useRef(false);
@@ -125,6 +127,7 @@ export function useGame({ level, seed, isDaily, settings }) {
     let cancelled = false;
     dispatch({ type: 'reset' });
     setElapsed(0);
+    setCompletion(null);
     finalMs.current = null;
     recorded.current = false;
 
@@ -185,7 +188,12 @@ export function useGame({ level, seed, isDaily, settings }) {
     const ms = Date.now() - startedAt.current;
     finalMs.current = ms;
     setElapsed(ms);
-    recordSolve({ level, ms, isDaily });
+    const before = loadStats();
+    const { stats: after, persisted } = recordSolveWithStatus({ level, ms, isDaily });
+    setCompletion({
+      ...completionReward({ before, after: persisted ? after : before, level, ms }),
+      persisted
+    });
   }, [state.solved, level, isDaily]);
 
   const place = useCallback(
@@ -228,6 +236,7 @@ export function useGame({ level, seed, isDaily, settings }) {
     togglePencil,
     elapsed,
     finalMs: finalMs.current,
+    completion,
     place,
     erase
   };

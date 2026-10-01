@@ -1,7 +1,6 @@
 ## 1. Reliable resume paths
 
-- [x] 1.1 Restore idiom gameplay from the persisted puzzle and add a regression test across generator drift.
-- [x] 1.2 Add Sudoku continuation navigation for saved daily and seeded sessions, including rendered route coverage.
+- [x] 1.1 Add Sudoku continuation navigation for saved daily and seeded sessions, including rendered route coverage.
 
 ## 2. Stable shared infrastructure
 

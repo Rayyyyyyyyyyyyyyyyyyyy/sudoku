@@ -1,0 +1,59 @@
+.sd-medal { width: 52px; height: 60px; color: #c3bdaf; fill: #eeeadf; stroke: currentColor; stroke-width: 2; flex: none; }
+.sd-medal circle { fill: none; }
+.sd-medal__ribbon { fill: #b8b3a6; stroke: none; }
+.sd-medal__mark { fill: currentColor; stroke: none; }
+.sd-medal__detail { stroke: #fff9e7; stroke-width: 1.5; }
+.sd-medal--bronze { color: #985b30; fill: #f2d5b4; }
+.sd-medal--silver { color: #576574; fill: #e1e8ed; }
+.sd-medal--gold { color: #9a711c; fill: #f4d886; }
+.sd-medal--bronze .sd-medal__ribbon, .sd-medal--silver .sd-medal__ribbon, .sd-medal--gold .sd-medal__ribbon { fill: #14785f; }
+.sd-medal--large { width: 78px; height: 90px; }
+.sd-trophies__heading { display: flex; gap: 16px; align-items: center; justify-content: space-between; }
+.sd-trophies h2 { font-size: 23px; margin: 7px 0 0; }
+.sd-trophies__heading > span { white-space: nowrap; font-family: var(--sd-font-mono); color: #75684e; }
+.sd-trophies__intro { color: #66645c; font-size: 13px; line-height: 1.7; margin: 12px 0 18px; }
+.sd-trophies__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.sd-trophy { border: 1px dashed #c6c0b3; border-radius: 14px; display: flex; align-items: center; flex-direction: column; padding: 17px 7px; text-align: center; gap: 5px; }
+.sd-trophy.is-earned { border-style: solid; background: var(--sd-card); }
+.sd-trophy h3 { margin: 4px 0 0; font-size: 15px; }
+.sd-trophy strong { color: #6c5737; font-size: 12px; }
+.sd-trophy > span, .sd-trophy small { color: #706a60; font-size: 11px; line-height: 1.6; }
+.sd-trophy__steps { display: flex; gap: 7px; margin: 6px 0; }
+.sd-trophy__steps i { width: 8px; height: 8px; border: 1px solid #beb7a9; border-radius: 50%; }
+.sd-trophy__steps .is-bronze { background: #b97940; border-color: #985b30; }
+.sd-trophy__steps .is-silver { background: #8a9bab; border-color: #576574; }
+.sd-trophy__steps .is-gold { background: #d7ac44; border-color: #9a711c; }
+.sd-summit { position: relative; overflow: hidden; padding: 26px; background: #192a27; color: #f8f3e5; border-radius: 18px; border: 1px solid #536e61; }
+.sd-summit::after { content: '◆'; position: absolute; right: -8px; top: -36px; font-size: 185px; color: #a4c7b312; pointer-events: none; }
+.sd-summit > * { position: relative; z-index: 1; }
+.sd-summit__label { color: #e4c98c; font-size: 11px; letter-spacing: .1em; font-weight: 700; }
+.sd-summit h2 { margin: 10px 0; font-size: 27px; }
+.sd-summit p { color: #c3d0c8; line-height: 1.8; font-size: 14px; margin: 10px 0 20px; max-width: 430px; }
+.sd-summit__goal { display: block; font-size: 12px; color: #e4c98c; margin-top: 14px; }
+.sd-victory { position: relative; isolation: isolate; overflow: hidden; background: #182924; color: #f8f3e5; border: 1px solid #466456; border-radius: 18px; padding: 28px 22px; display: flex; flex-direction: column; align-items: center; gap: 13px; text-align: center; animation: sdVictoryEnter .55s ease both; }
+.sd-victory__eyebrow { color: #e8cf95; letter-spacing: .09em; font-size: 10px; font-weight: 700; }
+.sd-victory h2 { font-size: clamp(23px, 5vw, 30px); margin: 0; line-height: 1.4; }
+.sd-victory p { margin: 0; font-size: 13px; line-height: 1.7; color: #c2d0c7; }
+.sd-victory__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; border-block: 1px solid #456153; padding: 18px 0; margin: 5px 0; }
+.sd-victory__stats div { display: flex; flex-direction: column; gap: 7px; }
+.sd-victory__stats--unsaved { grid-template-columns: 1fr; }
+.sd-victory__stats strong { font-family: var(--sd-font-mono); font-size: 22px; color: #f3d794; }
+.sd-victory__stats span { font-size: 11px; color: #c2d0c7; }
+.sd-victory .sd-victory__record { color: #f3d794; font-size: 14px; font-weight: 650; }
+.sd-victory__record small { display: block; color: #c2d0c7; font-weight: 400; }
+.sd-victory .sd-victory__earned { background: #294436; border: 1px solid #66846b; border-radius: 9px; color: #f3dfb1; padding: 9px 14px; }
+.sd-victory__next { width: 100%; display: flex; flex-direction: column; gap: 9px; margin-top: 7px; font-size: 13px; }
+.sd-victory__next progress { width: 100%; height: 7px; accent-color: #e6c378; border: 0; border-radius: 5px; overflow: hidden; }
+.sd-victory__next progress::-webkit-progress-bar { background: #40564a; }
+.sd-victory__next progress::-webkit-progress-value { background: #e6c378; }
+.sd-victory__next small { color: #c2d0c7; }
+.sd-victory__actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 9px; width: 100%; }
+.sd-victory__actions > button { min-height: 44px; }
+.sd-victory__actions .sd-victory__home { flex-basis: 100%; color: #cfddcf; font-size: 13px; background: none; }
+.sd-victory__sparks { position: absolute; inset: 0; pointer-events: none; z-index: -1; }
+.sd-victory__sparks i { position: absolute; top: 10px; left: calc(7% + var(--spark) * 12%); width: 5px; height: 12px; background: #e9c879; opacity: 0; transform: rotate(25deg); animation: sdVictorySpark 1.4s calc(var(--spark) * .07s) ease-out both; }
+.sd-game--solved .sd-board { opacity: .75; }
+@keyframes sdVictoryEnter { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes sdVictorySpark { 0% { opacity: 0; transform: translateY(-12px) rotate(0); } 20% { opacity: .8; } 100% { opacity: 0; transform: translateY(180px) rotate(200deg); } }
+@media (max-width: 380px) { .sd-summit { padding: 21px; } .sd-victory { padding: 24px 15px; } .sd-victory__actions > button { flex: 1 1 100%; } }
+@media (prefers-reduced-motion: reduce) { .sd-victory, .sd-victory__sparks i { animation: none; } .sd-victory__sparks { display: none; } }

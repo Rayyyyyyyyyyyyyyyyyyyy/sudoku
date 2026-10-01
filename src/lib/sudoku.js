@@ -1,11 +1,17 @@
 import { PUZZLES } from '../data/puzzles.js';
+import { SUDOKU_CHALLENGE_PUZZLES } from '../data/sudokuChallengePuzzles.js';
+
+// Append new difficulties: saved games identify puzzles by their original level + seed.
+export const PUZZLE_POOLS = [...PUZZLES, SUDOKU_CHALLENGE_PUZZLES];
+export const PUZZLE_COUNT = PUZZLE_POOLS.reduce((total, pool) => total + pool.length, 0);
 
 export const LEVELS = [
   { name: '入門', rating: '1.5–2.0', desc: 'SE 1.5–2.0 · 已高於基礎掃描題' },
   { name: '簡單', rating: '2.3–3.0', desc: 'SE 2.3–3.0 · 需要多步候選排除' },
   { name: '中等', rating: '3.2–4.4', desc: 'SE 3.2–4.4 · 進階技巧開始出現' },
   { name: '困難', rating: '4.5–6.6', desc: 'SE 4.5–6.6 · 複合邏輯推理' },
-  { name: '專家', rating: '6.7+', desc: 'SE 6.7+ · 高強度邏輯題' }
+  { name: '專家', rating: '6.7–9.1', desc: 'SE 6.7–9.1 · 高強度邏輯題' },
+  { name: '極限', rating: '9.2–9.3', desc: 'SE 9.2–9.3 · 題庫最難的 21 題' }
 ];
 
 // 每日題也由原本的中等提高為困難。
@@ -92,10 +98,10 @@ export function countSolutions(g, limit = 2) {
 
 /**
  * 從預先評級的離線題庫取題。
- * 題庫共 1,000 題，全部由 QQWing 保證唯一解、Sukaku Explainer 評級。
+ * 保留來源的 Sukaku Explainer 評級，每題由匯入或測試檢查唯一解。
  */
 export function generate(level, seed) {
-  const pool = PUZZLES[level];
+  const pool = PUZZLE_POOLS[level];
   if (!pool) throw new RangeError(`Unknown Sudoku level: ${level}`);
 
   const mixedSeed = (seed ^ Math.imul(level + 1, 0x9e3779b9)) >>> 0;

@@ -5,7 +5,9 @@ import {
   gameSessionPath,
   loadAnyGameSession
 } from '../lib/gameSession';
-import { DAILY_LEVEL, LEVELS } from '../lib/sudoku';
+import { DAILY_LEVEL, LEVELS, PUZZLE_COUNT, PUZZLE_POOLS } from '../lib/sudoku';
+import { SudokuTrophies } from '../components/SudokuRewards';
+import { medalProgress } from '../lib/sudokuRewards';
 import { dayKey, emptyStats, fmt, loadStats, persistStats } from '../lib/stats';
 import { SETTING_LABELS } from '../lib/settings';
 
@@ -17,6 +19,8 @@ export default function Home({ settings, toggleSetting }) {
 
   const today = dayKey();
   const dailyMs = stats.daily && stats.daily[today];
+  const summitLevel = LEVELS.length - 1;
+  const summit = medalProgress(stats, summitLevel);
 
   const resetStats = useCallback(() => {
     if (confirm('清除所有紀錄？')) setStats(persistStats(emptyStats()));
@@ -68,6 +72,14 @@ export default function Home({ settings, toggleSetting }) {
         </section>
       )}
 
+      <section className="sd-summit" aria-labelledby="sd-summit-title">
+        <span className="sd-summit__label">BEYOND EXPERT · SE {LEVELS[summitLevel].rating}</span>
+        <h2 id="sd-summit-title">專家之後，挑戰極限。</h2>
+        <p>{PUZZLE_POOLS[summitLevel].length} 題更高評級的獨立挑戰。解開第一題，拿下極限初勝徽章；每次突破都會留在你的收藏。</p>
+        <button type="button" className="sd-btn sd-btn--win" onClick={() => startNewGame(`/play/${summitLevel}`)}>挑戰極限 →</button>
+        <span className="sd-summit__goal">{summit.next ? `下一枚：極限・${summit.next.name} · 還差 ${summit.remaining} 題` : '極限徽章已集齊 · 挑戰個人最佳時間'}</span>
+      </section>
+
       <div className="sd-daily">
         <div className="sd-daily__meta">
           <span className="sd-daily__date">{today.replace(/-/g, ' / ')}</span>
@@ -105,6 +117,8 @@ export default function Home({ settings, toggleSetting }) {
           </button>
         ))}
       </div>
+
+      <SudokuTrophies stats={stats} />
 
       <div className="sd-section">
         <span className="sd-kicker">個人紀錄</span>
@@ -147,7 +161,7 @@ export default function Home({ settings, toggleSetting }) {
       </div>
 
       <div className="sd-foot">
-        <span>1,000 題專業評級題庫 · 解唯一</span>
+        <span>{PUZZLE_COUNT.toLocaleString()} 題專業評級題庫 · 解唯一</span>
         <button type="button" className="sd-btn sd-foot__reset" onClick={resetStats}>
           清除紀錄
         </button>

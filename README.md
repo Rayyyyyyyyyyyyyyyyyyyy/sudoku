@@ -2,10 +2,7 @@
 
 原本是一份 6.1 MB 的單檔 artifact bundle(base64 + gzip 塞在 `<script type="__bundler/manifest">` 裡),
 現在改寫成 Vite + React、具離線快取的 SPA。既有數獨玩法、鍵盤操作與 localStorage 格式維持不變，
-並新增一套以有限牌庫、牌型計分、效果順序與回合經濟為核心的原創「通勤牌局」，
-以及一款以教育部《成語典》為題庫、確定性出題並保證唯一解的「成語填字」。
-「夢魘堡壘」是以全新繁中敘事改編 Lord Dunsany 原作的劍與魔法文字 RPG，
-目前提供 v2 擴寫候選：三日圍困、互斥堡內路線、三職業六專精、兩件取捨遺物與歧義尾聲；尚未以真人證明三小時內容。
+並新增一套以有限牌庫、牌型計分、效果順序與回合經濟為核心的原創「通勤牌局」。
 
 ## 開發
 
@@ -15,8 +12,6 @@ npm run dev      # http://localhost:5173
 npm run build    # 產出 dist/
 npm run preview  # 預覽 production build
 npm test         # 全部 engine、資料、持久化與 UI 回歸測試
-npm run test:rpg # RPG 引擎、劇情圖與存檔測試
-npm run typecheck # RPG TypeScript 範圍的嚴格型別檢查
 ```
 
 ## 離線使用
@@ -27,23 +22,19 @@ service worker 會預先快取該版本的 HTML、JavaScript、CSS、題庫與�
 
 離線能力以「至少成功載入並安裝過一次」為前提，從未開啟過的部署網址無法在離線時首次安裝。
 部署服務必須以 HTTPS（localhost 除外）提供網站，且不能阻擋 `service-worker.js` 或 precache
-清單內的檔案。新版 service worker 啟用時只清除本應用程式的舊版 Cache Storage，
-不會清除 localStorage 進度或同源其他應用程式的 cache。
+清單內的檔案。新版 service worker 保留當前及上一份建置，啟用時只清除本應用程式更早的 Cache Storage，
+不會清除現行遊戲的 localStorage 進度或同源其他應用程式的 cache。應用程式升級後會移除已下架遊戲的舊本機進度；數獨與牌局紀錄保留。
 
 ## 路由
 
 | 路徑 | 說明 |
 | --- | --- |
-| `/#/` | 共用遊戲櫃，顯示四款遊戲 |
-| `/#/sudoku` | 數獨首頁：每日一題、五種難度、個人紀錄、玩法設定 |
-| `/#/play/:level?seed=…` | 指定難度的題目(`level` 為 0–4,seed 決定盤面) |
+| `/#/` | 共用遊戲櫃，顯示兩款遊戲 |
+| `/#/sudoku` | 數獨首頁：每日一題、六種難度、極限挑戰、解題徽章與個人紀錄 |
+| `/#/play/:level?seed=…` | 指定難度的題目(`level` 為 0–5,seed 決定盤面) |
 | `/#/daily` | 每日一題(困難難度,seed 取當天日期,同一天永遠同一題) |
-| `/#/poker` | 通勤牌局首頁、新局/續玩、規則與紀錄 |
+| `/#/poker` | 通勤牌局首頁、新局/續玩、效果牌圖鑑、規則與紀錄 |
 | `/#/poker/play` | 目前牌局、回合、計分、商店與選擇包 |
-| `/#/idiom` | 成語填字首頁：每日一題、五種難度、紀錄與玩法設定 |
-| `/#/idiom/play/:level?seed=…` | 指定難度的盤面(`level` 為 0–4,seed 決定盤面) |
-| `/#/idiom/daily` | 每日一題(中等難度,seed 取當天日期) |
-| `/#/rpg` | 夢魘堡壘：職業選擇、遠征、續玩、終戰與村莊養成 |
 
 不認得的路徑會導回 `/`。路由放在 URL hash 中，部署到一般靜態主機不需要額外 rewrite；
 手機回收分頁後重新載入，也不會把遊戲路徑當成伺服器檔案而回傳 404。
@@ -53,6 +44,7 @@ service worker 會預先快取該版本的 HTML、JavaScript、CSS、題庫與�
 ```
 src/
   data/puzzles.js   1,000 題離線題庫,保留 Sukaku Explainer 原始評分
+  data/sudokuChallengePuzzles.js  21 題 SE 9.2–9.3 的獨立極限題組
   lib/sudoku.js     依 seed 選題 + 最少候選數優先求解與唯一解驗證
   lib/stats.js      localStorage 紀錄(key: sudoku-drill-v1),最佳時間 / 連續天數
   lib/settings.js   玩法設定(key: sudoku-drill-settings-v1)
@@ -72,28 +64,12 @@ src/
   pages/GameHub.jsx            共用遊戲入口
   pages/PokerHome.jsx          牌局入口、resume/recovery/records/rules
   pages/PokerGame.jsx          portrait-first 牌桌、商店、pack 與 inspect UI
-  data/idioms.js               5,270 條四字成語與詞頻分層,由教育部《成語典》產生
-  lib/idiom/corpus.js          (字, 位置) -> 成語[] 放置索引
-  lib/idiom/board.js           盤面幾何、佔用表與「不得產生非宣告字串」的檢查
-  lib/idiom/generate.js        由詞生盤的回溯生成、挖空、候選字池與唯一解修補
-  lib/idiom/solve.js           以候選字池為值域的解題器,計數上限 2
-  lib/idiom/difficulty.js      五級難度表(純資料)與單調性檢查
-  data/rpg/story.ts            文字 RPG 節點、選項、條件分支與逐節改編來源
-  lib/rpg/                     純 TS 狀態轉換、戰鬥、養成、內容驗證與存檔邊界
-  pages/RpgGame.jsx            文字閱讀、戰鬥意圖、異象、背包與村莊養成介面
-  lib/idiom/play.js            一局的純 reducer:填入、替換、清除、揭示、完成判定
-  lib/idiom/persistence.js     逐步存檔、版本不合的保留策略與紀錄
-  lib/idiom/useIdiomGame.js    reducer、存檔與計時的 React 綁定
-  pages/IdiomHome.jsx          成語填字首頁
-  pages/IdiomGame.jsx          盤面、候選字池、揭示與成語列表
-  components/IdiomBoard.jsx    縱橫盤面(每格一個原生 button)
-  components/IdiomPool.jsx     候選字池(點選填入,不用輸入法也不用拖曳)
 ```
 
 題目來自 public-domain 的
 [Sudoku Exchange Puzzle Bank](https://github.com/grantm/sudoku-exchange-puzzle-bank)：
 由 QQWing 產生並確認唯一解，再由 Sukaku Explainer 依實際解題技巧評分。應用程式收錄
-五級各 200 題，且刻意略過最基礎的 SE 1.2 題目；授權與來源見
+原五級各 200 題，另加入固定來源中全部 21 題 SE 9.2–9.3 的極限題，總計 1,021 題；授權與來源見
 [`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md)。
 
 ## 跟原版的差異
@@ -107,6 +83,34 @@ src/
 
 `sudoku-drill-v1` 這個 localStorage key 沒有變,舊的紀錄會直接沿用。
 未完成題目的 seed、輸入、註記和計時起點也會保存，完整重載後可接著作答。
+
+## 數獨挑戰與過關回報
+
+「極限」為新增的 level 5，保留來源的 SE 9.2–9.3 評級；原「專家」題組實際為
+SE 6.7–9.1。新題組的每一題都高於原題組最高評級，但 SE 是解題技巧評級，不能保證每位玩家的主觀難度。
+固定來源只提供 21 題符合此門檻的題目，不以變形或重複題湊數。
+可用 `node scripts/import-sudoku-challenges.mjs <diabolical.txt 路徑>` 重建新增資料；
+腳本校驗固定來源雜湊、唯一解及重複題，且不重寫原五級題庫。
+
+數獨存檔只以 level 與 seed 重建盤面，因此原五級的題庫順序和選題算法必須保留。
+新難度只可附加，不能插入既有級別中間；若要修改既有題庫，須另行處理進行中的存檔相容性。
+
+每個難度累計完成 1／5／20 題，分別取得初勝／熟練／精通徽章。
+徽章直接由既有 `stats.count` 衍生，不另存一份獎勵狀態；舊紀錄自動計入，清除紀錄也會清除這些成果。
+此處計的是完成次數，不是不同題目數。過關畫面比較記錄前後的成績，顯示新增徽章、個人最佳突破、
+下枚徽章進度與更高難度入口；首頁可回看收藏。完成紀錄仍由遊戲 hook 寫入，展示元件不負責授獎或保存。
+
+## 跨局收藏
+
+遊戲櫃顯示兩款遊戲各自的累積進度；收藏仍由各款遊戲保存，共用首頁只讀取，不建立另一份進度。
+
+| 遊戲 | 收錄時機 | 保存位置與相容性 |
+| --- | --- | --- |
+| 通勤牌局 | 真正取得效果牌時收錄，出售、落敗與新局仍保留 | 既有 records 的 `discoveredModifierIds`；舊局恢復時補收目前持有的效果牌 |
+
+收藏冊讓玩家回看已發現的內容，並提示下一個數量目標；牌局的收藏不授予下一局額外戰力。
+兩款遊戲的進度各自保存，不共用貨幣，也不改動既有新局規則。
+收藏隨原本的本機紀錄保存，不另設帳號或雲端資料。
 
 ## 通勤牌局規則基線
 
@@ -125,56 +129,11 @@ src/
 
 - 點選 1–5 張牌切換選取；原生 button 同時提供觸控、鍵盤與 focus 操作。
 - 「出牌」計分、「棄牌」換牌；每次計分停在可檢查的 resolving phase，trace 可展開查看籌碼 × 倍率。
+- 補給後進入下一回合與整局結束時會顯示約 1.2 秒的全畫面過場，可按「略過過場」立即繼續；偏好減少動態效果時不播放。
 - 效果牌依左至右順序觸發；展開任一張即可閱讀效果、目前 counter，並用 44px 以上的左移/右移按鈕排序。
 - 商店可購買、刷新、出售與打開選擇包；purchase、choice、sell 與 reroll 均有 transaction guard。
 - 每個 committed reducer transition 都會寫入 `sudoku-drill-poker-active-v1`；牌局紀錄另存於 `sudoku-drill-poker-records-v1`。
 - 介面在 360 CSS px 使用四欄、兩排手牌，沒有橫向 page scroll；選取與計分狀態不只靠顏色，並支援 `prefers-reduced-motion`。
-
-## 成語填字規則基線
-
-- 盤面是四格線段的網狀連接:成語一律四字,只有向右與向下,交叉處共用一個字。
-- **任何長度 ≥2 的連續字串都必須是宣告過的四字成語**;同向相鄰僅在兩格同屬
-  一條垂直詞條時允許(也就是交叉本身)。英文填字的黑格對稱慣例不適用。
-- 出題「由詞生盤」而非「由盤填詞」:因為詞長固定為 4,不必先設計網格再填詞,
-  迴避了一般填字生成的 NP-Complete 難題,回溯深度等於詞條數而非格數。
-- 每個盤面都以解題器驗證**恰好一組解**;不唯一就多揭示一格提示字後重驗,
-  超過上限則丟棄該 seed。與 `lib/sudoku.js` 的唯一解驗證是同一個思路。
-- 盤面上限 9×9,確保 360 CSS px 下每格仍在 36px 以上,不需要橫向捲動。
-- 五級難度調整詞條數(4→10)、提示字比例(50%→18%)、干擾字比例(0%→50%)
-  與可用詞頻層;L3/L4 的目標詞條數依實測短缺率訂為 9 與 10。
-- 填字方式是「點格子、再點候選字池的字」,**不使用輸入法、不使用拖曳**:
-  中文沒有 26 鍵字母表,自由輸入需要 IME(手機上是蓋住盤面的全螢幕模態),
-  拖曳則在晃動的車廂中命中率低且沒有鍵盤等價操作。
-- 存檔存**整個盤面**而非只存 seed:只存 seed 的話,語料或生成器一改,
-  進行中的題目會無聲換題。版本不合時保留紀錄、不載入,由玩家明示清除。
-- 用過「揭示」的完成照樣計數與續連續天數,但**不寫最佳時間**。
-
-成語資料取自教育部《成語典》正文(CC BY-ND 3.0 臺灣)。教育部對「禁止改作」的
-解釋是限制只及於文本本身,不限制格式轉換與後續應用;因此本專案只做格式轉換與
-子集篩選,若日後顯示釋義必須逐字照錄,不得濃縮或改寫。詳見
-[`THIRD_PARTY_NOTICES.md`](./THIRD_PARTY_NOTICES.md) 與
-[`docs/idiom-crossword-research.md`](./docs/idiom-crossword-research.md)。
-
-## 夢魘堡壘：v2 擴寫候選
-
-- 64 節點、165 選項：在既有遠征上增加森林盟約與五時段三日圍困、Porte Resonant 後互斥的交涉／辨夢路線，以及三種矛盾歸鄉記錄；兩組事件池各八件。
-- 戰士、法師、遊俠在鍛造時各選一次二選一專精；準備型以格擋取得一次準備並由下一次技能消耗。盟約繩結與燭淚鏡可在戰鬥外擇一裝備或卸下。
-- 戰士、法師、遊俠各有技能；探索選項受職業、線索、物品和資源限制，介面顯示不可選原因。
-- 戰鬥可普攻、技能、格擋調息、用藥或撤離；敵方意圖可見，致勝一擊不受反擊。
-- 每趟升級與裝備選擇之外，首次里程碑及勝利帶回永久見聞；六項村莊養成可強化生命、魔力、補給、攻擊、煉金或解鎖暗渠路線。
-- 旅程編號控制戰鬥亂數、血月／黑雨／靜星三種異象、荒野與夢城事件，以及兩組戰利品表；相同版本、起始配置、編號與選擇可重現結果。
-- 規則以 TypeScript 執行，不依賴伺服器或語言模型。故事隨程式打包；飛行前須在有網路時完整載入一次，之後同一網址由 app shell 快取離線開啟，只有另開英文原典連結需要網路。
-- 職業、異象、怪物與遺物使用一張專案生成的 16-bit 像素圖鑑；PNG 隨 build 與 service worker 一同打包，不從外站載入。
-- 存檔仍只使用 `sudoku-drill-rpg-v1`，新契約是 schema 2／`nightmare-fortress-2`，不修改其他遊戲資料。合法 v1 先顯示可複製的 raw 與成果預覽；玩家確認後保留永久成果、退休舊遠征。未確認、轉換失敗、版本不合或損毀都不覆寫。
-- v2 沒有自動降版；舊版程式會保留 v2 raw 為 incompatible。回到 v1 只能使用玩家事先保存的 raw，新舊進度不合併。
-
-可讀文本見 [`docs/rpg-story.md`](./docs/rpg-story.md)，唯一維護來源是
-[`src/data/rpg/story.ts`](./src/data/rpg/story.ts)。設計約束見
-[`docs/rpg-architecture.md`](./docs/rpg-architecture.md)，原典研究及尚未實作的長篇方向見
-[`docs/text-rpg-adaptation-research.md`](./docs/text-rpg-adaptation-research.md)；Dunsany 原文的逐段定位、
-固定設定與現行改編對照見 [`docs/rpg-source-reference.md`](./docs/rpg-source-reference.md)。
-
-本機 Chrome 已在 production preview 完成安裝，關閉伺服器後重新載入並推進故事；目標手機／平板的真正飛航冷開、四類 checkpoint、60 分鐘斷網遠征及六位真人比較仍待執行。因此目前只能描述為擴寫候選，不能宣稱已完成實機飛航驗收或證明「約三小時」。驗收表見 [`docs/rpg-playtest-protocol.md`](./docs/rpg-playtest-protocol.md)。
 
 ## 資產與相容性聲明
 

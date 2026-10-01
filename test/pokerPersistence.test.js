@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { POKER_RULES } from '../src/data/poker/compatibility.js';
+import { MODIFIERS, POKER_RULES } from '../src/data/poker/compatibility.js';
 import {
   POKER_RECORDS_KEY, clearPokerSnapshot, emptyPokerRecords, loadPokerRecords, loadPokerSnapshot,
-  migratePokerSnapshot, parsePokerRecords, recordPokerCompletion, recordPokerRunStarted,
+  getPokerCollectionProgress, migratePokerSnapshot, parsePokerRecords, recordPokerCollection, recordPokerCompletion, recordPokerRunStarted,
   savePokerSnapshot, validatePokerSnapshot
 } from '../src/lib/poker/persistence.js';
 import { createNewRun, currentRound, pokerRunReducer } from '../src/lib/poker/run.js';
@@ -286,7 +286,8 @@ test('poker records normalize counters, identities, and unsupported properties b
     highestCompletedScore: 0,
     winStreak: 0,
     startedRunIds: ['run-a', 'run-b'],
-    completedRunIds: ['run-old']
+    completedRunIds: ['run-old'],
+    discoveredModifierIds: []
   });
   assert.equal(Object.hasOwn(canonical, 'injected'), false);
 
@@ -335,4 +336,94 @@ test('enriched resolving snapshots restore played and drawn identities under sch
   const restored = loadPokerSnapshot(storage);
   assert.deepEqual(restored, { status: 'ok', state });
   assert.deepEqual(restored.state.pendingResolution, state.pendingResolution);
+});
+
+test('collection accepts legacy records and filters invalid discoveries without resetting other statistics', () => {
+  const legacy = { runsStarted: 12, runsWon: 5, highestCompletedScore: 12000, winStreak: 2, startedRunIds: ['old-run'], completedRunIds: ['old-run'] };
+  assert.deepEqual(parsePokerRecords(legacy), { ...legacy, discoveredModifierIds: [] });
+  assert.deepEqual(getPokerCollectionProgress(legacy), { collected: 0, total: MODIFIERS.length });
+  const mixed = { ...legacy, discoveredModifierIds: ['flat-mult', null, 'unknown-effect', {}, 7, 'flat-mult', 'face-card-chips'] };
+  assert.deepEqual(parsePokerRecords(mixed), { ...legacy, discoveredModifierIds: ['flat-mult', 'face-card-chips'] });
+  assert.deepEqual(getPokerCollectionProgress(mixed), { collected: 2, total: MODIFIERS.length });
+  for (const invalid of [null, 5, 'flat-mult', {}]) {
+    assert.deepEqual(parsePokerRecords({ ...legacy, discoveredModifierIds: invalid }), { ...legacy, discoveredModifierIds: [] });
+  }
+});
+
+test('discoveries from purchases and packs survive sale, defeat, clearing the active save, and a new run', () => {
+  const storage = memoryStorage();
+  const otherGames = { 'sudoku-drill-v1': '{"count":9}', 'unrelated-records': '{"wins":4}', 'unrelated-progress': 'keep-exactly' };
+  Object.entries(otherGames).forEach(([key, value]) => storage.setItem(key, value));
+  let state = forceRoundWin(createNewRun({ seed: 950, now: 1 }), 2);
+  state = pokerRunReducer(state, { type: 'SETTLE_ROUND', now: 6 });
+  state = { ...state, coins: 100 };
+  recordPokerRunStarted(state.runId, storage);
+  const offer = state.offers.items.find((item) => item.type === 'modifier');
+  state = pokerRunReducer(state, { type: 'BUY_OFFER', offerId: offer.offerId, transactionId: 'collection-buy', now: 7 });
+  recordPokerCollection(state, storage);
+  const once = storage.getItem(POKER_RECORDS_KEY);
+  recordPokerCollection(state, storage);
+  assert.equal(storage.getItem(POKER_RECORDS_KEY), once);
+
+  const pack = state.offers.items.find((item) => item.type === 'pack');
+  state = pokerRunReducer(state, { type: 'BUY_OFFER', offerId: pack.offerId, transactionId: 'collection-pack', now: 8 });
+  const choice = state.packState.choices[0];
+  state = pokerRunReducer(state, { type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: 'collection-choice', now: 9 });
+  recordPokerCollection(state, storage);
+  if (state.phase === 'pack') state = pokerRunReducer(state, { type: 'SKIP_PACK', now: 10 });
+  for (const owned of state.modifiers) {
+    state = pokerRunReducer(state, { type: 'SELL_MODIFIER', instanceId: owned.instanceId, transactionId: `sell-${owned.instanceId}`, now: 11 });
+    recordPokerCollection(state, storage);
+  }
+  assert.equal(state.modifiers.length, 0);
+  state = pokerRunReducer(state, { type: 'CONTINUE', now: 12 });
+  state = pokerRunReducer(state, { type: 'BEGIN_ROUND', now: 13 });
+  while (state.phase === 'selecting') {
+    state = pokerRunReducer(state, { type: 'TOGGLE_CARD', cardId: state.zones.hand[0].instanceId, now: 14 });
+    state = pokerRunReducer(state, { type: 'PLAY', now: 15 });
+    state = pokerRunReducer(state, { type: 'FINISH_RESOLUTION', now: 16 });
+    recordPokerCollection(state, storage);
+  }
+  assert.equal(state.phase, 'run-lost');
+  recordPokerCompletion(state, storage);
+  savePokerSnapshot(state, storage);
+  clearPokerSnapshot(storage);
+  const fresh = createNewRun({ seed: 951, now: 20 });
+  savePokerSnapshot(fresh, storage);
+  recordPokerRunStarted(fresh.runId, storage);
+  recordPokerCollection(fresh, storage);
+  const records = loadPokerRecords(storage);
+  assert.deepEqual(records.discoveredModifierIds, [offer.itemId, choice.itemId]);
+  assert.equal(records.runsStarted, 2);
+  assert.equal(records.highestCompletedScore, state.totalScore);
+  assert.deepEqual(loadPokerSnapshot(storage).state.modifiers, []);
+  Object.entries(otherGames).forEach(([key, value]) => assert.equal(storage.getItem(key), value));
+});
+
+test('invalid collection input cannot erase discoveries, run statistics, or the active snapshot', () => {
+  const storage = memoryStorage();
+  const records = { ...emptyPokerRecords(), runsStarted: 8, runsWon: 3, highestCompletedScore: 2200, discoveredModifierIds: ['flat-mult'] };
+  storage.setItem(POKER_RECORDS_KEY, JSON.stringify(records));
+  const run = createNewRun({ seed: 952, now: 1 });
+  savePokerSnapshot(run, storage);
+  for (const state of [null, {}, { modifiers: 'flat-mult' }, { modifiers: [null, {}, { catalogId: 'unknown' }, { catalogId: 1 }] }]) {
+    assert.deepEqual(recordPokerCollection(state, storage), { records, newModifierIds: [] });
+  }
+  assert.deepEqual(loadPokerRecords(storage), records);
+  assert.deepEqual(loadPokerSnapshot(storage).state, run);
+});
+
+test('collection reports only successful new saves and can retry after storage recovers', () => {
+  const storage = memoryStorage();
+  const records = { ...emptyPokerRecords(), runsStarted: 5, discoveredModifierIds: ['flat-mult'] };
+  storage.setItem(POKER_RECORDS_KEY, JSON.stringify(records));
+  const state = { modifiers: [{ catalogId: 'flat-mult' }, { catalogId: 'face-card-chips' }] };
+  const unavailable = { ...storage, setItem() { throw new Error('quota exceeded'); } };
+  assert.deepEqual(recordPokerCollection(state, unavailable), { records, newModifierIds: [] });
+  assert.deepEqual(loadPokerRecords(storage), records);
+  const saved = recordPokerCollection(state, storage);
+  assert.deepEqual(saved.newModifierIds, ['face-card-chips']);
+  assert.deepEqual(saved.records.discoveredModifierIds, ['flat-mult', 'face-card-chips']);
+  assert.deepEqual(recordPokerCollection(state, storage).newModifierIds, []);
+  assert.deepEqual(recordPokerCollection(state, null).newModifierIds, []);
 });

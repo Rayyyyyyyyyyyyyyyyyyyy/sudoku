@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import PokerCard from '../components/PokerCard';
+import '../components/pokerCollection.css';
 import { POKER_RULES, modifierById, opponentById, packById, specialRuleById } from '../data/poker/compatibility';
 import { sortCardsForDisplay } from '../lib/poker/cards';
 import { rerollCost, shopOfferCost } from '../lib/poker/economy';
@@ -12,6 +13,45 @@ import { usePokerPresentation } from '../lib/poker/usePokerPresentation';
 import { usePokerRun } from '../lib/poker/usePokerRun';
 
 const ROUND_LABELS = { small: '小型回合', big: '大型回合', special: '特殊回合' };
+const CHAPTER_TRANSITION_MS = 1200;
+
+function transitionForPhase(state, round) {
+  switch (state.phase) {
+    case 'round-intro': return { eyebrow: `STAGE ${state.stageIndex + 1} · ROUND ${state.roundIndex + 1}`, title: ROUND_LABELS[round.type], detail: `目標 ${round.target.toLocaleString()} 分`, mark: '♠' };
+    case 'run-won': return { eyebrow: 'RUN COMPLETE', title: '牌局完成', detail: `${state.totalScore.toLocaleString()} 分`, mark: '◆' };
+    case 'run-lost': return { eyebrow: 'RUN ENDED', title: '本局結束', detail: `${state.totalScore.toLocaleString()} 分`, mark: '◇' };
+    default: return null;
+  }
+}
+
+function ChapterTransition({ transition, onSkip, skipRef }) {
+  if (!transition) return null;
+  return <div
+    className="pkr-chapter-transition"
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="pkr-chapter-transition-title"
+    onKeyDown={(event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onSkip();
+      }
+      if (event.key === 'Tab') {
+        event.preventDefault();
+        skipRef.current?.focus();
+      }
+    }}
+    key={transition.key}
+  >
+    <div className="pkr-chapter-transition__card">
+      <i aria-hidden="true">{transition.mark}</i>
+      <span>{transition.eyebrow}</span>
+      <strong id="pkr-chapter-transition-title">{transition.title}</strong>
+      <small>{transition.detail}</small>
+      <button ref={skipRef} type="button" onClick={onSkip}>略過過場</button>
+    </div>
+  </div>;
+}
 
 function ModifierStrip({ state, dispatch, shop = false, triggeredModifierIds = [] }) {
   if (state.modifiers.length === 0) return <p className="pkr-empty">{shop ? '尚無效果牌，可從上方商品取得。' : '尚無效果牌，通過回合後可在商店取得。'}</p>;
@@ -131,10 +171,13 @@ export default function PokerGame() {
 }
 
 function ActivePokerGame({ initialState, navigate }) {
-  const [state, dispatch] = usePokerRun(initialState);
+  const [state, dispatch, newModifierIds] = usePokerRun(initialState);
   const phaseHeadingRef = useRef(null);
   const handRootRef = useRef(null);
   const previousPhaseRef = useRef(null);
+  const transitionSkipRef = useRef(null);
+  const transitionWasVisibleRef = useRef(false);
+  const [chapterTransition, setChapterTransition] = useState(null);
   const round = currentRound(state);
   const opponent = opponentById(state.opponentId);
   const rule = specialRuleById(round.specialRuleId);
@@ -148,9 +191,31 @@ function ActivePokerGame({ initialState, navigate }) {
   useEffect(() => {
     const previous = previousPhaseRef.current;
     previousPhaseRef.current = state.phase;
+    if (previous !== null && previous !== state.phase && !presentation.reducedMotion) {
+      const chapter = transitionForPhase(state, round);
+      if (chapter) setChapterTransition({ ...chapter, key: `${state.stageIndex}-${state.roundIndex}-${state.phase}` });
+    }
     if (previous === state.phase || !['round-intro', 'shop', 'pack', 'run-lost', 'run-won'].includes(state.phase)) return;
     phaseHeadingRef.current?.focus({ preventScroll: true });
-  }, [state.phase, state.stageIndex, state.roundIndex]);
+  }, [state.phase, state.stageIndex, state.roundIndex, presentation.reducedMotion]);
+
+  useEffect(() => {
+    if (!chapterTransition) {
+      if (transitionWasVisibleRef.current) {
+        transitionWasVisibleRef.current = false;
+        phaseHeadingRef.current?.focus({ preventScroll: true });
+      }
+      return undefined;
+    }
+    transitionWasVisibleRef.current = true;
+    transitionSkipRef.current?.focus({ preventScroll: true });
+    const timeout = setTimeout(() => setChapterTransition(null), CHAPTER_TRANSITION_MS);
+    return () => clearTimeout(timeout);
+  }, [chapterTransition, state.phase]);
+
+  useEffect(() => {
+    if (presentation.reducedMotion) setChapterTransition(null);
+  }, [presentation.reducedMotion]);
 
   useEffect(() => {
     if (!presentation.focusAfterSkip || state.phase !== 'selecting') return;
@@ -170,17 +235,24 @@ function ActivePokerGame({ initialState, navigate }) {
       : !availability.canDiscard
         ? availability.discardReason
         : '可點選牌面切換選取；參與目前牌型的牌會標記「計分」。';
+  const collectionNotice = newModifierIds.length > 0 && <aside className="pkr-collection-notice" role="status">
+    <strong>圖鑑新增：{newModifierIds.map((id) => modifierById(id).display.name).join('、')}</strong>
+    <span>這次發現已收藏，落敗或賣出也會保留。</span>
+  </aside>;
+  const chapterCue = <ChapterTransition transition={chapterTransition} onSkip={() => setChapterTransition(null)} skipRef={transitionSkipRef} />;
 
-  if (state.phase === 'shop') return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
-  if (state.phase === 'pack') return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
+  if (state.phase === 'shop') return <main className="pkr-game">{chapterCue}<TopNav navigate={navigate} />{collectionNotice}<PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
+  if (state.phase === 'pack') return <main className="pkr-game">{chapterCue}<TopNav navigate={navigate} />{collectionNotice}<PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
   if (['run-won', 'run-lost'].includes(state.phase)) {
     const lost = state.phase === 'run-lost';
     const shortfall = Math.max(0, round.target - state.roundScore);
-    return <main className="pkr-game"><TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><section className="pkr-terminal"><span aria-hidden="true">{lost ? '◇' : '◆'}</span><h1 ref={phaseHeadingRef} className="pkr-phase-anchor" tabIndex="-1">{lost ? '本局結束' : '牌局完成'}</h1>{lost ? <><p>第 {state.stageIndex + 1} 階 · {ROUND_LABELS[round.type]}</p><div className="pkr-terminal__result"><strong>{state.roundScore.toLocaleString()} / {round.target.toLocaleString()}</strong><span>還差 {shortfall.toLocaleString()} 分</span></div></> : <p>你完成了三階九回合。</p>}<strong>{state.totalScore.toLocaleString()}</strong><small>累計分數 · {state.coins} 幣</small><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker')}>查看紀錄</button></section></main>;
+    return <main className="pkr-game">{chapterCue}<TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><section className="pkr-terminal"><span aria-hidden="true">{lost ? '◇' : '◆'}</span><h1 ref={phaseHeadingRef} className="pkr-phase-anchor" tabIndex="-1">{lost ? '本局結束' : '牌局完成'}</h1>{lost ? <><p>第 {state.stageIndex + 1} 階 · {ROUND_LABELS[round.type]}</p><div className="pkr-terminal__result"><strong>{state.roundScore.toLocaleString()} / {round.target.toLocaleString()}</strong><span>還差 {shortfall.toLocaleString()} 分</span></div></> : <p>你完成了三階九回合。</p>}<strong>{state.totalScore.toLocaleString()}</strong><small>累計分數 · {state.coins} 幣</small><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker')}>查看紀錄</button></section></main>;
   }
 
   return <main className={`pkr-game ${presentation.reducedMotion ? 'is-reduced-motion' : ''}`}>
+    {chapterCue}
     <TopNav navigate={navigate} />
+    {collectionNotice}
     <PokerStatus message={phaseStatus} />
     <header className="pkr-round-head">
       <div><span className="pkr-kicker">{opponent.display.name} · STAGE {state.stageIndex + 1}/{opponent.stages.length}</span><h1 ref={state.phase === 'round-intro' ? phaseHeadingRef : null} className="pkr-phase-anchor" tabIndex="-1">{ROUND_LABELS[round.type]}</h1><p>{rule ? `${rule.display.name}：${specialRuleDescription(rule.id)}` : '標準規則：選擇 1–5 張牌出牌或棄牌，達到目標分數即可過關。'}</p></div>

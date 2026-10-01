@@ -51,6 +51,7 @@ export function createServiceWorkerSource({ base, buildId, files }) {
   return `const CACHE_PREFIX = ${JSON.stringify(CACHE_PREFIX)};
 const CACHE_NAME = CACHE_PREFIX + ${JSON.stringify(buildId)};
 const APP_SHELL_URL = ${JSON.stringify(shellUrl)};
+const ASSET_PATH = new URL(${JSON.stringify(normalizedBase + 'assets/')}, self.registration.scope).pathname;
 const PRECACHE_URLS = ${JSON.stringify(precacheUrls, null, 2)};
 const PRECACHE_URL_SET = new Set(
   PRECACHE_URLS.map((url) => new URL(url, self.registration.scope).href)
@@ -67,11 +68,11 @@ self.addEventListener('install', (event) => {
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((names) => Promise.all(
-        names
-          .filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      ))
+      .then((names) => {
+        // Keep the preceding build while already-open pages finish loading its assets.
+        const previous = names.filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME);
+        return Promise.all(previous.slice(0, -1).map((name) => caches.delete(name)));
+      })
       .then(() => self.clients.claim())
   );
 });
@@ -92,10 +93,18 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  if (PRECACHE_URL_SET.has(url.href)) {
+  if (PRECACHE_URL_SET.has(url.href) || url.pathname.startsWith(ASSET_PATH)) {
     event.respondWith(
       caches.open(CACHE_NAME)
         .then((cache) => cache.match(request))
+        .then(async (cached) => {
+          if (cached) return cached;
+          const names = (await caches.keys()).filter((name) => name.startsWith(CACHE_PREFIX) && name !== CACHE_NAME).reverse();
+          for (const name of names) {
+            const previous = await (await caches.open(name)).match(request);
+            if (previous) return previous;
+          }
+        })
         .then((cached) => cached || fetch(request))
     );
   }

@@ -1,4 +1,4 @@
-import { POKER_RULES, modifierById, opponentById, packById } from '../../data/poker/compatibility.js';
+import { MODIFIERS, POKER_RULES, modifierById, opponentById, packById } from '../../data/poker/compatibility.js';
 import { RANKS, SUITS, ZONE_NAMES, assertZoneInvariant } from './cards.js';
 import { POKER_PHASES } from './run.js';
 import { validRandomState } from './random.js';
@@ -347,7 +347,13 @@ export function clearPokerSnapshot(storage = defaultStorage()) {
 }
 
 export function emptyPokerRecords() {
-  return { runsStarted: 0, runsWon: 0, highestCompletedScore: 0, winStreak: 0, startedRunIds: [], completedRunIds: [] };
+  return { runsStarted: 0, runsWon: 0, highestCompletedScore: 0, winStreak: 0, startedRunIds: [], completedRunIds: [], discoveredModifierIds: [] };
+}
+
+function knownModifierIds(ids) {
+  return Array.isArray(ids)
+    ? [...new Set(ids.filter((id) => typeof id === 'string' && modifierById(id)))]
+    : [];
 }
 
 export function parsePokerRecords(raw) {
@@ -360,7 +366,12 @@ export function parsePokerRecords(raw) {
       ? [...new Set(raw[key].filter(nonEmptyString))]
       : defaults[key];
   });
+  records.discoveredModifierIds = knownModifierIds(raw.discoveredModifierIds);
   return records;
+}
+
+export function getPokerCollectionProgress(records) {
+  return { collected: knownModifierIds(records?.discoveredModifierIds).length, total: MODIFIERS.length };
 }
 
 export function loadPokerRecords(storage = defaultStorage()) {
@@ -371,12 +382,30 @@ export function loadPokerRecords(storage = defaultStorage()) {
   } catch (error) { return emptyPokerRecords(); }
 }
 
-export function savePokerRecords(records, storage = defaultStorage()) {
+function writePokerRecords(records, storage) {
   const canonical = parsePokerRecords(records);
   if (storage) {
-    try { storage.setItem(POKER_RECORDS_KEY, JSON.stringify(canonical)); } catch (error) { /* unavailable storage */ }
+    try {
+      storage.setItem(POKER_RECORDS_KEY, JSON.stringify(canonical));
+      return { records: canonical, persisted: true };
+    } catch (error) { /* unavailable storage */ }
   }
-  return canonical;
+  return { records: canonical, persisted: false };
+}
+
+export function savePokerRecords(records, storage = defaultStorage()) {
+  return writePokerRecords(records, storage).records;
+}
+
+// Collection remembers discoveries across runs; it never grants run modifiers.
+export function recordPokerCollection(state, storage = defaultStorage()) {
+  const records = loadPokerRecords(storage);
+  const ownedIds = Array.isArray(state?.modifiers) ? state.modifiers.map((owned) => owned?.catalogId) : [];
+  const discoveredModifierIds = knownModifierIds([...records.discoveredModifierIds, ...ownedIds]);
+  const newModifierIds = discoveredModifierIds.filter((id) => !records.discoveredModifierIds.includes(id));
+  if (newModifierIds.length === 0) return { records, newModifierIds: [] };
+  const saved = writePokerRecords({ ...records, discoveredModifierIds }, storage);
+  return saved.persisted ? { records: saved.records, newModifierIds } : { records, newModifierIds: [] };
 }
 
 export function recordPokerRunStarted(runId, storage = defaultStorage()) {
