@@ -4,7 +4,8 @@ import { MODIFIERS, POKER_RULES } from '../src/data/poker/compatibility.js';
 import {
   POKER_RECORDS_KEY, clearPokerSnapshot, emptyPokerRecords, loadPokerRecords, loadPokerSnapshot,
   getPokerCollectionProgress, migratePokerSnapshot, parsePokerRecords, recordPokerCollection, recordPokerCompletion, recordPokerRunStarted,
-  savePokerSnapshot, validatePokerSnapshot
+  savePokerSnapshot, validatePokerSnapshot, startPokerRun, commitPokerRun, POKER_SNAPSHOT_KEY,
+  loadPokerRecordsState, recoverPokerRecords
 } from '../src/lib/poker/persistence.js';
 import { createNewRun, currentRound, pokerRunReducer } from '../src/lib/poker/run.js';
 
@@ -168,6 +169,34 @@ test('canonical parser rejects invalid cursors, identities, catalogs, guards, an
   rejectMutation(pack, (state) => ({ ...state, packState: null }), /pack state/);
 });
 
+test('a sold first choice in a two-choice pack restores as consumed and cannot be granted twice', () => {
+  let state = forceRoundWin(createNewRun({ seed: 541, now: 1 }), 2);
+  state = pokerRunReducer(state, { type: 'SETTLE_ROUND', now: 6 });
+  const offer = state.offers.items.find((item) => item.type === 'pack');
+  state = { ...state, coins: 100, offers: { ...state.offers, items: state.offers.items.map((item) => item === offer ? { ...item, itemId: 'modifier-pack-mega' } : item) } };
+  state = pokerRunReducer(state, { type: 'BUY_OFFER', offerId: offer.offerId, transactionId: 'open-two-choice-pack', now: 7 });
+  const choice = state.packState.choices[0];
+  const take = { type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: 'first-pack-choice', now: 8 };
+  state = pokerRunReducer(state, take);
+  state = pokerRunReducer(state, { type: 'SELL_MODIFIER', instanceId: state.modifiers[0].instanceId, transactionId: 'sell-first-choice', now: 9 });
+  const storage = memoryStorage();
+  savePokerSnapshot(state, storage);
+  const restored = loadPokerSnapshot(storage);
+  assert.deepEqual(restored, { status: 'ok', state });
+  assert.equal(restored.state.modifiers.length, 0);
+  assert.equal(restored.state.packState.choicesRemaining, 1);
+  assert.equal(restored.state.packState.choices[0].taken, true);
+  assert.equal(pokerRunReducer(restored.state, { ...take, transactionId: 'take-sold-choice-again' }), restored.state);
+  rejectMutation(state, (snapshot) => {
+    snapshot.modifiers = [{ instanceId: 'forged-owned', catalogId: snapshot.packState.choices[1].itemId, counters: {} }];
+    return snapshot;
+  }, /pack choice ownership/);
+  rejectMutation(state, (snapshot) => {
+    snapshot.packState.choicesRemaining = 2;
+    return snapshot;
+  }, /pack choices remaining/);
+});
+
 test('canonical parser accumulates independent validation errors without exposing partial state', () => {
   const state = createNewRun({ seed: 421, now: 1 });
   const result = migratePokerSnapshot({ ...state, stageIndex: 99, transactionIds: ['same', 'same'], timers: null });
@@ -318,7 +347,7 @@ test('schema-v1 legacy offer costs are removed without changing authoritative sh
   assert.deepEqual(restored.state.offers, shop.offers);
   assert.equal(restored.state.offers.items.some((offer) => Object.hasOwn(offer, 'cost')), false);
   const saved = savePokerSnapshot(legacy, storage);
-  assert.deepEqual(saved, shop);
+  assert.deepEqual(saved, { state: shop, persisted: true });
   assert.deepEqual(loadPokerSnapshot(storage), { status: 'ok', state: shop });
 });
 
@@ -426,4 +455,168 @@ test('collection reports only successful new saves and can retry after storage r
   assert.deepEqual(saved.records.discoveredModifierIds, ['flat-mult', 'face-card-chips']);
   assert.deepEqual(recordPokerCollection(state, storage).newModifierIds, []);
   assert.deepEqual(recordPokerCollection(state, null).newModifierIds, []);
+});
+
+test('a failed new run preserves the old snapshot and never counts a start', () => {
+  const storage = memoryStorage();
+  const old = createNewRun({ seed: 980, now: 1 });
+  savePokerSnapshot(old, storage);
+  recordPokerRunStarted(old.runId, storage);
+  const before = loadPokerRecords(storage);
+  const failing = { ...storage, setItem() { throw new Error('quota exceeded'); } };
+  const failed = startPokerRun({ seed: 981, now: 2 }, failing);
+  assert.equal(failed.persisted, false);
+  assert.deepEqual(loadPokerSnapshot(storage).state, old);
+  assert.deepEqual(loadPokerRecords(storage), before);
+  assert.equal(startPokerRun({ seed: 981, now: 2 }, storage).state.runId, failed.state.runId);
+  assert.equal(loadPokerRecords(storage).runsStarted, before.runsStarted);
+  commitPokerRun(failed.state, [], storage);
+  commitPokerRun(failed.state, [], storage);
+  assert.equal(loadPokerRecords(storage).runsStarted, before.runsStarted + 1);
+});
+
+test('completion stays pending on a records failure and a recovered win is counted once', () => {
+  const storage = memoryStorage();
+  let won = createNewRun({ seed: 982, now: 1 });
+  let now = 10;
+  while (won.phase !== 'run-won') {
+    won = forceRoundWin(won, now);
+    won = pokerRunReducer(won, { type: 'SETTLE_ROUND', now: now + 4 });
+    if (won.phase === 'shop') won = pokerRunReducer(won, { type: 'CONTINUE', now: now + 5 });
+    now += 10;
+  }
+  const failing = { ...storage, setItem(key, value) {
+    if (key === POKER_RECORDS_KEY) throw new Error('quota exceeded');
+    storage.setItem(key, value);
+  } };
+  assert.equal(commitPokerRun(won, [], failing).recordsApplied, false);
+  assert.equal(loadPokerSnapshot(storage).state.completion.recordsApplied, false);
+  assert.equal(loadPokerRecords(storage).runsWon, 0);
+  assert.equal(commitPokerRun(loadPokerSnapshot(storage).state, [], storage).recordsApplied, true);
+  commitPokerRun(won, [], storage);
+  assert.equal(loadPokerRecords(storage).runsWon, 1);
+  assert.equal(loadPokerRecords(storage).winStreak, 1);
+  assert.deepEqual(loadPokerRecords(storage).completedRunIds, [won.runId]);
+});
+
+test('a saved completion is not counted twice when its snapshot acknowledgement fails', () => {
+  const storage = memoryStorage();
+  const lost = { ...createNewRun({ seed: 983, now: 1 }), phase: 'run-lost', totalScore: 42 };
+  assert.equal(commitPokerRun(lost, [], storage).recordsApplied, true);
+  const acknowledged = pokerRunReducer(lost, { type: 'MARK_RECORDS_APPLIED', now: 2 });
+  const failing = { ...storage, setItem(key, value) {
+    if (key === POKER_SNAPSHOT_KEY) throw new Error('quota exceeded');
+    storage.setItem(key, value);
+  } };
+  assert.equal(commitPokerRun(acknowledged, [], failing).persisted, false);
+  const restored = loadPokerSnapshot(storage).state;
+  assert.equal(restored.completion.recordsApplied, false);
+  assert.equal(commitPokerRun(restored, [], storage).recordsApplied, true);
+  assert.deepEqual(loadPokerRecords(storage).completedRunIds, [lost.runId]);
+});
+
+test('pending discoveries survive sale in memory and join existing records on retry', () => {
+  const storage = memoryStorage();
+  const run = createNewRun({ seed: 984, now: 1 });
+  recordPokerRunStarted(run.runId, storage);
+  storage.setItem(POKER_RECORDS_KEY, JSON.stringify({ ...loadPokerRecords(storage), runsWon: 3, discoveredModifierIds: ['flat-mult'] }));
+  const owned = { ...run, modifiers: [{ instanceId: 'pending-discovery', catalogId: 'face-card-chips', counters: {} }] };
+  const failing = { ...storage, setItem(key, value) {
+    if (key === POKER_RECORDS_KEY) throw new Error('quota exceeded');
+    storage.setItem(key, value);
+  } };
+  const first = commitPokerRun(owned, [], failing);
+  assert.equal(first.persisted, false);
+  assert.deepEqual(first.newModifierIds, []);
+  const sold = commitPokerRun(run, first.pendingModifierIds, failing);
+  assert.deepEqual(sold.pendingModifierIds, ['face-card-chips']);
+  const retry = commitPokerRun(run, sold.pendingModifierIds, storage);
+  assert.equal(retry.persisted, true);
+  assert.deepEqual(retry.newModifierIds, ['face-card-chips']);
+  assert.deepEqual(retry.pendingModifierIds, []);
+  assert.deepEqual(loadPokerRecords(storage).discoveredModifierIds, ['flat-mult', 'face-card-chips']);
+  assert.equal(loadPokerRecords(storage).runsWon, 3);
+  assert.equal(loadPokerRecords(storage).runsStarted, 1);
+});
+
+test('failed records reads cannot overwrite history, and unavailable storage remains retryable', () => {
+  const storage = memoryStorage();
+  const run = createNewRun({ seed: 985, now: 1 });
+  const before = { ...emptyPokerRecords(), runsWon: 10, discoveredModifierIds: ['flat-mult'] };
+  storage.setItem(POKER_RECORDS_KEY, JSON.stringify(before));
+  const unreadable = { ...storage, getItem(key) {
+    if (key === POKER_RECORDS_KEY) throw new Error('storage unavailable');
+    return storage.getItem(key);
+  } };
+  assert.equal(commitPokerRun(run, [], unreadable).persisted, false);
+  assert.deepEqual(loadPokerRecords(storage), before);
+  assert.equal(commitPokerRun(run, [], null).persisted, false);
+  assert.equal(startPokerRun({ seed: 986, now: 2 }, null).persisted, false);
+  assert.equal(commitPokerRun(run, [], storage).persisted, true);
+  assert.equal(loadPokerRecords(storage).runsWon, 10);
+});
+
+test('corrupt records stay untouched until recovery backs them up, then terminal recording can finish', () => {
+  const storage = memoryStorage();
+  const run = { ...createNewRun({ seed: 987, now: 1 }), phase: 'run-lost', totalScore: 46 };
+  savePokerSnapshot(run, storage);
+  const snapshot = storage.getItem(POKER_SNAPSHOT_KEY);
+  storage.setItem(POKER_RECORDS_KEY, '{');
+  storage.setItem('sudoku-drill-v1', 'preserve');
+  assert.deepEqual(loadPokerRecordsState(storage), { records: emptyPokerRecords(), status: 'corrupt', raw: '{' });
+  assert.equal(commitPokerRun(run, [], storage).recordsApplied, false);
+  const recovered = recoverPokerRecords(storage);
+  assert.equal(recovered.persisted, true);
+  assert.equal(storage.getItem(recovered.backupKey), '{');
+  assert.equal(storage.getItem(POKER_SNAPSHOT_KEY), snapshot);
+  assert.equal(storage.getItem('sudoku-drill-v1'), 'preserve');
+  assert.deepEqual(loadPokerRecords(storage), emptyPokerRecords());
+  assert.equal(commitPokerRun(run, [], storage).recordsApplied, true);
+  commitPokerRun(run, [], storage);
+  assert.deepEqual(loadPokerRecords(storage).completedRunIds, [run.runId]);
+});
+
+test('recovery never resets valid records or temporarily unreadable storage', () => {
+  const storage = memoryStorage();
+  const raw = JSON.stringify({ ...emptyPokerRecords(), runsWon: 5 });
+  storage.setItem(POKER_RECORDS_KEY, raw);
+  const noWrites = { ...storage, setItem() { assert.fail('must not write'); } };
+  assert.deepEqual(recoverPokerRecords(noWrites), { persisted: true });
+  const unavailable = { ...noWrites, getItem() { throw new Error('unavailable'); } };
+  assert.equal(loadPokerRecordsState(unavailable).status, 'unavailable');
+  assert.deepEqual(recoverPokerRecords(unavailable), { persisted: false });
+  assert.deepEqual(recoverPokerRecords(null), { persisted: false });
+  assert.equal(storage.getItem(POKER_RECORDS_KEY), raw);
+});
+
+test('failed backups or resets preserve the original and successful retry reuses the backup', () => {
+  const storage = memoryStorage();
+  storage.setItem(POKER_RECORDS_KEY, '{');
+  const noBackup = { ...storage, setItem() { throw new Error('quota exceeded'); } };
+  assert.equal(recoverPokerRecords(noBackup).persisted, false);
+  assert.equal(storage.getItem(POKER_RECORDS_KEY), '{');
+  const noReset = { ...storage, setItem(key, value) {
+    if (key === POKER_RECORDS_KEY) throw new Error('quota exceeded');
+    storage.setItem(key, value);
+  } };
+  const failed = recoverPokerRecords(noReset);
+  assert.equal(failed.persisted, false);
+  assert.equal(storage.getItem(failed.backupKey), '{');
+  assert.equal(storage.getItem(POKER_RECORDS_KEY), '{');
+  const retried = recoverPokerRecords(storage);
+  assert.equal(retried.persisted, true);
+  assert.equal(retried.backupKey, failed.backupKey);
+  assert.equal(storage.getItem(retried.backupKey), '{');
+});
+
+test('a later recovery preserves earlier backups', () => {
+  const storage = memoryStorage();
+  storage.setItem(POKER_RECORDS_KEY, '{');
+  const first = recoverPokerRecords(storage);
+  storage.setItem(POKER_RECORDS_KEY, '[broken');
+  const second = recoverPokerRecords(storage);
+  assert.equal(second.persisted, true);
+  assert.notEqual(first.backupKey, second.backupKey);
+  assert.equal(storage.getItem(first.backupKey), '{');
+  assert.equal(storage.getItem(second.backupKey), '[broken');
 });

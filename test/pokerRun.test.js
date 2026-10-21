@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { MODIFIERS, PACKS, POKER_RULES } from '../src/data/poker/compatibility.js';
+import { MODIFIERS, PACKS, POKER_RULES, modifierById } from '../src/data/poker/compatibility.js';
 import { generateShopOffers, openPack, progressiveShopCost, rerollCost, settleRound, shopOfferCost } from '../src/lib/poker/economy.js';
 import { actionAvailability, addTestModifier, createNewRun, currentRound, pokerRunReducer, roundSettlementPreview } from '../src/lib/poker/run.js';
 import { seedRandom } from '../src/lib/poker/random.js';
@@ -172,6 +172,37 @@ test('shop and pack generation never offer duplicate or already-owned modifiers'
   const choiceIds = opened.packState.choices.map((choice) => choice.itemId);
   assert.equal(choiceIds.includes('owned-modifier-mult'), false);
   assert.equal(new Set(choiceIds).size, choiceIds.length);
+});
+
+test('a full inventory can sell and replace modifiers in every pack without consuming choices or repeating sale credit', () => {
+  for (const pack of PACKS) {
+    let state = { ...winCurrentRound(createNewRun({ seed: 540, now: 1 })), coins: 100 };
+    for (const item of MODIFIERS.slice(0, 6)) state = addTestModifier(state, item.id);
+    const offer = state.offers.items.find((item) => item.type === 'pack');
+    state = { ...state, offers: { ...state.offers, items: state.offers.items.map((item) => item === offer ? { ...item, itemId: pack.id } : item) } };
+    state = pokerRunReducer(state, { type: 'BUY_OFFER', offerId: offer.offerId, transactionId: 'open-full-pack', now: 20 });
+    for (let index = 0; index < pack.choiceCount; index += 1) {
+      const before = state;
+      const choice = state.packState.choices.find((item) => !item.taken);
+      const take = { type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `replace-${index}`, now: 24 + index };
+      assert.equal(pokerRunReducer(state, take), state, 'a full inventory must still reject taking a seventh card');
+      const owned = state.modifiers[0];
+      const sale = { type: 'SELL_MODIFIER', instanceId: owned.instanceId, transactionId: `sell-pack-${index}`, now: 22 + index };
+      state = pokerRunReducer(state, sale);
+      assert.equal(state.modifiers.length, 5, 'selling inside a pack must free a slot');
+      assert.equal(state.phase, 'pack');
+      assert.equal(state.coins, before.coins + modifierById(owned.catalogId).saleValue);
+      assert.deepEqual(state.packState, before.packState);
+      assert.deepEqual(state.offers, before.offers);
+      assert.deepEqual(state.randomState, before.randomState);
+      assert.equal(pokerRunReducer(state, sale), state, 'the same sale must never credit coins twice');
+      state = pokerRunReducer(state, take);
+      assert.equal(state.modifiers.length, 6);
+      assert.equal(state.coins, before.coins + modifierById(owned.catalogId).saleValue);
+      assert.equal(pokerRunReducer(state, take), state, 'the same choice must never grant another modifier');
+      assert.equal(state.phase, index === pack.choiceCount - 1 ? 'shop' : 'pack');
+    }
+  }
 });
 
 test('stale shop and pack payloads cannot grant an already-owned modifier', () => {

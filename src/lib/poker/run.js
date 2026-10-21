@@ -352,7 +352,7 @@ export function pokerRunReducer(state, action) {
       if (state.phase !== 'pack' || !state.packState?.canSkip) return state;
       return cloneWithCommit(state, { phase: 'shop', packState: null, trace: [{ type: 'pack-skipped' }] }, action.type, now);
     case 'SELL_MODIFIER': {
-      if (!['shop', 'selecting', 'round-intro'].includes(state.phase) || state.transactionIds.includes(action.transactionId)) return state;
+      if (!['shop', 'pack', 'selecting', 'round-intro'].includes(state.phase) || state.transactionIds.includes(action.transactionId)) return state;
       const owned = state.modifiers.find((item) => item.instanceId === action.instanceId);
       const item = owned && modifierById(owned.catalogId);
       if (!item) return state;

@@ -1,6 +1,6 @@
 import { MODIFIERS, POKER_RULES, modifierById, opponentById, packById } from '../../data/poker/compatibility.js';
 import { RANKS, SUITS, ZONE_NAMES, assertZoneInvariant } from './cards.js';
-import { POKER_PHASES } from './run.js';
+import { POKER_PHASES, createNewRun } from './run.js';
 import { validRandomState } from './random.js';
 
 export const POKER_SNAPSHOT_KEY = 'sudoku-drill-poker-active-v1';
@@ -12,7 +12,7 @@ const HAND_TYPES = Object.keys(POKER_RULES.handValues);
 const COUNTER_FIELDS = ['runsStarted', 'runsWon', 'highestCompletedScore', 'winStreak'];
 
 function defaultStorage() {
-  return typeof localStorage === 'undefined' ? null : localStorage;
+  try { return globalThis.localStorage ?? null; } catch (error) { return null; }
 }
 
 function isObject(value) {
@@ -218,7 +218,8 @@ function validatePack(snapshot, errors) {
     choiceIds.push(choice.choiceId);
     itemIds.push(choice.itemId);
     if (choice.taken) takenCount += 1;
-    if (ownedIds.has(choice.itemId) !== choice.taken) errors.push('pack choice ownership is inconsistent');
+    // A taken choice stays consumed even if its modifier was sold while the pack is open.
+    if (ownedIds.has(choice.itemId) && !choice.taken) errors.push('pack choice ownership is inconsistent');
   });
   if (new Set(choiceIds).size !== choiceIds.length) errors.push('duplicate pack choice ids');
   if (new Set(itemIds).size !== itemIds.length) errors.push('duplicate pack choice items');
@@ -336,9 +337,17 @@ export function loadPokerSnapshot(storage = defaultStorage()) {
 export function savePokerSnapshot(snapshot, storage = defaultStorage()) {
   const parsed = parsePokerSnapshot(snapshot);
   if (!parsed.ok) throw new Error(`Refusing invalid poker snapshot: ${parsed.errors.join(', ')}`);
-  if (!storage) return parsed.state;
-  try { storage.setItem(POKER_SNAPSHOT_KEY, JSON.stringify(parsed.state)); } catch (error) { /* unavailable storage must not break play */ }
-  return parsed.state;
+  if (storage) {
+    try {
+      storage.setItem(POKER_SNAPSHOT_KEY, JSON.stringify(parsed.state));
+      return { state: parsed.state, persisted: true };
+    } catch (error) { /* keep the current run in memory for retry */ }
+  }
+  return { state: parsed.state, persisted: false };
+}
+
+export function startPokerRun(options, storage = defaultStorage()) {
+  return savePokerSnapshot(createNewRun(options), storage);
 }
 
 export function clearPokerSnapshot(storage = defaultStorage()) {
@@ -374,12 +383,36 @@ export function getPokerCollectionProgress(records) {
   return { collected: knownModifierIds(records?.discoveredModifierIds).length, total: MODIFIERS.length };
 }
 
-export function loadPokerRecords(storage = defaultStorage()) {
-  if (!storage) return emptyPokerRecords();
+export function loadPokerRecordsState(storage = defaultStorage()) {
+  if (!storage) return { records: emptyPokerRecords(), status: 'unavailable' };
+  let raw;
   try {
-    const raw = storage.getItem(POKER_RECORDS_KEY);
-    return raw ? parsePokerRecords(JSON.parse(raw)) : emptyPokerRecords();
-  } catch (error) { return emptyPokerRecords(); }
+    raw = storage.getItem(POKER_RECORDS_KEY);
+  } catch (error) { return { records: emptyPokerRecords(), status: 'unavailable' }; }
+  try {
+    return { records: raw ? parsePokerRecords(JSON.parse(raw)) : emptyPokerRecords(), status: 'ok' };
+  } catch (error) { return { records: emptyPokerRecords(), status: 'corrupt', raw }; }
+}
+
+export function loadPokerRecords(storage = defaultStorage()) {
+  return loadPokerRecordsState(storage).records;
+}
+
+export function recoverPokerRecords(storage = defaultStorage()) {
+  const loaded = loadPokerRecordsState(storage);
+  if (loaded.status === 'ok') return { persisted: true };
+  if (loaded.status !== 'corrupt') return { persisted: false };
+  const prefix = `${POKER_RECORDS_KEY}-corrupt-backup`;
+  let backupKey = prefix;
+  let index = 1;
+  try {
+    // Keep earlier recoveries and reuse an identical backup after a failed reset.
+    while (storage.getItem(backupKey) !== null && storage.getItem(backupKey) !== loaded.raw) {
+      backupKey = `${prefix}-${index++}`;
+    }
+    storage.setItem(backupKey, loaded.raw);
+    return { persisted: writePokerRecords(emptyPokerRecords(), storage).persisted, backupKey };
+  } catch (error) { return { persisted: false }; }
 }
 
 function writePokerRecords(records, storage) {
@@ -410,20 +443,51 @@ export function recordPokerCollection(state, storage = defaultStorage()) {
 
 export function recordPokerRunStarted(runId, storage = defaultStorage()) {
   const records = loadPokerRecords(storage);
-  if (!nonEmptyString(runId) || records.startedRunIds.includes(runId)) return records;
-  return savePokerRecords({ ...records, runsStarted: records.runsStarted + 1, startedRunIds: [...records.startedRunIds, runId] }, storage);
+  const next = recordsWithRunStarted(records, runId);
+  return next === records ? records : savePokerRecords(next, storage);
 }
 
 export function recordPokerCompletion(state, storage = defaultStorage()) {
-  if (!TERMINAL_PHASES.includes(state?.phase) || !nonEmptyString(state.runId)) return loadPokerRecords(storage);
   const records = loadPokerRecords(storage);
+  const next = recordsWithCompletion(records, state);
+  return next === records ? records : savePokerRecords(next, storage);
+}
+
+function recordsWithRunStarted(records, runId) {
+  if (!nonEmptyString(runId) || records.startedRunIds.includes(runId)) return records;
+  return { ...records, runsStarted: records.runsStarted + 1, startedRunIds: [...records.startedRunIds, runId] };
+}
+
+function recordsWithCompletion(records, state) {
+  if (!TERMINAL_PHASES.includes(state?.phase) || !nonEmptyString(state.runId)) return records;
   if (records.completedRunIds.includes(state.runId)) return records;
   const won = state.phase === 'run-won';
-  return savePokerRecords({
+  return {
     ...records,
     runsWon: records.runsWon + (won ? 1 : 0),
     highestCompletedScore: Math.max(records.highestCompletedScore, nonnegativeInteger(state.totalScore) ? state.totalScore : 0),
     winStreak: won ? records.winStreak + 1 : 0,
     completedRunIds: [...records.completedRunIds, state.runId]
-  }, storage);
+  };
+}
+
+export function commitPokerRun(snapshot, pendingModifierIds = [], storage = defaultStorage()) {
+  // Save the recoverable run before acknowledging any completion records.
+  const saved = savePokerSnapshot(snapshot, storage);
+  const state = saved.state;
+  const discoveries = knownModifierIds([...pendingModifierIds, ...state.modifiers.map((owned) => owned.catalogId)]);
+  const loaded = loadPokerRecordsState(storage);
+  const newModifierIds = discoveries.filter((id) => !loaded.records.discoveredModifierIds.includes(id));
+  let next = recordsWithRunStarted(loaded.records, state.runId);
+  if (newModifierIds.length) next = { ...next, discoveredModifierIds: [...loaded.records.discoveredModifierIds, ...newModifierIds] };
+  next = recordsWithCompletion(next, state);
+  // A failed read must never turn existing records into an empty replacement.
+  const recorded = loaded.status === 'ok' && (next === loaded.records || writePokerRecords(next, storage).persisted);
+  return {
+    persisted: saved.persisted && recorded,
+    recordsStatus: loaded.status,
+    recordsApplied: recorded && TERMINAL_PHASES.includes(state.phase),
+    newModifierIds: recorded ? newModifierIds : [],
+    pendingModifierIds: recorded ? [] : discoveries
+  };
 }

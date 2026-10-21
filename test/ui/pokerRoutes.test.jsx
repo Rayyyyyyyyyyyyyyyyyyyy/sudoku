@@ -1,4 +1,4 @@
-import { act, render, screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -10,7 +10,7 @@ import {
   POKER_SNAPSHOT_KEY,
   emptyPokerRecords
 } from '../../src/lib/poker/persistence.js';
-import { REDUCED_MOTION_CONTINUATION_MS } from '../../src/lib/poker/presentation.js';
+import { REDUCED_MOTION_CONTINUATION_MS, SCORE_FINAL_HOLD_MS, scoreSequenceDuration, selectMajorScoreBeats } from '../../src/lib/poker/presentation.js';
 import { addTestModifier, createNewRun, currentRound, pokerRunReducer } from '../../src/lib/poker/run.js';
 
 function LocationProbe() {
@@ -105,6 +105,66 @@ describe('poker route recovery boundary', () => {
 });
 
 describe('mounted poker play behavior', () => {
+  it('deals the opening hand with fresh markers while keeping card selection usable', async () => {
+    storeSnapshot(createNewRun({ seed: 509, now: 1 }));
+    const user = userEvent.setup();
+    const view = renderApp();
+    await user.click(screen.getByRole('button', { name: '開始回合' }));
+    const cards = screen.getAllByRole('button', { name: /，新牌/ });
+    expect(cards).toHaveLength(8);
+    cards.forEach((card) => expect(card).toHaveClass('is-fresh'));
+    await user.click(cards[0]);
+    expect(cards[0]).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.getByRole('button', { name: /出牌 ·/ })).toBeEnabled();
+    view.unmount();
+    renderApp();
+    expect(screen.queryByRole('button', { name: /，新牌/ })).not.toBeInTheDocument();
+  });
+
+  it('animates committed chips and multiplier, highlights the scoring card, and holds the final result before continuation', async () => {
+    vi.useFakeTimers();
+    let state = addTestModifier(createNewRun({ seed: 508, now: 1 }), 'flat-mult');
+    state = pokerRunReducer(state, { type: 'BEGIN_ROUND', now: 2 });
+    state = pokerRunReducer(state, { type: 'TOGGLE_CARD', cardId: state.zones.hand[0].instanceId, now: 3 });
+    state = pokerRunReducer(state, { type: 'PLAY', now: 4 });
+    storeSnapshot(state);
+    renderApp();
+    const stage = screen.getByRole('region', { name: '高牌' });
+    const equation = stage.querySelector('.pkr-equation');
+    const beats = selectMajorScoreBeats(state.trace);
+    const duration = scoreSequenceDuration(beats.length);
+    const step = (duration - SCORE_FINAL_HOLD_MS) / (beats.length - 1);
+    expect(equation).toHaveTextContent('計分中');
+    expect(equation.querySelector('.pkr-count--chips')).toHaveTextContent('5');
+    await act(async () => { vi.advanceTimersByTime(Math.round(step)); });
+    expect(within(stage).getByRole('list', { name: '本手打出的牌' }).querySelector('.is-scoring')).toBeInTheDocument();
+    await act(async () => { vi.advanceTimersByTime(duration - SCORE_FINAL_HOLD_MS - Math.round(step)); });
+    expect(equation).toHaveClass('is-complete');
+    expect(equation).toHaveTextContent(`+${state.pendingResolution.score.toLocaleString()} 分`);
+    expect(equation.querySelector('.pkr-count--mult')).toHaveTextContent(String(state.trace.at(-1).mult));
+    await act(async () => { vi.advanceTimersByTime(SCORE_FINAL_HOLD_MS - 1); });
+    expect(stage).toBeInTheDocument();
+    await act(async () => { vi.advanceTimersByTime(1); });
+    expect(screen.getByText('0 張已選')).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: /，新牌/ })).toHaveLength(state.pendingResolution.drawnCardIds.length);
+  });
+
+  it('replaces discarded cards immediately and allows a new action during the outgoing animation', async () => {
+    storeSnapshot(pokerRunReducer(createNewRun({ seed: 507, now: 1 }), { type: 'BEGIN_ROUND', now: 2 }));
+    const user = userEvent.setup();
+    renderApp();
+    const cards = screen.getAllByRole('button', { name: /^[2-9JQKA][♣♦♥♠]/ });
+    await user.click(cards[0]);
+    await user.click(cards[1]);
+    await user.click(screen.getByRole('button', { name: /棄牌 ·/ }));
+    expect(screen.getByRole('status', { name: '已棄掉 2 張牌，補 2 張' })).toBeInTheDocument();
+    const replacements = screen.getAllByRole('button', { name: /，新牌/ });
+    expect(replacements).toHaveLength(2);
+    fireEvent.click(replacements[0]);
+    expect(screen.getByRole('button', { name: /出牌 ·/ })).toBeEnabled();
+    expect(screen.queryByRole('status', { name: '已棄掉 2 張牌，補 2 張' })).not.toBeInTheDocument();
+  });
+
   it('exposes disabled reasons, resolves a committed score, and restores focus after skip', async () => {
     let state = createNewRun({ seed: 510, now: 1 });
     state = pokerRunReducer(state, { type: 'BEGIN_ROUND', now: 2 });
@@ -216,6 +276,64 @@ describe('mounted poker play behavior', () => {
     await waitFor(() => expect(shopHeading).toHaveFocus());
     const purchasedPack = screen.getByRole('heading', { name: packById(packOffer.itemId).display.name }).closest('article');
     expect(within(purchasedPack).getByRole('button', { name: '已取得' })).toBeDisabled();
+  });
+
+  it.each(['modifier-pack-small', 'modifier-pack-mega'])('allows a full inventory to reorder and sell inside %s, restore the open pack, and take a replacement', async (packId) => {
+    let base = createNewRun({ seed: 540, now: 1 });
+    for (const item of MODIFIERS.slice(0, 6)) base = addTestModifier(base, item.id);
+    let shop = { ...createShop(540, base), coins: 100 };
+    shop = { ...shop, offers: { ...shop.offers, items: shop.offers.items.map((item) => item.type === 'pack' ? { ...item, itemId: packId } : item) } };
+    const offer = shop.offers.items.find((item) => item.type === 'pack');
+    const pack = pokerRunReducer(shop, { type: 'BUY_OFFER', offerId: offer.offerId, transactionId: 'full-inventory-pack', now: 8 });
+    expect(pack.modifiers).toHaveLength(6);
+    const owned = pack.modifiers[0];
+    const item = modifierById(owned.catalogId);
+    storeSnapshot(pack);
+    const user = userEvent.setup();
+    const view = renderApp();
+
+    const firstChoice = screen.getByRole('heading', { name: modifierById(pack.packState.choices[0].itemId).display.name }).closest('article');
+    expect(within(firstChoice).getByRole('button')).toBeDisabled();
+    await user.click(screen.getByRole('button', { name: `將 ${item.display.name} 右移` }));
+    expect(JSON.parse(localStorage.getItem(POKER_SNAPSHOT_KEY)).modifiers[1].instanceId).toBe(owned.instanceId);
+    const ownedCard = screen.getByText(item.display.name, { selector: 'b' }).closest('article');
+    await user.click(within(ownedCard).getByRole('button', { name: `出售 +${item.saleValue}` }));
+    const sold = JSON.parse(localStorage.getItem(POKER_SNAPSHOT_KEY));
+    expect(sold.phase).toBe('pack');
+    expect(sold.modifiers).toHaveLength(5);
+    expect(sold.coins).toBe(pack.coins + item.saleValue);
+    expect(sold.packState).toEqual(pack.packState);
+    expect(sold.randomState).toEqual(pack.randomState);
+    view.unmount();
+    const restoredView = renderApp();
+
+    expect(screen.getByRole('heading', { name: packById(offer.itemId).display.name })).toBeInTheDocument();
+    const replacement = pack.packState.choices[0];
+    const choiceCard = screen.getByRole('heading', { name: modifierById(replacement.itemId).display.name }).closest('article');
+    await user.click(within(choiceCard).getByRole('button', { name: '選這張' }));
+    const replaced = JSON.parse(localStorage.getItem(POKER_SNAPSHOT_KEY));
+    expect(replaced.modifiers).toHaveLength(6);
+    expect(replaced.modifiers.some((modifier) => modifier.instanceId === owned.instanceId)).toBe(false);
+    expect(replaced.modifiers.some((modifier) => modifier.catalogId === replacement.itemId)).toBe(true);
+    expect(replaced.coins).toBe(sold.coins);
+    expect(replaced.phase).toBe(packId === 'modifier-pack-mega' ? 'pack' : 'shop');
+    if (packId === 'modifier-pack-mega') {
+      const replacementItem = modifierById(replacement.itemId);
+      const acquiredCard = screen.getByText(replacementItem.display.name, { selector: 'b' }).closest('article');
+      await user.click(within(acquiredCard).getByRole('button', { name: `出售 +${replacementItem.saleValue}` }));
+      restoredView.unmount();
+      renderApp();
+      expect(screen.getByRole('heading', { name: packById(packId).display.name })).toBeInTheDocument();
+      const takenCard = screen.getByRole('heading', { name: replacementItem.display.name }).closest('article');
+      expect(within(takenCard).getByRole('button', { name: '已選' })).toBeDisabled();
+      const nextChoice = pack.packState.choices[1];
+      const nextCard = screen.getByRole('heading', { name: modifierById(nextChoice.itemId).display.name }).closest('article');
+      await user.click(within(nextCard).getByRole('button', { name: '選這張' }));
+      const finished = JSON.parse(localStorage.getItem(POKER_SNAPSHOT_KEY));
+      expect(finished.phase).toBe('shop');
+      expect(finished.modifiers).toHaveLength(6);
+      expect(finished.coins).toBe(sold.coins + replacementItem.saleValue);
+    }
   });
 
   it('completes reduced-motion resolution within the bounded continuation and keeps status comprehensible', async () => {

@@ -82,6 +82,8 @@ Poker uses new localStorage keys, separate from all Sudoku keys. The persisted s
 
 Animated intermediate frames are derived from a stable resolution trace and are not separately persisted. A reload during animation restores the resolved stable state and lets the UI replay or skip the presentation. Purchases and record updates are reducer transitions with idempotency guards.
 
+An open pack also permits selling and reordering the owned inventory, including when all six slots are occupied. Selling uses the same reducer action and transaction guard as the shop and does not consume pack choices, regenerate offers, or advance the PRNG. A pack choice's `taken` flag records consumption, not current ownership: a taken modifier may have been sold before the remaining choices are used. Restoration must accept that state while still rejecting an owned, untaken choice and inconsistent remaining-choice counts. Selling never resets a choice's `taken` flag or refunds a choice.
+
 ### 7. Add a hub while preserving direct Sudoku routes
 
 The root route becomes a compact game hub. The current Sudoku landing content moves to `/sudoku`; `/daily` and `/play/:level` retain their current meaning so saved and shared URLs remain valid. Poker uses `/poker` for run setup/resume and `/poker/play` for the active run. Unknown routes return to the hub.

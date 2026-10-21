@@ -37,6 +37,8 @@ New committed player actions supersede older discard and fresh-card cues. Timer 
 
 CSS keyframes handle card movement, glow, progress, and beat reveal. React only supplies stable IDs, ordering indexes, and duration custom properties. This is preferred to adding reducer phases such as `discarding-card-2` or `counting-multiplier`, which would make persistence and tests depend on animation frames.
 
+Opening deals also use transient fresh-card identifiers, only after a live `BEGIN_ROUND`; mounting an already selecting hand does not replay the deal. During scoring, the displayed chips and multiplier come from committed trace snapshots up to the current beat. An overflow beat advances through all omitted snapshots before the next retained effect, so bounded choreography cannot lose contributions or reconstruct score rules. The final beat receives a 450ms hold within the existing total duration to let the 420ms target-progress transition finish before automatic continuation.
+
 ### 3. Resolve scores inside the table and auto-finish ordinary hands
 
 The `resolving` view keeps the modifier strip and table frame. It shows the played cards in a non-interactive scoring rail, a compact sequence of localized trace beats, the exact owned modifier instance associated with the active beat, the final chips × multiplier equation, the gained score, and target progress from the pre-hand score to the committed score.

@@ -7,7 +7,7 @@ import { sortCardsForDisplay } from '../lib/poker/cards';
 import { rerollCost, shopOfferCost } from '../lib/poker/economy';
 import { handLabel } from '../lib/poker/evaluate';
 import { loadPokerSnapshot } from '../lib/poker/persistence';
-import { presentScoreTrace, rarityLabel, specialRuleDescription } from '../lib/poker/presentation';
+import { presentScoreTrace, rarityLabel, scoreFrameForBeat, specialRuleDescription } from '../lib/poker/presentation';
 import { actionAvailability, currentRound, projectedHand, roundSettlementPreview } from '../lib/poker/run';
 import { usePokerPresentation } from '../lib/poker/usePokerPresentation';
 import { usePokerRun } from '../lib/poker/usePokerRun';
@@ -77,8 +77,8 @@ function ScoreTrace({ trace, cards }) {
   return <details className="pkr-sheet"><summary>查看計分明細{total ? ` · ${total.chips} 籌碼 × ${total.mult} 倍率` : ''}</summary><ol className="pkr-trace">{rows.map((row) => <li key={row.id}><span className="pkr-trace__copy"><b>{row.title}</b>{row.detail && <small>{row.detail}</small>}</span>{row.value && <strong>{row.value}</strong>}</li>)}</ol></details>;
 }
 
-function PokerCardRail({ cards, label, className = '', contributingIds = [] }) {
-  return <ul className={`pkr-card-rail ${className}`} aria-label={label}>{cards.map((card, index) => <PokerCard key={card.instanceId} card={card} contributing={contributingIds.includes(card.instanceId)} presentationIndex={index} interactive={false} />)}</ul>;
+function PokerCardRail({ cards, label, className = '', contributingIds = [], scoringCardId = null }) {
+  return <ul className={`pkr-card-rail ${className}`} aria-label={label}>{cards.map((card, index) => <PokerCard key={card.instanceId} card={card} contributing={contributingIds.includes(card.instanceId)} scoring={card.instanceId === scoringCardId} presentationIndex={index} interactive={false} />)}</ul>;
 }
 
 function DiscardCue({ cue, cards }) {
@@ -97,7 +97,7 @@ function TargetProgress({ progress, animated = false }) {
   return <section className={`pkr-target-progress ${progress.crossedTarget ? 'is-crossed' : ''}`} aria-label="回合目標進度">
     <div className="pkr-target-progress__copy"><span>出牌前 {progress.before.toLocaleString()}</span><strong>{progress.committed.toLocaleString()} / {progress.target.toLocaleString()}</strong></div>
     <div className="pkr-target-progress__track" role="progressbar" aria-valuemin="0" aria-valuemax={progress.target} aria-valuenow={Math.min(progress.committed, progress.target)}><i style={{ width: `${width}%` }} /></div>
-    {progress.crossedTarget && <b>目標突破{progress.excess > 0 ? ` · 超出 ${progress.excess.toLocaleString()} 分` : ''}</b>}
+    {progress.crossedTarget && animated && <b>目標突破{progress.excess > 0 ? ` · 超出 ${progress.excess.toLocaleString()} 分` : ''}</b>}
   </section>;
 }
 
@@ -106,9 +106,13 @@ function ScoreStage({ state, presentation }) {
   const allCards = Object.values(state.zones).flat();
   const playedCards = (pending.playedCardIds || []).map((id) => allCards.find((card) => card.instanceId === id)).filter(Boolean);
   const total = [...state.trace].reverse().find((event) => event.type === 'hand-total');
+  const frame = scoreFrameForBeat(state.trace, presentation.scoreBeats, presentation.activeBeatIndex);
+  const complete = presentation.reducedMotion || frame.complete;
+  const chips = presentation.reducedMotion ? total?.chips : frame.chips;
+  const mult = presentation.reducedMotion ? total?.mult : frame.mult;
   return <section className="pkr-score-stage" aria-labelledby="pkr-score-stage-title">
     <header><span>本手計分</span><h2 id="pkr-score-stage-title">{handLabel(pending.handType)}</h2></header>
-    <PokerCardRail cards={playedCards} label="本手打出的牌" className="pkr-card-rail--scoring" />
+    <PokerCardRail cards={playedCards} label="本手打出的牌" className="pkr-card-rail--scoring" scoringCardId={frame.source} />
     <ol className="pkr-score-beats" aria-label="主要計分效果">{presentation.scoreBeats.map((beat, index) => {
       const row = beat.type === 'overflow-summary' ? beat : presentScoreTrace([beat], { cards: allCards })[0];
       const revealed = presentation.reducedMotion || index <= presentation.activeBeatIndex;
@@ -118,8 +122,12 @@ function ScoreStage({ state, presentation }) {
         {beat.copySourceInstanceId && <em>由左側複製效果牌觸發</em>}
       </li>;
     })}</ol>
-    {total && <div className="pkr-equation"><span>最終計算</span><strong>{total.chips.toLocaleString()} 籌碼 × {total.mult.toLocaleString()} 倍率</strong><b>+{pending.score.toLocaleString()} 分</b></div>}
-    <TargetProgress progress={presentation.targetProgress} animated={presentation.reducedMotion || presentation.activeBeatIndex >= presentation.scoreBeats.length - 1} />
+    {total && <div className={`pkr-equation ${complete ? 'is-complete' : ''}`}>
+      <span>{complete ? '最終計算' : '計分中'}</span>
+      <strong><em key={`chips-${chips}`} className="pkr-count pkr-count--chips">{(chips ?? 0).toLocaleString()}</em> 籌碼 × <em key={`mult-${mult}`} className="pkr-count pkr-count--mult">{(mult ?? 0).toLocaleString()}</em> 倍率</strong>
+      <b key={complete ? 'total' : 'counting'}>{complete ? `+${pending.score.toLocaleString()} 分` : '⋯'}</b>
+    </div>}
+    <TargetProgress progress={presentation.targetProgress} animated={complete} />
     <button className="pkr-btn pkr-btn--ghost pkr-skip" type="button" onClick={presentation.skipResolution}>略過動畫</button>
   </section>;
 }
@@ -147,6 +155,15 @@ function PokerStatus({ message }) {
   return <div className="pkr-live-status" role="status" aria-live="polite" aria-atomic="true">{message}</div>;
 }
 
+function PokerSaveNotice({ save }) {
+  const savedRef = useRef(null);
+  useEffect(() => {
+    if (save.persisted && save.retried) savedRef.current?.focus({ preventScroll: true });
+  }, [save.persisted, save.retried]);
+  if (save.persisted) return save.retried ? <p ref={savedRef} tabIndex="-1" role="status">已保存</p> : null;
+  return <div className="pkr-warning" role="alert"><strong>尚未保存</strong><p>目前牌局與待保存的成果仍保留在此頁。離開或重新載入可能失去尚未保存的內容。{save.recordsStatus === 'corrupt' ? '牌局紀錄已損壞，可回牌局首頁備份並重建。' : '請重試保存。'}</p><button type="button" onClick={save.retry}>重試保存</button></div>;
+}
+
 function Shop({ state, dispatch, headingRef }) {
   const cost = rerollCost(state.offers.rerollCount);
   return <section className="pkr-shop"><header><span className="pkr-kicker">BETWEEN ROUNDS</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">補給站</h2><p>持有 {state.coins} 幣 · 效果牌 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p>{state.settlement && <div className="pkr-settlement" aria-label="上回合獎勵結算"><span>上回合結算</span><strong>基本 {state.settlement.base} + 剩餘出牌 {state.settlement.remainingHands} + 利息 {state.settlement.interest} = {state.settlement.total} 幣</strong><small>結算後共 {state.settlement.coinsAfter} 幣</small></div>}</header><div className="pkr-offers">{state.offers.items.map((offer) => {
@@ -160,7 +177,26 @@ function Shop({ state, dispatch, headingRef }) {
 
 function Pack({ state, dispatch, headingRef }) {
   const pack = packById(state.packState.packId);
-  return <section className="pkr-pack"><span className="pkr-kicker">OPENED</span><h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">{pack.display.name}</h2><p>還可選 {state.packState.choicesRemaining} 張 · 欄位 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value}</p><div className="pkr-offers">{state.packState.choices.map((choice) => { const item = modifierById(choice.itemId); const alreadyOwned = state.modifiers.some((owned) => owned.catalogId === choice.itemId); return <article className="pkr-offer" key={choice.choiceId}><span>{rarityLabel(item.rarity)}</span><h3>{item.display.name}</h3><p>{item.display.description}</p><button type="button" disabled={choice.taken || alreadyOwned || state.modifiers.length >= POKER_RULES.modifierCapacity.value} onClick={() => dispatch({ type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `take-${choice.choiceId}`, now: Date.now() })}>{choice.taken ? '已選' : alreadyOwned ? '已持有' : '選這張'}</button></article>; })}</div>{state.packState.canSkip && <button className="pkr-btn pkr-btn--ghost" type="button" onClick={() => dispatch({ type: 'SKIP_PACK', now: Date.now() })}>略過並返回商店</button>}</section>;
+  const full = state.modifiers.length >= POKER_RULES.modifierCapacity.value;
+  return <section className="pkr-pack">
+    <span className="pkr-kicker">OPENED</span>
+    <h2 ref={headingRef} className="pkr-phase-anchor" tabIndex="-1">{pack.display.name}</h2>
+    <p>還可選 {state.packState.choicesRemaining} 張 · 欄位 {state.modifiers.length}/{POKER_RULES.modifierCapacity.value} · 持有 {state.coins} 幣</p>
+    {full && <p>效果牌欄位已滿，可先在下方出售現有牌，再選取效果包中的新牌。</p>}
+    <div className="pkr-offers">{state.packState.choices.map((choice) => {
+      const item = modifierById(choice.itemId);
+      const alreadyOwned = state.modifiers.some((owned) => owned.catalogId === choice.itemId);
+      return <article className="pkr-offer" key={choice.choiceId}>
+        <span>{rarityLabel(item.rarity)}</span><h3>{item.display.name}</h3><p>{item.display.description}</p>
+        <button type="button" disabled={choice.taken || alreadyOwned || full} onClick={() => dispatch({ type: 'TAKE_PACK_CHOICE', choiceId: choice.choiceId, transactionId: `take-${choice.choiceId}`, now: Date.now() })}>{choice.taken ? '已選' : alreadyOwned ? '已持有' : full ? '欄位已滿' : '選這張'}</button>
+      </article>;
+    })}</div>
+    <section aria-label="現有效果牌">
+      <div className="pkr-section-title"><span>現有效果牌</span><small>可出售、調整順序</small></div>
+      <ModifierStrip state={state} dispatch={dispatch} shop />
+    </section>
+    {state.packState.canSkip && <button className="pkr-btn pkr-btn--ghost" type="button" onClick={() => dispatch({ type: 'SKIP_PACK', now: Date.now() })}>略過並返回商店</button>}
+  </section>;
 }
 
 export default function PokerGame() {
@@ -171,7 +207,12 @@ export default function PokerGame() {
 }
 
 function ActivePokerGame({ initialState, navigate }) {
-  const [state, dispatch, newModifierIds] = usePokerRun(initialState);
+  const [state, dispatch, save] = usePokerRun(initialState);
+  const newModifierIds = save.newModifierIds;
+  const saveNotice = <PokerSaveNotice save={save} />;
+  const leave = (path) => {
+    if (save.persisted || confirm('目前進度尚未保存，離開會失去未保存的進度。確定離開？')) navigate(path);
+  };
   const phaseHeadingRef = useRef(null);
   const handRootRef = useRef(null);
   const previousPhaseRef = useRef(null);
@@ -241,17 +282,18 @@ function ActivePokerGame({ initialState, navigate }) {
   </aside>;
   const chapterCue = <ChapterTransition transition={chapterTransition} onSkip={() => setChapterTransition(null)} skipRef={transitionSkipRef} />;
 
-  if (state.phase === 'shop') return <main className="pkr-game">{chapterCue}<TopNav navigate={navigate} />{collectionNotice}<PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
-  if (state.phase === 'pack') return <main className="pkr-game">{chapterCue}<TopNav navigate={navigate} />{collectionNotice}<PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
+  if (state.phase === 'shop') return <main className="pkr-game">{chapterCue}<TopNav navigate={leave} />{saveNotice}{collectionNotice}<PokerStatus message={phaseStatus} /><Shop state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
+  if (state.phase === 'pack') return <main className="pkr-game">{chapterCue}<TopNav navigate={leave} />{saveNotice}{collectionNotice}<PokerStatus message={phaseStatus} /><Pack state={state} dispatch={dispatch} headingRef={phaseHeadingRef} /></main>;
   if (['run-won', 'run-lost'].includes(state.phase)) {
     const lost = state.phase === 'run-lost';
     const shortfall = Math.max(0, round.target - state.roundScore);
-    return <main className="pkr-game">{chapterCue}<TopNav navigate={navigate} /><PokerStatus message={phaseStatus} /><section className="pkr-terminal"><span aria-hidden="true">{lost ? '◇' : '◆'}</span><h1 ref={phaseHeadingRef} className="pkr-phase-anchor" tabIndex="-1">{lost ? '本局結束' : '牌局完成'}</h1>{lost ? <><p>第 {state.stageIndex + 1} 階 · {ROUND_LABELS[round.type]}</p><div className="pkr-terminal__result"><strong>{state.roundScore.toLocaleString()} / {round.target.toLocaleString()}</strong><span>還差 {shortfall.toLocaleString()} 分</span></div></> : <p>你完成了三階九回合。</p>}<strong>{state.totalScore.toLocaleString()}</strong><small>累計分數 · {state.coins} 幣</small><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker')}>查看紀錄</button></section></main>;
+    return <main className="pkr-game">{chapterCue}<TopNav navigate={leave} />{saveNotice}<PokerStatus message={phaseStatus} /><section className="pkr-terminal"><span aria-hidden="true">{lost ? '◇' : '◆'}</span><h1 ref={phaseHeadingRef} className="pkr-phase-anchor" tabIndex="-1">{lost ? '本局結束' : '牌局完成'}</h1>{lost ? <><p>第 {state.stageIndex + 1} 階 · {ROUND_LABELS[round.type]}</p><div className="pkr-terminal__result"><strong>{state.roundScore.toLocaleString()} / {round.target.toLocaleString()}</strong><span>還差 {shortfall.toLocaleString()} 分</span></div></> : <p>你完成了三階九回合。</p>}<strong>{state.totalScore.toLocaleString()}</strong><small>累計分數 · {state.coins} 幣</small><button className="pkr-btn pkr-btn--primary" type="button" onClick={() => leave('/poker')}>查看紀錄</button></section></main>;
   }
 
   return <main className={`pkr-game ${presentation.reducedMotion ? 'is-reduced-motion' : ''}`}>
     {chapterCue}
-    <TopNav navigate={navigate} />
+    <TopNav navigate={leave} />
+    {saveNotice}
     {collectionNotice}
     <PokerStatus message={phaseStatus} />
     <header className="pkr-round-head">

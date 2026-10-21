@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   DISCARD_CUE_DURATION_MS,
   FRESH_CARD_DURATION_MS,
+  SCORE_FINAL_HOLD_MS,
   deriveTargetProgress,
   scoreSequenceDuration,
   selectMajorScoreBeats
@@ -83,7 +84,10 @@ export function presentationForCommittedState(previous, state, round, { initial 
   if (state.phase === 'round-won') return { ...EMPTY_POKER_PRESENTATION };
   if (state.phase === 'run-lost') return { ...EMPTY_POKER_PRESENTATION, statusMessage: '本局結束' };
   if (state.phase === 'run-won') return { ...EMPTY_POKER_PRESENTATION, statusMessage: '牌局完成' };
-  if (['TOGGLE_CARD', 'PLAY', 'BEGIN_ROUND'].includes(state.lastAction)) {
+  if (state.lastAction === 'BEGIN_ROUND') {
+    return { ...EMPTY_POKER_PRESENTATION, freshCardIds: state.zones.hand.map((card) => card.instanceId) };
+  }
+  if (['TOGGLE_CARD', 'PLAY'].includes(state.lastAction)) {
     return { ...base, discardCue: null, freshCardIds: [], focusAfterSkip: false };
   }
   return base;
@@ -144,7 +148,7 @@ export function usePokerPresentation(state, round, dispatch) {
     if (state.phase === 'resolving' && state.pendingResolution) {
       const duration = scoreSequenceDuration(next.scoreBeats.length, reducedMotion);
       if (!reducedMotion && next.scoreBeats.length > 1) {
-        const step = duration / next.scoreBeats.length;
+        const step = (duration - SCORE_FINAL_HOLD_MS) / (next.scoreBeats.length - 1);
         next.scoreBeats.slice(1).forEach((beat, index) => {
           schedule(() => setPresentation((value) => ({
             ...value,

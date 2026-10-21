@@ -1,10 +1,11 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, expect, it } from 'vitest';
 import App from '../../src/App.jsx';
 import GameHub from '../../src/pages/GameHub.jsx';
 import { emptyStats, persistStats } from '../../src/lib/stats.js';
-import { emptyPokerRecords, POKER_RECORDS_KEY } from '../../src/lib/poker/persistence.js';
+import { emptyPokerRecords, POKER_RECORDS_KEY, POKER_SNAPSHOT_KEY } from '../../src/lib/poker/persistence.js';
+import { createNewRun } from '../../src/lib/poker/run.js';
 import { MODIFIERS } from '../../src/data/poker/compatibility.js';
 
 function storageSnapshot() {
@@ -16,6 +17,16 @@ function LocationProbe() {
 }
 
 describe('game hub collection progress', () => {
+  it('routes pending terminal records back to the poker table without claiming they were saved', async () => {
+    localStorage.setItem(POKER_SNAPSHOT_KEY, JSON.stringify({ ...createNewRun({ seed: 907, now: 1 }), phase: 'run-lost' }));
+    render(<MemoryRouter><App /><LocationProbe /></MemoryRouter>);
+    expect(screen.getByText('上一局已結束 · 紀錄待保存')).toBeInTheDocument();
+    expect(screen.queryByText('上一局已結束 · 紀錄已保存')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: '重試保存牌局紀錄 →' }));
+    await waitFor(() => expect(screen.getByTestId('location').textContent).toBe('/poker/play'));
+    expect(screen.getByRole('heading', { name: '本局結束' })).toBeInTheDocument();
+  });
+
   it('reads available games’ permanent progress without awarding or modifying data', () => {
     persistStats({ ...emptyStats(), solved: 5, count: { 4: 5 } });
     localStorage.setItem(POKER_RECORDS_KEY, JSON.stringify({ ...emptyPokerRecords(), discoveredModifierIds: [MODIFIERS[0].id] }));

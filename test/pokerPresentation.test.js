@@ -6,6 +6,7 @@ import {
   deriveTargetProgress,
   presentScoreTrace,
   rarityLabel,
+  scoreFrameForBeat,
   scoreSequenceDuration,
   selectMajorScoreBeats,
   specialRuleDescription,
@@ -70,6 +71,30 @@ test('score timing and target progress use named bounded values and committed sc
     crossedTarget: true,
     excess: 25
   });
+});
+
+test('animated score frames follow committed snapshots through hidden effects and the final total', () => {
+  const trace = [
+    { type: 'hand-base', chips: 10, mult: 2 },
+    ...Array.from({ length: 9 }, (_, index) => ({
+      type: 'add-chips', source: `card-${index}`, amount: 1, after: { chips: 11 + index, mult: 2 }
+    })),
+    { type: 'hand-total', chips: 19, mult: 2, score: 38 }
+  ];
+  const beats = selectMajorScoreBeats(trace);
+  assert.deepEqual(scoreFrameForBeat(trace, beats, 0), { chips: 10, mult: 2, complete: false, source: null });
+  assert.deepEqual(scoreFrameForBeat(trace, beats, 1), { chips: 11, mult: 2, complete: false, source: 'card-0' });
+  const overflowIndex = beats.findIndex((beat) => beat.type === 'overflow-summary');
+  assert.equal(scoreFrameForBeat(trace, beats, overflowIndex).chips, 18);
+  assert.deepEqual(scoreFrameForBeat(trace, beats, beats.length - 1), { chips: 19, mult: 2, complete: true, source: null });
+  assert.equal(scoreFrameForBeat([], [], -1).complete, false);
+});
+
+test('starting a round animates the dealt hand but restoring it does not replay the deal', () => {
+  const state = { phase: 'selecting', lastAction: 'BEGIN_ROUND', zones: { hand: [{ instanceId: 'one' }, { instanceId: 'two' }] } };
+  const dealt = presentationForCommittedState(EMPTY_POKER_PRESENTATION, state, { target: 100 });
+  assert.deepEqual(dealt.freshCardIds, ['one', 'two']);
+  assert.deepEqual(presentationForCommittedState(dealt, state, { target: 100 }, { initial: true }), EMPTY_POKER_PRESENTATION);
 });
 
 test('presentation transitions suppress reload history, replay resolving, supersede cues, and retain fresh cards after completion', () => {

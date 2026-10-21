@@ -16,6 +16,7 @@ export const SCORE_SEQUENCE_MAX_MS = 1800;
 export const SCORE_SEQUENCE_BASE_MS = 900;
 export const SCORE_BEAT_STEP_MS = 120;
 export const MAX_VISIBLE_SCORE_BEATS = 8;
+export const SCORE_FINAL_HOLD_MS = 450;
 
 export const SPECIAL_RULE_DESCRIPTIONS = {
   'start-with-zero-discards': '本回合沒有棄牌次數；只能靠出牌與補牌達標。',
@@ -133,6 +134,25 @@ export function scoreSequenceDuration(visibleBeatCount, reducedMotion = false) {
   if (reducedMotion) return REDUCED_MOTION_CONTINUATION_MS;
   const duration = SCORE_SEQUENCE_BASE_MS + Math.max(0, Number(visibleBeatCount) || 0) * SCORE_BEAT_STEP_MS;
   return Math.min(SCORE_SEQUENCE_MAX_MS, Math.max(SCORE_SEQUENCE_MIN_MS, duration));
+}
+
+// Read committed trace snapshots, including effects hidden by the bounded beat list.
+// These are display values only; the reducer has already awarded the exact score.
+export function scoreFrameForBeat(trace, beats, activeIndex) {
+  const beat = beats[activeIndex];
+  if (!beat) return { chips: 0, mult: 0, complete: false, source: null };
+  const boundary = beat.type === 'overflow-summary'
+    ? (beats[activeIndex + 1]?.originalIndex ?? trace.length) - 1
+    : beat.originalIndex;
+  const snapshot = trace.slice(0, boundary + 1).reverse().find((event) =>
+    event.after || (event.chips != null && event.mult != null));
+  const values = snapshot?.after || snapshot;
+  return {
+    chips: values?.chips ?? 0,
+    mult: values?.mult ?? 0,
+    complete: beat.type === 'hand-total',
+    source: beat.source || null
+  };
 }
 
 export function deriveTargetProgress({ roundScore, handScore, target }) {

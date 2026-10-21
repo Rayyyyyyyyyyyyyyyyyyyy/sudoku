@@ -16,6 +16,7 @@ export default function GameHub() {
   const poker = pokerSave.status === 'ok' ? pokerSave.state : null;
   const activePoker = poker && !['run-won', 'run-lost'].includes(poker.phase) ? poker : null;
   const terminalPoker = poker && ['run-won', 'run-lost'].includes(poker.phase) ? poker : null;
+  const pendingPokerRecords = terminalPoker && !terminalPoker.completion.recordsApplied;
   const opponent = poker ? opponentById(poker.opponentId) : null;
   const sudokuMedals = useMemo(() => {
     const stats = loadStats();
@@ -53,9 +54,9 @@ export default function GameHub() {
           {activePoker && (
             <p className="hub-session"><span>●</span> {opponent.display.name} · 第 {activePoker.stageIndex + 1} 階 / 第 {activePoker.roundIndex + 1} 回合</p>
           )}
-          {terminalPoker && <p className="hub-session">上一局已結束 · 紀錄已保存</p>}
+          {terminalPoker && <p className="hub-session">{pendingPokerRecords ? '上一局已結束 · 紀錄待保存' : '上一局已結束 · 紀錄已保存'}</p>}
           {pokerSave.status === 'incompatible' && <p className="hub-session hub-session--warning">儲存版本需要處理</p>}
-          <button className="hub-action" type="button" onClick={() => navigate('/poker')}>{activePoker ? '繼續牌局' : terminalPoker ? '查看紀錄' : '進入牌局'} <span>→</span></button>
+          <button className="hub-action" type="button" onClick={() => navigate(pendingPokerRecords ? '/poker/play' : '/poker')}>{activePoker ? '繼續牌局' : pendingPokerRecords ? '重試保存牌局紀錄' : terminalPoker ? '查看紀錄' : '進入牌局'} <span>→</span></button>
         </article>
       </section>
       <footer className="hub-footer">本機儲存 · 不需登入 · 原創介面與幾何圖像</footer>

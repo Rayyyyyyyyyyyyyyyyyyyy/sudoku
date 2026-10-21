@@ -52,6 +52,14 @@ Purchasing a pack SHALL open its configured deterministic set of choices and all
 - **WHEN** the pack permits skipping and the player activates Skip
 - **THEN** no offered item is granted and the game returns to the shop
 
+#### Scenario: Replace a modifier from a full inventory inside a pack
+- **WHEN** the player opens a pack while owning six modifiers
+- **THEN** the pack displays the existing inventory with reorder and sell controls, and selling an owned modifier credits its configured sale value exactly once and enables taking a new modifier without consuming a pack choice
+
+#### Scenario: Sell a taken modifier before finishing a two-choice pack
+- **WHEN** the player sells the first selected modifier while the pack still has one choice remaining and reloads the game
+- **THEN** the same open pack, inventory, coins, and remaining choice are restored, and the sold choice remains taken and cannot be selected again
+
 ### Requirement: Rewards, remaining hands, and interest
 Successful rounds SHALL grant their configured base reward, one coin for each remaining play action, and one interest coin for each complete five coins held at settlement, capped at five interest coins, unless a round rule or modifier overrides that rule.
 

@@ -95,14 +95,15 @@ describe('permanent poker collection', () => {
     Object.entries(otherGames).forEach(([key, value]) => expect(localStorage.getItem(key)).toBe(value));
   });
 
-  it('does not announce a permanent discovery when its records cannot be saved', async () => {
+  it('announces a failed discovery only after a successful retry, even if the card was sold first', async () => {
     const shop = shopState();
     const offer = shop.offers.items.find((item) => item.type === 'modifier');
     const item = modifierById(offer.itemId);
     localStorage.setItem(POKER_SNAPSHOT_KEY, JSON.stringify(shop));
     const originalSetItem = Storage.prototype.setItem;
+    let blocked = true;
     vi.spyOn(Storage.prototype, 'setItem').mockImplementation(function (key, value) {
-      if (key === POKER_RECORDS_KEY) throw new Error('quota exceeded');
+      if (blocked && key === POKER_RECORDS_KEY) throw new Error('quota exceeded');
       originalSetItem.call(this, key, value);
     });
     const user = userEvent.setup();
@@ -112,5 +113,13 @@ describe('permanent poker collection', () => {
     expect(loadPokerSnapshot().state.modifiers.map((owned) => owned.catalogId)).toEqual([item.id]);
     expect(loadPokerRecords().discoveredModifierIds).toEqual([]);
     expect(screen.queryByText(`圖鑑新增：${item.display.name}`)).not.toBeInTheDocument();
+    const owned = screen.getByText(item.display.name, { selector: '.pkr-mod b' }).closest('article');
+    await user.click(within(owned).getByRole('button', { name: /出售/ }));
+    expect(loadPokerSnapshot().state.modifiers).toEqual([]);
+    blocked = false;
+    await user.click(within(screen.getByRole('alert')).getByRole('button', { name: '重試保存' }));
+    expect(loadPokerRecords().discoveredModifierIds).toEqual([item.id]);
+    expect(screen.getByText(`圖鑑新增：${item.display.name}`)).toBeVisible();
+    expect(screen.getByText('已保存')).toHaveFocus();
   });
 });

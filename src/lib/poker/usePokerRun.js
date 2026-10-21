@@ -1,24 +1,27 @@
-import { useEffect, useReducer, useRef, useState } from 'react';
-import { recordPokerCollection, recordPokerCompletion, savePokerSnapshot } from './persistence.js';
+import { useCallback, useEffect, useReducer, useRef, useState } from 'react';
+import { commitPokerRun } from './persistence.js';
 import { pokerRunReducer } from './run.js';
 
 export function usePokerRun(initialState) {
   const [state, dispatch] = useReducer(pokerRunReducer, initialState);
-  const [newModifierIds, setNewModifierIds] = useState([]);
-  const terminalRecorded = useRef(false);
+  const [save, setSave] = useState({ persisted: true, recordsStatus: 'ok', newModifierIds: [], retried: false });
+  const pendingModifierIds = useRef([]);
 
-  useEffect(() => {
-    savePokerSnapshot(state);
-    const collection = recordPokerCollection(state);
-    setNewModifierIds((previous) => collection.newModifierIds.length ? collection.newModifierIds : previous.length ? [] : previous);
+  const persist = useCallback((retried = false) => {
+    const result = commitPokerRun(state, pendingModifierIds.current);
+    pendingModifierIds.current = result.pendingModifierIds;
+    setSave((previous) => ({
+      persisted: result.persisted,
+      recordsStatus: result.recordsStatus,
+      newModifierIds: result.newModifierIds,
+      retried: retried || (state.lastAction === 'MARK_RECORDS_APPLIED' && previous.retried)
+    }));
+    if (result.recordsApplied && !state.completion.recordsApplied) {
+      dispatch({ type: 'MARK_RECORDS_APPLIED', now: Date.now() });
+    }
   }, [state]);
 
-  useEffect(() => {
-    if (!['run-won', 'run-lost'].includes(state.phase) || state.completion.recordsApplied || terminalRecorded.current) return;
-    terminalRecorded.current = true;
-    recordPokerCompletion(state);
-    dispatch({ type: 'MARK_RECORDS_APPLIED', now: Date.now() });
-  }, [state]);
+  useEffect(() => { persist(); }, [persist]);
 
-  return [state, dispatch, newModifierIds];
+  return [state, dispatch, { ...save, retry: () => persist(true) }];
 }

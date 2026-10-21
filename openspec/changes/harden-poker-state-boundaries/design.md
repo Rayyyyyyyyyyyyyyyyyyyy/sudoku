@@ -80,6 +80,20 @@ Full browser end-to-end automation was considered but deferred because these flo
 
 The primary stage-three special round intentionally has no additional selection restriction. The stale `add-poker-roguelike` delta requirement will be corrected before completed poker changes are synchronized or archived. This change documents the reconciliation but does not change runtime behavior.
 
+### 7. Own session commits and observable persistence results
+
+The poker persistence module owns new-run creation and the cooperation between snapshot, started-run, collection, and completion writes. The React hook owns the live run and pending discoveries; pages render persistence outcomes and invoke retry instead of assembling a storage protocol. Storage success is explicit. Invalid snapshots still fail canonical validation before any records write, and storage keys, schema v1, scoring, and PRNG consumption remain unchanged.
+
+A new run is not entered or counted if its initial snapshot cannot be saved. Retrying uses the same seed and start time, preserving the attempted run identity and the previous stored run until replacement succeeds. Once the play route mounts, a single records update idempotently accounts for the run start, new discoveries, and any terminal result. Existing valid runs whose start record is missing are accounted for through the same run-ID guard.
+
+For live play, attempt the recoverable snapshot first and combine record changes into one records write. Only successful completion recording permits `MARK_RECORDS_APPLIED`. The snapshot and records keys are not an atomic transaction: if the final acknowledgement fails, the stored terminal run remains pending while the completed-run ID prevents counting it again. A failed records read must not be overwritten with default records.
+
+After a write failure the hook keeps the current run and pending discoveries in memory, including discoveries sold before retry. Show an accessible unsaved warning and a retry control; the next committed action also retries. Retry success restores focus to its status message. In-app exit controls warn before discarding unsaved progress. Closing, reloading, browser history navigation, or explicitly leaving the table can still lose memory-only updates; no new durable queue or storage schema is introduced. A stored terminal run with pending records remains reachable from the landing page and hub, and cannot be replaced by a new run from the landing page until its records are saved.
+
+Record loading distinguishes unavailable storage from malformed JSON. Malformed records remain untouched until the player confirms recovery on the landing page. Recovery rechecks the current value, saves the exact raw content under an additive `sudoku-drill-poker-records-v1-corrupt-backup` key (suffixing to preserve different earlier backups), then writes default records. Failure to back up or reset leaves the original records intact. Existing snapshots and Sudoku data are unchanged. The player can return to the current run to re-record recoverable results; historical scores and discoveries in the malformed JSON cannot be guaranteed. Valid records and temporary read failures must never be reset by this recovery path.
+
+Preserve the pure reducer and parser tests. Mounted tests cover initial-save failure with and without an existing run, continuing with unsaved inputs, manual and subsequent-action retry, completion recovery after remount, discovery recovery after sale, and confirmed corruption recovery with cancellation and write failures. Node fixtures also cover record-read failure, backup preservation, and a successful completion write followed by a failed snapshot acknowledgement.
+
 ## Risks / Trade-offs
 
 - **[Over-strict parsing retires valid saves]** A new invariant may reject a state legitimately emitted by the reducer. → Derive accepted shapes from every persisted phase fixture and add exact round-trip coverage before tightening each check.
