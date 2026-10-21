@@ -63,7 +63,7 @@ With `prefers-reduced-motion: reduce`, transforms and staggered delays are remov
 
 A persistent live region remains mounted across poker phases and announces committed outcomes: discarded and replacement counts, hand type and gained score, target crossing, loss, and settlement. Visual cards used in discard and scoring rails are non-interactive list items rather than disabled buttons, so they do not enter the tab order or imply an unavailable action.
 
-Automatic ordinary-hand continuation preserves the current scroll position and does not move focus to the round heading. When a user explicitly activates `略過動畫` and that control disappears, focus moves with `preventScroll` to the first usable hand card or the play controls. Round intro, shop, pack, loss, and completed-run transitions may focus their meaningful heading. This replaces the current phase-wide focus-and-scroll effect that would otherwise pull the player away from newly dealt cards.
+Automatic ordinary-hand continuation preserves the current scroll position and does not move focus to the round heading. When a user explicitly activates `略過動畫` and that control disappears, focus moves with `preventScroll` to the first usable hand card or the play controls. Round intro, shop, pack, loss, and completed-run transitions may focus their meaningful heading. Next-round and run-end screens appear immediately without a full-screen interstitial or progress timer. This replaces the current phase-wide focus-and-scroll effect that would otherwise pull the player away from newly dealt cards.
 
 ### 7. Keep presentation behavior testable without a browser clock
 

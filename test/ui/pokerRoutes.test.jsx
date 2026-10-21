@@ -211,37 +211,18 @@ describe('mounted poker play behavior', () => {
     expect(within(article).getByRole('button')).toBeDisabled();
   });
 
-  it('shows a skippable chapter transition when leaving the shop for the next round', async () => {
+  it.each([false, true])('opens the next round immediately with reduced motion %s', async (reducedMotion) => {
+    window.matchMedia = mediaQuery(reducedMotion);
     storeSnapshot(createShop(519));
     const user = userEvent.setup();
     renderApp();
     await user.click(screen.getByRole('button', { name: '下一回合 →' }));
-    const heading = screen.getByRole('heading', { name: '大型回合' });
-    const cue = screen.getByRole('dialog', { name: '大型回合' });
-    expect(cue).toHaveTextContent('STAGE 1 · ROUND 2');
-    expect(cue).toHaveTextContent('目標');
-    const skip = within(cue).getByRole('button', { name: '略過過場' });
-    expect(skip).toHaveFocus();
-    await user.click(skip);
-    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
-    await waitFor(() => expect(heading).toHaveFocus());
-  });
-
-  it('finishes the chapter transition automatically and respects reduced motion', async () => {
-    storeSnapshot(createShop(518));
-    const user = userEvent.setup();
-    const view = renderApp();
-    await user.click(screen.getByRole('button', { name: '下一回合 →' }));
-    expect(screen.getByRole('dialog', { name: '大型回合' })).toBeInTheDocument();
-    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument(), { timeout: 2000 });
-    view.unmount();
-
-    window.matchMedia = mediaQuery(true);
-    storeSnapshot(createShop(518));
-    renderApp();
-    await user.click(screen.getByRole('button', { name: '下一回合 →' }));
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(screen.getByRole('heading', { name: '大型回合' })).toHaveFocus();
+    const begin = screen.getByRole('button', { name: '開始回合' });
+    expect(begin).toBeEnabled();
+    await user.click(begin);
+    expect(screen.getByRole('button', { name: /出牌 ·/ })).toBeInTheDocument();
   });
 
   it('enforces inventory capacity and excludes owned modifiers from shop and pack choices', async () => {
