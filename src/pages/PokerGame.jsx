@@ -161,7 +161,7 @@ function PokerSaveNotice({ save }) {
     if (save.persisted && save.retried) savedRef.current?.focus({ preventScroll: true });
   }, [save.persisted, save.retried]);
   if (save.persisted) return save.retried ? <p ref={savedRef} tabIndex="-1" role="status">已保存</p> : null;
-  return <div className="pkr-warning" role="alert"><strong>尚未保存</strong><p>目前牌局與待保存的成果仍保留在此頁。離開或重新載入可能失去尚未保存的內容。{save.recordsStatus === 'corrupt' ? '牌局紀錄已損壞，可回牌局首頁備份並重建。' : '請重試保存。'}</p><button type="button" onClick={save.retry}>重試保存</button></div>;
+  return <div className="pkr-warning" role="alert"><strong>尚未保存</strong><p>目前牌局與待保存的成果仍保留在此頁。離開或重新載入可能失去尚未保存的內容。請重試保存。</p><button type="button" onClick={save.retry}>重試保存</button></div>;
 }
 
 function Shop({ state, dispatch, headingRef }) {

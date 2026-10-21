@@ -30,73 +30,27 @@ beforeEach(() => {
 });
 
 describe('poker save recovery', () => {
-  it('backs up corrupt records after confirmation and unlocks a terminal run without clearing its snapshot', async () => {
+  it('starts fresh from corrupt records and finishes the pending run without a recovery prompt', async () => {
     const state = { ...createNewRun({ seed: 909, now: 1 }), phase: 'run-lost', totalScore: 45 };
     const snapshot = JSON.stringify(state);
     localStorage.setItem(POKER_SNAPSHOT_KEY, snapshot);
     localStorage.setItem(POKER_RECORDS_KEY, '{');
     localStorage.setItem('sudoku-drill-v1', 'keep-sudoku');
-    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false);
-    const user = userEvent.setup();
-    const live = renderPoker('/poker/play');
-    expect(screen.getByRole('alert')).toHaveTextContent('牌局紀錄已損壞，可回牌局首頁備份並重建');
-    live.unmount();
-    renderPoker('/poker');
-    const alert = screen.getByRole('alert');
-    expect(alert).toHaveTextContent('牌局紀錄已損壞');
-    expect(screen.getByRole('button', { name: '開始牌局' })).toBeDisabled();
-    await user.click(within(alert).getByRole('button', { name: '備份並重建紀錄' }));
-    expect(localStorage.getItem(POKER_RECORDS_KEY)).toBe('{');
-    expect(localStorage.getItem(POKER_SNAPSHOT_KEY)).toBe(snapshot);
-    expect(Object.keys(localStorage).some((key) => key.startsWith(`${POKER_RECORDS_KEY}-corrupt-backup`))).toBe(false);
-
-    confirm.mockReturnValue(true);
-    await user.click(within(alert).getByRole('button', { name: '備份並重建紀錄' }));
-    expect(confirm).toHaveBeenCalledWith(expect.stringContaining('歷史成績與收藏'));
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
-    expect(screen.getByText('原始內容已備份，牌局紀錄已重建。')).toHaveFocus();
-    const backupKey = Object.keys(localStorage).find((key) => key.startsWith(`${POKER_RECORDS_KEY}-corrupt-backup`));
-    expect(localStorage.getItem(backupKey)).toBe('{');
-    expect(localStorage.getItem(POKER_SNAPSHOT_KEY)).toBe(snapshot);
-    expect(localStorage.getItem('sudoku-drill-v1')).toBe('keep-sudoku');
-
-    await user.click(screen.getByRole('button', { name: '重試保存牌局紀錄' }));
-    expect(loadPokerSnapshot().state.completion.recordsApplied).toBe(true);
-    expect(loadPokerRecords().completedRunIds).toEqual([state.runId]);
-    await user.click(screen.getByRole('button', { name: '查看紀錄' }));
-    expect(screen.getByRole('button', { name: '開始牌局' })).toBeEnabled();
-  });
-
-  it.each(['backup', 'records'])('preserves corrupt records if the %s write fails, and allows another recovery attempt', async (failure) => {
-    const snapshot = JSON.stringify({ ...createNewRun({ seed: 910, now: 1 }), phase: 'run-lost' });
-    localStorage.setItem(POKER_SNAPSHOT_KEY, snapshot);
-    localStorage.setItem(POKER_RECORDS_KEY, '{');
-    let blocked = true;
-    failWrites((key) => blocked && (failure === 'backup' ? key.startsWith(`${POKER_RECORDS_KEY}-corrupt-backup`) : key === POKER_RECORDS_KEY));
-    vi.spyOn(window, 'confirm').mockReturnValue(true);
+    const confirm = vi.spyOn(window, 'confirm');
     const user = userEvent.setup();
     renderPoker('/poker');
-    await user.click(screen.getByRole('button', { name: '備份並重建紀錄' }));
-    expect(screen.getByRole('alert')).toHaveTextContent('原始紀錄未被清除');
-    expect(localStorage.getItem(POKER_RECORDS_KEY)).toBe('{');
-    expect(localStorage.getItem(POKER_SNAPSHOT_KEY)).toBe(snapshot);
-    blocked = false;
-    await user.click(screen.getByRole('button', { name: '備份並重建紀錄' }));
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     expect(loadPokerRecords()).toEqual(emptyPokerRecords());
-  });
+    expect(localStorage.getItem(POKER_SNAPSHOT_KEY)).toBe(snapshot);
 
-  it('does not offer corruption recovery for a temporary records read failure', () => {
-    const records = JSON.stringify({ ...emptyPokerRecords(), runsWon: 4 });
-    localStorage.setItem(POKER_RECORDS_KEY, records);
-    const originalGet = Storage.prototype.getItem;
-    vi.spyOn(Storage.prototype, 'getItem').mockImplementation(function (key) {
-      if (key === POKER_RECORDS_KEY) throw new Error('temporarily unavailable');
-      return originalGet.call(this, key);
-    });
-    renderPoker('/poker');
-    expect(screen.queryByRole('button', { name: '備份並重建紀錄' })).not.toBeInTheDocument();
-    expect(originalGet.call(localStorage, POKER_RECORDS_KEY)).toBe(records);
+    await user.click(screen.getByRole('button', { name: '重試保存牌局紀錄' }));
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    expect(loadPokerSnapshot().state.completion.recordsApplied).toBe(true);
+    expect(loadPokerRecords().completedRunIds).toEqual([state.runId]);
+    expect(localStorage.getItem('sudoku-drill-v1')).toBe('keep-sudoku');
+    expect(confirm).not.toHaveBeenCalled();
+    await user.click(screen.getByRole('button', { name: '查看紀錄' }));
+    expect(screen.getByRole('button', { name: '開始牌局' })).toBeEnabled();
   });
 
   it('records a terminal run only once when StrictMode repeats mounted effects', () => {

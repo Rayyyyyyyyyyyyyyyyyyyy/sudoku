@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import PokerCollection from '../components/PokerCollection';
 import { POKER_RULES, opponentById } from '../data/poker/compatibility';
 import { handLabel } from '../lib/poker/evaluate';
-import { clearPokerSnapshot, loadPokerRecordsState, loadPokerSnapshot, recoverPokerRecords, startPokerRun } from '../lib/poker/persistence';
+import { clearPokerSnapshot, loadPokerRecords, loadPokerSnapshot, startPokerRun } from '../lib/poker/persistence';
 
 function newSeed() {
   if (globalThis.crypto?.getRandomValues) return crypto.getRandomValues(new Uint32Array(1))[0];
@@ -14,23 +14,9 @@ export default function PokerHome() {
   const navigate = useNavigate();
   const [save, setSave] = useState(loadPokerSnapshot);
   const [pendingStart, setPendingStart] = useState(null);
-  const [recovery, setRecovery] = useState(null);
-  const recoveryStatusRef = useRef(null);
-  const recordsState = useMemo(() => loadPokerRecordsState(), [save]);
-  const records = recordsState.records;
+  const records = useMemo(() => loadPokerRecords(), [save]);
   const active = save.status === 'ok' && !['run-won', 'run-lost'].includes(save.state.phase) ? save.state : null;
   const pendingCompletion = save.status === 'ok' && ['run-won', 'run-lost'].includes(save.state.phase) && !save.state.completion.recordsApplied;
-
-  useEffect(() => {
-    if (recovery?.persisted) recoveryStatusRef.current?.focus({ preventScroll: true });
-  }, [recovery]);
-
-  const recoverRecords = () => {
-    if (!confirm('將先備份損壞的原始紀錄，再重建牌局紀錄。歷史成績與收藏可能無法恢復，目前牌局會保留。確定要繼續？')) return;
-    const result = recoverPokerRecords();
-    setRecovery(result);
-    if (result.persisted) setSave(loadPokerSnapshot());
-  };
 
   const start = () => {
     if (!pendingStart && active && !confirm('目前有可繼續的牌局。確定要以新牌局取代嗎？')) return;
@@ -59,8 +45,6 @@ export default function PokerHome() {
           {pendingCompletion && <button className="pkr-btn pkr-btn--primary" type="button" onClick={() => navigate('/poker/play')}>重試保存牌局紀錄</button>}
           <button className={`pkr-btn ${active || pendingCompletion ? 'pkr-btn--ghost' : 'pkr-btn--primary'}`} type="button" disabled={pendingCompletion} onClick={start}>{active ? '開始新局' : '開始牌局'}</button>
         </div>
-        {recordsState.status === 'corrupt' && <div className="pkr-warning" role="alert"><strong>牌局紀錄已損壞</strong><p>反覆重試無法修復這份資料。可先備份原始內容再重建紀錄，目前牌局會保留；歷史成績與收藏可能無法恢復。</p><button type="button" onClick={recoverRecords}>備份並重建紀錄</button>{recovery?.persisted === false && <p role="status">備份或重建失敗，原始紀錄未被清除。請確認本機儲存空間後再試。</p>}</div>}
-        {recovery?.persisted && <p ref={recoveryStatusRef} tabIndex="-1" role="status">{recovery.backupKey ? '原始內容已備份，牌局紀錄已重建。' : '牌局紀錄已可使用。'}</p>}
         {pendingCompletion && <p className="pkr-resume">上一局紀錄尚未保存，請先重試保存。</p>}
         {pendingStart && <div className="pkr-warning" role="alert"><strong>新局尚未保存</strong><p>原有牌局與紀錄保留。請重試保存後再開始。</p><button type="button" onClick={start}>重試保存</button></div>}
         {active && <p className="pkr-resume">已保存：{opponentById(active.opponentId).display.name} · 第 {active.stageIndex + 1} 階第 {active.roundIndex + 1} 回合 · {active.coins} 幣</p>}

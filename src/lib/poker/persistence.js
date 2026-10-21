@@ -383,36 +383,22 @@ export function getPokerCollectionProgress(records) {
   return { collected: knownModifierIds(records?.discoveredModifierIds).length, total: MODIFIERS.length };
 }
 
-export function loadPokerRecordsState(storage = defaultStorage()) {
-  if (!storage) return { records: emptyPokerRecords(), status: 'unavailable' };
+function readPokerRecords(storage) {
+  if (!storage) return { records: emptyPokerRecords(), readable: false };
   let raw;
   try {
     raw = storage.getItem(POKER_RECORDS_KEY);
-  } catch (error) { return { records: emptyPokerRecords(), status: 'unavailable' }; }
+  } catch (error) { return { records: emptyPokerRecords(), readable: false }; }
   try {
-    return { records: raw ? parsePokerRecords(JSON.parse(raw)) : emptyPokerRecords(), status: 'ok' };
-  } catch (error) { return { records: emptyPokerRecords(), status: 'corrupt', raw }; }
+    return { records: raw ? parsePokerRecords(JSON.parse(raw)) : emptyPokerRecords(), readable: true };
+  } catch (error) {
+    // Pre-release records have no history to recover.
+    return { records: emptyPokerRecords(), readable: true };
+  }
 }
 
 export function loadPokerRecords(storage = defaultStorage()) {
-  return loadPokerRecordsState(storage).records;
-}
-
-export function recoverPokerRecords(storage = defaultStorage()) {
-  const loaded = loadPokerRecordsState(storage);
-  if (loaded.status === 'ok') return { persisted: true };
-  if (loaded.status !== 'corrupt') return { persisted: false };
-  const prefix = `${POKER_RECORDS_KEY}-corrupt-backup`;
-  let backupKey = prefix;
-  let index = 1;
-  try {
-    // Keep earlier recoveries and reuse an identical backup after a failed reset.
-    while (storage.getItem(backupKey) !== null && storage.getItem(backupKey) !== loaded.raw) {
-      backupKey = `${prefix}-${index++}`;
-    }
-    storage.setItem(backupKey, loaded.raw);
-    return { persisted: writePokerRecords(emptyPokerRecords(), storage).persisted, backupKey };
-  } catch (error) { return { persisted: false }; }
+  return readPokerRecords(storage).records;
 }
 
 function writePokerRecords(records, storage) {
@@ -476,16 +462,15 @@ export function commitPokerRun(snapshot, pendingModifierIds = [], storage = defa
   const saved = savePokerSnapshot(snapshot, storage);
   const state = saved.state;
   const discoveries = knownModifierIds([...pendingModifierIds, ...state.modifiers.map((owned) => owned.catalogId)]);
-  const loaded = loadPokerRecordsState(storage);
+  const loaded = readPokerRecords(storage);
   const newModifierIds = discoveries.filter((id) => !loaded.records.discoveredModifierIds.includes(id));
   let next = recordsWithRunStarted(loaded.records, state.runId);
   if (newModifierIds.length) next = { ...next, discoveredModifierIds: [...loaded.records.discoveredModifierIds, ...newModifierIds] };
   next = recordsWithCompletion(next, state);
-  // A failed read must never turn existing records into an empty replacement.
-  const recorded = loaded.status === 'ok' && (next === loaded.records || writePokerRecords(next, storage).persisted);
+  // Do not replace records while storage itself is inaccessible.
+  const recorded = loaded.readable && (next === loaded.records || writePokerRecords(next, storage).persisted);
   return {
     persisted: saved.persisted && recorded,
-    recordsStatus: loaded.status,
     recordsApplied: recorded && TERMINAL_PHASES.includes(state.phase),
     newModifierIds: recorded ? newModifierIds : [],
     pendingModifierIds: recorded ? [] : discoveries

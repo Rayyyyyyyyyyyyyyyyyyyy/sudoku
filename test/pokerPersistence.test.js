@@ -4,8 +4,7 @@ import { MODIFIERS, POKER_RULES } from '../src/data/poker/compatibility.js';
 import {
   POKER_RECORDS_KEY, clearPokerSnapshot, emptyPokerRecords, loadPokerRecords, loadPokerSnapshot,
   getPokerCollectionProgress, migratePokerSnapshot, parsePokerRecords, recordPokerCollection, recordPokerCompletion, recordPokerRunStarted,
-  savePokerSnapshot, validatePokerSnapshot, startPokerRun, commitPokerRun, POKER_SNAPSHOT_KEY,
-  loadPokerRecordsState, recoverPokerRecords
+  savePokerSnapshot, validatePokerSnapshot, startPokerRun, commitPokerRun, POKER_SNAPSHOT_KEY
 } from '../src/lib/poker/persistence.js';
 import { createNewRun, currentRound, pokerRunReducer } from '../src/lib/poker/run.js';
 
@@ -556,67 +555,21 @@ test('failed records reads cannot overwrite history, and unavailable storage rem
   assert.equal(loadPokerRecords(storage).runsWon, 10);
 });
 
-test('corrupt records stay untouched until recovery backs them up, then terminal recording can finish', () => {
+test('corrupt pre-release records start fresh and do not block completion or change other game data', () => {
   const storage = memoryStorage();
   const run = { ...createNewRun({ seed: 987, now: 1 }), phase: 'run-lost', totalScore: 46 };
   savePokerSnapshot(run, storage);
   const snapshot = storage.getItem(POKER_SNAPSHOT_KEY);
   storage.setItem(POKER_RECORDS_KEY, '{');
   storage.setItem('sudoku-drill-v1', 'preserve');
-  assert.deepEqual(loadPokerRecordsState(storage), { records: emptyPokerRecords(), status: 'corrupt', raw: '{' });
-  assert.equal(commitPokerRun(run, [], storage).recordsApplied, false);
-  const recovered = recoverPokerRecords(storage);
-  assert.equal(recovered.persisted, true);
-  assert.equal(storage.getItem(recovered.backupKey), '{');
+  assert.deepEqual(loadPokerRecords(storage), emptyPokerRecords());
+  assert.equal(storage.getItem(POKER_RECORDS_KEY), '{');
+  const result = commitPokerRun(run, [], storage);
+  assert.equal(result.persisted, true);
+  assert.equal(result.recordsApplied, true);
   assert.equal(storage.getItem(POKER_SNAPSHOT_KEY), snapshot);
   assert.equal(storage.getItem('sudoku-drill-v1'), 'preserve');
-  assert.deepEqual(loadPokerRecords(storage), emptyPokerRecords());
-  assert.equal(commitPokerRun(run, [], storage).recordsApplied, true);
   commitPokerRun(run, [], storage);
   assert.deepEqual(loadPokerRecords(storage).completedRunIds, [run.runId]);
-});
-
-test('recovery never resets valid records or temporarily unreadable storage', () => {
-  const storage = memoryStorage();
-  const raw = JSON.stringify({ ...emptyPokerRecords(), runsWon: 5 });
-  storage.setItem(POKER_RECORDS_KEY, raw);
-  const noWrites = { ...storage, setItem() { assert.fail('must not write'); } };
-  assert.deepEqual(recoverPokerRecords(noWrites), { persisted: true });
-  const unavailable = { ...noWrites, getItem() { throw new Error('unavailable'); } };
-  assert.equal(loadPokerRecordsState(unavailable).status, 'unavailable');
-  assert.deepEqual(recoverPokerRecords(unavailable), { persisted: false });
-  assert.deepEqual(recoverPokerRecords(null), { persisted: false });
-  assert.equal(storage.getItem(POKER_RECORDS_KEY), raw);
-});
-
-test('failed backups or resets preserve the original and successful retry reuses the backup', () => {
-  const storage = memoryStorage();
-  storage.setItem(POKER_RECORDS_KEY, '{');
-  const noBackup = { ...storage, setItem() { throw new Error('quota exceeded'); } };
-  assert.equal(recoverPokerRecords(noBackup).persisted, false);
-  assert.equal(storage.getItem(POKER_RECORDS_KEY), '{');
-  const noReset = { ...storage, setItem(key, value) {
-    if (key === POKER_RECORDS_KEY) throw new Error('quota exceeded');
-    storage.setItem(key, value);
-  } };
-  const failed = recoverPokerRecords(noReset);
-  assert.equal(failed.persisted, false);
-  assert.equal(storage.getItem(failed.backupKey), '{');
-  assert.equal(storage.getItem(POKER_RECORDS_KEY), '{');
-  const retried = recoverPokerRecords(storage);
-  assert.equal(retried.persisted, true);
-  assert.equal(retried.backupKey, failed.backupKey);
-  assert.equal(storage.getItem(retried.backupKey), '{');
-});
-
-test('a later recovery preserves earlier backups', () => {
-  const storage = memoryStorage();
-  storage.setItem(POKER_RECORDS_KEY, '{');
-  const first = recoverPokerRecords(storage);
-  storage.setItem(POKER_RECORDS_KEY, '[broken');
-  const second = recoverPokerRecords(storage);
-  assert.equal(second.persisted, true);
-  assert.notEqual(first.backupKey, second.backupKey);
-  assert.equal(storage.getItem(first.backupKey), '{');
-  assert.equal(storage.getItem(second.backupKey), '[broken');
+  assert.equal(loadPokerRecords(storage).runsStarted, 1);
 });

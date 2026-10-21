@@ -4,7 +4,7 @@ import { pokerRunReducer } from './run.js';
 
 export function usePokerRun(initialState) {
   const [state, dispatch] = useReducer(pokerRunReducer, initialState);
-  const [save, setSave] = useState({ persisted: true, recordsStatus: 'ok', newModifierIds: [], retried: false });
+  const [save, setSave] = useState({ persisted: true, newModifierIds: [], retried: false });
   const pendingModifierIds = useRef([]);
 
   const persist = useCallback((retried = false) => {
@@ -12,7 +12,6 @@ export function usePokerRun(initialState) {
     pendingModifierIds.current = result.pendingModifierIds;
     setSave((previous) => ({
       persisted: result.persisted,
-      recordsStatus: result.recordsStatus,
       newModifierIds: result.newModifierIds,
       retried: retried || (state.lastAction === 'MARK_RECORDS_APPLIED' && previous.retried)
     }));
